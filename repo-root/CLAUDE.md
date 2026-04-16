@@ -52,6 +52,8 @@ Source repos on disk:
 - v3: `C:\Users\ruben\source\repos\iPM_GV\IPM_Frontend\`
 - Backend: `C:\Users\ruben\source\repos\iPM_GV\IPM_Backend\`
 
+⚠️ frontend-v2/ existe en disco pero está DESCARTADO. No copiar, no referenciar, no importar nada de ahí. Solo v2 (frontend/) y v3 (IPM_Frontend/) son válidos.
+
 **Duplication cleanup when copying from v3:** drop accidental nested folders `services/services/`, `hooks/hooks/`, `types/types/`. Take outer-level files only.
 
 ---
