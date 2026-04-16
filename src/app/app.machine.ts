@@ -1,4 +1,4 @@
-import { setup, assign } from 'xstate'
+import { setup, assign, sendTo } from 'xstate'
 import { createActorContext } from '@xstate/react'
 import type { ActorRefFrom } from 'xstate'
 import deepEqual from 'fast-deep-equal'
@@ -56,9 +56,27 @@ const appMachine = setup({
       states: {
         closed: {
           on: {
-            OPEN_PERSON:  { target: 'person',  actions: assign({ overlayId: ({ event }) => event.id, overlayIdB: null }) },
-            OPEN_COMPANY: { target: 'company', actions: assign({ overlayId: ({ event }) => event.id, overlayIdB: null }) },
-            OPEN_VS:      { target: 'vs',      actions: assign({ overlayId: ({ event }) => event.a,  overlayIdB: ({ event }) => event.b }) },
+            OPEN_PERSON: {
+              target: 'person',
+              actions: [
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'person' as const, id: event.id } })),
+              ],
+            },
+            OPEN_COMPANY: {
+              target: 'company',
+              actions: [
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'company' as const, id: event.id } })),
+              ],
+            },
+            OPEN_VS: {
+              target: 'vs',
+              actions: [
+                assign({ overlayId: ({ event }) => event.a, overlayIdB: ({ event }) => event.b }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'vs' as const, a: event.a, b: event.b } })),
+              ],
+            },
             URL_CHANGED: [
               { guard: 'isPersonUrl',  target: 'person',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
               { guard: 'isCompanyUrl', target: 'company', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
@@ -68,9 +86,27 @@ const appMachine = setup({
         },
         person: {
           on: {
-            CLOSE_OVERLAY: { target: 'closed',  actions: assign({ overlayId: null, overlayIdB: null }) },
-            OPEN_COMPANY:  { target: 'company', actions: assign({ overlayId: ({ event }) => event.id, overlayIdB: null }) },
-            OPEN_VS:       { target: 'vs',      actions: assign({ overlayId: ({ event }) => event.a,  overlayIdB: ({ event }) => event.b }) },
+            CLOSE_OVERLAY: {
+              target: 'closed',
+              actions: [
+                assign({ overlayId: null, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
+              ],
+            },
+            OPEN_COMPANY: {
+              target: 'company',
+              actions: [
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'company' as const, id: event.id } })),
+              ],
+            },
+            OPEN_VS: {
+              target: 'vs',
+              actions: [
+                assign({ overlayId: ({ event }) => event.a, overlayIdB: ({ event }) => event.b }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'vs' as const, a: event.a, b: event.b } })),
+              ],
+            },
             URL_CHANGED: [
               { guard: 'noOverlayUrl', target: 'closed',  actions: assign({ overlayId: null, overlayIdB: null }) },
               { guard: 'isCompanyUrl', target: 'company', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
@@ -80,9 +116,27 @@ const appMachine = setup({
         },
         company: {
           on: {
-            CLOSE_OVERLAY: { target: 'closed', actions: assign({ overlayId: null, overlayIdB: null }) },
-            OPEN_PERSON:   { target: 'person', actions: assign({ overlayId: ({ event }) => event.id, overlayIdB: null }) },
-            OPEN_VS:       { target: 'vs',     actions: assign({ overlayId: ({ event }) => event.a,  overlayIdB: ({ event }) => event.b }) },
+            CLOSE_OVERLAY: {
+              target: 'closed',
+              actions: [
+                assign({ overlayId: null, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
+              ],
+            },
+            OPEN_PERSON: {
+              target: 'person',
+              actions: [
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'person' as const, id: event.id } })),
+              ],
+            },
+            OPEN_VS: {
+              target: 'vs',
+              actions: [
+                assign({ overlayId: ({ event }) => event.a, overlayIdB: ({ event }) => event.b }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'vs' as const, a: event.a, b: event.b } })),
+              ],
+            },
             URL_CHANGED: [
               { guard: 'noOverlayUrl', target: 'closed', actions: assign({ overlayId: null, overlayIdB: null }) },
               { guard: 'isPersonUrl',  target: 'person', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
@@ -92,9 +146,27 @@ const appMachine = setup({
         },
         vs: {
           on: {
-            CLOSE_OVERLAY: { target: 'closed',  actions: assign({ overlayId: null, overlayIdB: null }) },
-            OPEN_PERSON:   { target: 'person',  actions: assign({ overlayId: ({ event }) => event.id, overlayIdB: null }) },
-            OPEN_COMPANY:  { target: 'company', actions: assign({ overlayId: ({ event }) => event.id, overlayIdB: null }) },
+            CLOSE_OVERLAY: {
+              target: 'closed',
+              actions: [
+                assign({ overlayId: null, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
+              ],
+            },
+            OPEN_PERSON: {
+              target: 'person',
+              actions: [
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'person' as const, id: event.id } })),
+              ],
+            },
+            OPEN_COMPANY: {
+              target: 'company',
+              actions: [
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'company' as const, id: event.id } })),
+              ],
+            },
             URL_CHANGED: [
               { guard: 'noOverlayUrl',  target: 'closed',  actions: assign({ overlayId: null, overlayIdB: null }) },
               { guard: 'isPersonUrl',   target: 'person',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null }) },
