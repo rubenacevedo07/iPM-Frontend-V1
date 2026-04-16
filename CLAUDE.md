@@ -10,6 +10,28 @@ Architectural rules → read docs/skills/ipm-frontend.md
 2. NO fetch() outside apiClient.ts...
 (las 6 reglas inline aquí, para que estén siempre en contexto)
 
+---
+
+## ARCHITECTURAL DECISION RECORDS (sprint 1)
+
+Certain decisions for Phase 2a and beyond are frozen to prevent architectural drift. See:
+
+- **`docs/adr-0001-phase-2a-constraints.md`** — Zod for searchParams, useAuth/useGlobeTheme as stubs, same-context no-op guard for URL sync, app.machine shape (4 flat parallel regions max)
+
+Before proposing ANY work on AppShell, app.machine, routing, auth, or theme, Claude MUST read this ADR. Proposals that violate any decision in ADR-0001 must be refused with a pointer to the specific decision.
+
+---
+
+## RED FLAGS — STOP AND REASSESS
+
+- Implementing real `useAuth` or `AuthContext` during sprint 1 (ADR-0001 Decision 2)
+- Implementing theme switcher or real `useGlobeTheme` during sprint 1 (ADR-0001 Decision 2)
+- Using `ignoreNextUrlChange`, refs, or flags for URL sync (ADR-0001 Decision 3)
+- Adding states beyond the 4 flat parallel regions in app.machine during sprint 1 (ADR-0001 Decision 4)
+- Validating searchParams without Zod when a Zod schema would work (ADR-0001 Decision 1)
+
+---
+
 ## Current sprint phase
 Read docs/skills/ipm-frontend-v1-sprint.md for the live progress tracker.
 
