@@ -359,6 +359,13 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - Next: Phase 2b — EngineManager actor + engine contracts + GlobeBridge + EngineSlot.
 - Hours: +~3h (total now ~6h)
 
+### Session 2026-04-17 — Phases 1 + 2a
+- Done: Phase 1 foundation (134 archivos v3 + tokens v2), Phase 2a app skeleton (URL-as-truth bidireccional, anti-loop con fast-deep-equal guard, Zod validando searchParams)
+- Decisions: ADR-0001 creado con 4 reglas inmutables. Code-based routing (no file-based). Zod + fast-deep-equal instalados.
+- Broke: nada crítico. index.ts de services necesitó fix de barrel export (authService), v3 había perdido el re-export.
+- Next: Phase 2b (EngineManager + contracts + GlobeBridge + EngineSlot) — 4h estimadas
+- Hours: ~9h acumuladas de ~40h totales (22%)
+
 ---
 
 ## SESSION END UPDATE TEMPLATE
