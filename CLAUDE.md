@@ -41,3 +41,11 @@ Read docs/skills/ipm-frontend-v1-sprint.md for the live progress tracker.
 - Country fill opacity: max 0.25 (subtle, not political-map look)
 - Target: sustained 60fps on rotation with all layers active
 - If framerate drops below 50fps, reduce dot count before adding layer optimization
+
+
+## Technical stack conventions
+
+- Routing: TanStack Router **code-based** (manual `createRoute` + `rootRoute.addChildren`)
+- No file-based plugin installed — do NOT use `createFileRoute` API
+- Route files: `src/routes/{router.ts, __root.tsx, index.tsx, workstation.tsx}`
+- Each new route: add to `router.ts`'s `routeTree` chain explicitly
