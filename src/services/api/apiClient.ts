@@ -1,5 +1,5 @@
 // ============================================================
-// IPM — Authenticated API Client
+// IPM — Authenticated API Client (v2 shim)
 // Wraps fetch with:
 //   - Authorization: Bearer {accessToken} header
 //   - Auto-refresh on 401 (single retry)
