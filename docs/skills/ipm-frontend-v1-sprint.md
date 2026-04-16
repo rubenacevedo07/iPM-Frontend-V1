@@ -29,7 +29,7 @@ Sprint 1 of 2. Sprint 2 adds GraphEngine (Three.js vanilla + Worker + InstancedM
 | 4 | AppHeader + SearchOverlay | 3h | 6 | Verbatim from v2, search result → URL change |
 | 5 | Company overlay | 4h | 7 | globalCompanies verbatim from v2 |
 | 6 | Person overlay | 4h | 8 | v10 verbatim from v3, machine nested. **GATE B** |
-| 7 | Globe layers (real data) | 4h | 9 | Entity dots + country risk + click handlers |
+| 7 | Globe layers (real data) | 4h | 9 | ~100 entity dots + subtle country risk (top 20-30 only) + click handlers. 60fps target. |
 | 8 | ArcLayer (AI supply chain) | 3h | 10 | Animated arcs from v3 |
 | 9 | Polish + leak audit | 3h | 11 | `beforeunload` cleanup, 10x open/close no leak. **GATE C** |
 | 10 | Integration + buffer | 4h | 12 | Bug fixing, demo-ready |
@@ -183,6 +183,51 @@ Instead of bulk-copying, verify each capability with the user before copying. Do
 
 ---
 
+## PHASE 7 — CHECKLIST (4h) — Globe layers with strict budget
+
+**Performance budget is non-negotiable.** If any layer breaks 60fps on rotation, reduce dots before optimizing render.
+
+### Entity dots (2h) — target ~100 total
+- [ ] `useGlobalPowerRanking({ limit: 30 })` → ScatterplotLayer for persons
+  - Radius scaled by power score (min 4px, max 12px)
+  - Color by category (POWER_FIGURE, etc.)
+  - Click handler → `OPEN_PERSON { id }`
+- [ ] `useCompanies()` → filter top 30 by `marketCapUsd` descending → ScatterplotLayer
+  - Color by `sector` or `systemicImportanceLevel`
+  - Click handler → `OPEN_COMPANY { id }`
+- [ ] `useChokepoints()` + critical facilities → ~40 additional dots
+  - Different icon/color to distinguish from persons/companies
+- [ ] Verify total dot count in DevTools console: should NOT exceed ~105
+- [ ] DevTools Performance → 60fps sustained during rotation with all three layers active
+
+### Country risk fills (1h 30min) — subtle, filtered
+- [ ] `useCountries()` + `useCompositeIndices()` → GeoJsonLayer
+- [ ] Filter data BEFORE passing to layer: only countries with `RiskScore > 60`
+  - Not all 195 countries — only the top 20-30 highest risk
+- [ ] Color ramp: amber 600 (#BA7517) → red 800 (#791F1F)
+  - Linear interpolation based on RiskScore
+  - Max opacity: 0.25 (fill), 0.6 (stroke)
+- [ ] Countries NOT in the high-risk set: no fill, only thin 0.3px stroke
+- [ ] Verify visual: globe still reads as "night Earth with city lights", NOT political map
+
+### Validation (30min)
+- [ ] All 3 layers active simultaneously: 60fps sustained on rotation (Chrome Performance tab)
+- [ ] Click on any entity dot → correct overlay opens with correct entity
+- [ ] No console.error
+- [ ] `tsc --noEmit` → 0 errors
+- [ ] Memory: open/close overlays 10x, heap stable
+- [ ] Commit `v1-phase-7`
+
+### If framerate drops below 50fps
+Do NOT add layer optimization first. Instead, in order:
+1. Reduce entity dots by 20% (useGlobalPowerRanking limit → 25, useCompanies top 25)
+2. If still below 50fps, drop to 15 chokepoints instead of 40
+3. Only THEN consider layer-level optimizations (deck.gl `parameters`, instancing, etc.)
+
+Reason: performance issues at this scale are almost always "too much data", not "inefficient rendering".
+
+---
+
 ## GATES (hard blocks)
 
 ### GATE A — end Day 5 (after Phase 3)
@@ -197,6 +242,7 @@ Instead of bulk-copying, verify each capability with the user before copying. Do
 - [ ] CompanyOverlay renders **NVIDIA (id=1)** with real data from `useCompanyById(1)`
 - [ ] No `console.error`
 - [ ] `tsc --noEmit` → 0 errors
+- [ ] No assumptions violated on globe budget — entity dots NOT yet wired to overlays, but globe renders with placeholder data at 60fps
 
 ### GATE C — end Day 11 (after Phase 9)
 - [ ] Click on globe entity dot → correct overlay with correct entity
@@ -264,6 +310,10 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - Implementing Worker GraphEngine (sprint 2)
 - 4+ hours over a phase estimate
 - Skipping a gate to keep moving
+- Wiring more than 100 entity dots to the globe (exceeds layer budget — see Phase 7)
+- Rendering country risk fills for ALL countries instead of filtered top ~30
+- Using opacity > 0.3 on country fills (breaks "night Earth" visual)
+- Skipping the 60fps measurement at Phase 7 end
 
 ---
 

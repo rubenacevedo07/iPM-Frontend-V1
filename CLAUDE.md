@@ -12,3 +12,10 @@ Architectural rules → read docs/skills/ipm-frontend.md
 
 ## Current sprint phase
 Read docs/skills/ipm-frontend-v1-sprint.md for the live progress tracker.
+
+### Globe layer budget (strict)
+- Entity dots: ~100 total (30 persons + 30 companies + 40 chokepoints/facilities)
+- Country risk fills: ONLY countries with RiskScore > 60
+- Country fill opacity: max 0.25 (subtle, not political-map look)
+- Target: sustained 60fps on rotation with all layers active
+- If framerate drops below 50fps, reduce dot count before adding layer optimization

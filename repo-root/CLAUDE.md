@@ -105,6 +105,20 @@ Detail: `docs/state-model.md`.
 ### IN
 Video cinematic intro · Globe full-screen (DeckGL vanilla) · AppHeader · SearchOverlay · CompanyOverlay (globalCompanies verbatim) · PersonOverlay (v10 verbatim) · URL-as-state · 3 globe layers (entity dots, country risk, arcs) · EngineManager minimal.
 
+### Globe layer budget (strict performance cap)
+- **Entity dots:** ~100 total maximum
+  - ~30 persons (top of `useGlobalPowerRanking`, `?limit=30`)
+  - ~30 companies (top by `marketCapUsd` or `systemicImportanceLevel`)
+  - ~40 chokepoints + critical facilities
+- **Country risk fills:** subtle, not political-map look
+  - Only countries with `RiskScore > 60` (top ~20-30 countries)
+  - Rest transparent (no fill, stroke only)
+  - Max opacity 0.25
+  - Color ramp: amber 600 → red 800 (narrow range, no saturation)
+- **Target:** sustained 60fps on rotation with all layers active (DevTools Performance)
+- **Rule:** if framerate drops below 50fps, reduce dot count BEFORE adding rendering optimizations
+- **Visual north star:** globe reads as "night Earth with city lights", NOT as "political map"
+
 ### OUT (sprint 2 or later)
 GraphEngine + Worker · VsOverlay · CountryOverlay · CommodityOverlay · DEGRADED mode · retry/backoff · Transition Stress Harness · Landing pages · Trader module · OpenAPI codegen · ESLint architect plugin.
 
