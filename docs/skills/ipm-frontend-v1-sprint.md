@@ -269,14 +269,14 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 
 ## PROGRESS TRACKER (LIVE STATE)
 
-**Last updated:** [NOT STARTED]
-**Current phase:** NONE
-**Phases complete:** 0 / 11
-**Hours consumed:** 0 / 40h 30min
+**Last updated:** 2026-04-16
+**Current phase:** Phase 1 (Phase 0 complete)
+**Phases complete:** 1 / 11
+**Hours consumed:** ~1h / 40h 30min
 **Gates passed:** A [ ] B [ ] C [ ]
 
 ### Phase log
-- [ ] Phase 0 — Pre-flight + env + operational docs — __h / 2h 30min
+- [x] Phase 0 — Pre-flight + env + operational docs — ~1h / 2h 30min
 - [ ] Phase 1 — Capability matrix + foundation copy — __h / 5h
 - [ ] Phase 2a — AppShell + app.machine — __h / 4h
 - [ ] Phase 2b — EngineManager contracts — __h / 4h
@@ -290,7 +290,12 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - [ ] Phase 10 — Integration + buffer — __h / 4h
 
 ### Session notes
-(1-2 lines per session: what done, what broke, what next)
+
+### Session 2026-04-16 — Phase 0
+- Done: Vite scaffold (react-ts), dependencies installed (xstate, @xstate/react, @tanstack/react-query, @tanstack/react-router, sass), vite.config.ts with port 5178 + proxy secure:false, .gitignore full, git init, all operational docs verified in place, .github/PULL_REQUEST_TEMPLATE.md created. tsc → 0 errors. Proxy test → Elon Musk JSON via http://localhost:5178/api/persons/7.
+- Broke: Nothing.
+- Next: Phase 1 — Capability matrix verification + foundation copy (types, services, hooks, apiClient). Start with listing v3/v2 types and confirming with user.
+- Hours: +~1h (total now ~1h)
 
 ---
 
