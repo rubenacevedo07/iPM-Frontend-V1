@@ -320,14 +320,14 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 ## PROGRESS TRACKER (LIVE STATE)
 
 **Last updated:** 2026-04-16
-**Current phase:** Phase 1 (Phase 0 complete)
-**Phases complete:** 1 / 11
-**Hours consumed:** ~1h / 40h 30min
+**Current phase:** Phase 2a
+**Phases complete:** 2 / 11
+**Hours consumed:** ~3h / 40h 30min
 **Gates passed:** A [ ] B [ ] C [ ]
 
 ### Phase log
 - [x] Phase 0 — Pre-flight + env + operational docs — ~1h / 2h 30min
-- [ ] Phase 1 — Capability matrix + foundation copy — __h / 5h
+- [x] Phase 1 — Capability matrix + foundation copy — ~2h / 5h
 - [ ] Phase 2a — AppShell + app.machine — __h / 4h
 - [ ] Phase 2b — EngineManager contracts — __h / 4h
 - [ ] Phase 3 — GlobeEngine + Video intro — __h / 4h → **GATE A**
@@ -346,6 +346,12 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - Broke: Nothing.
 - Next: Phase 1 — Capability matrix verification + foundation copy (types, services, hooks, apiClient). Start with listing v3/v2 types and confirming with user.
 - Hours: +~1h (total now ~1h)
+
+### Session 2026-04-16 — Phase 1
+- Done: 43 types (v3 verbatim, company.ts wins for 7 intelligence fields), 36 services + api/ + auth/ (v3, authService barrel fixed — v3 regression), @/ alias in tsconfig+vite, apiConfig.ts from v3, 52 hooks (v3 verbatim — useAuth/useGlobeTheme are stubs, wired in Phase 2a), shell/tokens.ts from v2 canonical. tsc → 0 errors throughout. Tag v1-phase-1.
+- Broke: v3 index.ts missing authService export (fixed). useAuth/useGlobeTheme are stubs (expected, Phase 2a).
+- Next: Phase 2a — AppShell + app.machine + TanStack Router URL sync.
+- Hours: +~2h (total now ~3h)
 
 ---
 
