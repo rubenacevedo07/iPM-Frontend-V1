@@ -1,6 +1,7 @@
-import { createRoute, Outlet } from '@tanstack/react-router'
+import { createRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { rootRoute } from './__root'
+import { AppShell } from '@/app/AppShell'
 
 const workstationSearchSchema = z.object({
   overlay: z.enum(['person', 'company', 'vs']).optional(),
@@ -16,5 +17,5 @@ export const workstationRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/workstation',
   validateSearch: (search) => workstationSearchSchema.parse(search),
-  component: () => <Outlet />,
+  component: AppShell,
 })
