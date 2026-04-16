@@ -319,16 +319,16 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 
 ## PROGRESS TRACKER (LIVE STATE)
 
-**Last updated:** 2026-04-16
-**Current phase:** Phase 2a
-**Phases complete:** 2 / 11
-**Hours consumed:** ~3h / 40h 30min
+**Last updated:** 2026-04-17
+**Current phase:** Phase 2b
+**Phases complete:** 3 / 11
+**Hours consumed:** ~6h / 40h 30min
 **Gates passed:** A [ ] B [ ] C [ ]
 
 ### Phase log
 - [x] Phase 0 — Pre-flight + env + operational docs — ~1h / 2h 30min
 - [x] Phase 1 — Capability matrix + foundation copy — ~2h / 5h
-- [ ] Phase 2a — AppShell + app.machine — __h / 4h
+- [x] Phase 2a — AppShell + app.machine — ~3h / 4h
 - [ ] Phase 2b — EngineManager contracts — __h / 4h
 - [ ] Phase 3 — GlobeEngine + Video intro — __h / 4h → **GATE A**
 - [ ] Phase 4 — AppHeader + SearchOverlay — __h / 3h
@@ -352,6 +352,12 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - Broke: v3 index.ts missing authService export (fixed). useAuth/useGlobeTheme are stubs (expected, Phase 2a).
 - Next: Phase 2a — AppShell + app.machine + TanStack Router URL sync.
 - Hours: +~2h (total now ~3h)
+
+### Session 2026-04-17 — Phase 2a
+- Done: ADR-0001 established (Zod searchParams, auth/theme stubs, fast-deep-equal URL-sync guard, 4 parallel regions max). TanStack Router code-based wiring (router/root/workstation/index routes + Zod validateSearch). zod + fast-deep-equal installed. app.events + deriveContextFromSearchParams + app.machine (parallel: overlay[closed|person|company|vs], search, auth, focus) with top-level urlActuallyChanged guard. AppProviders (AppActor.Provider + QueryClient staleTime 30s). AppShell + RouterSync bridge (URL→machine). navigationActor real (fromCallback + router.navigate replace:true). sendTo(navRef, NAVIGATE) wired in 12 overlay transitions. Browser-validated: 5 URL→machine tests + 4 machine→URL tests all pass (incl. anti-loop via fast-deep-equal). Tag v1-phase-2a.
+- Broke: Nothing material. Minor: Vite dep-cache needed clearing after install (node_modules/.vite); resolved with manual rm.
+- Next: Phase 2b — EngineManager actor + engine contracts + GlobeBridge + EngineSlot.
+- Hours: +~3h (total now ~6h)
 
 ---
 
