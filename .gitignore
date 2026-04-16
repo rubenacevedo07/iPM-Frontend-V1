@@ -18,3 +18,15 @@ coverage/
 .DS_Store
 Thumbs.db
 .vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# TypeScript
+*.tsbuildinfo
+
+# Vite
+.vite/
+
+# Generated
+*.local
