@@ -22,3 +22,27 @@ Scroll-wheel zoom on the globe in /workstation feels laggy. Globe pauses ~500ms-
 - Revisit during or after Phase 4 (data layer integration may change render pipeline)
 - If persists, profile production build (npm run build) — lag may be dev-mode only
 - Consider production profile with React DevTools to identify render cause
+
+## Debugging session 2026-04-17 — ruled out
+
+Instrumented EngineSlot, AppShell, GlobeBridge with [PERF] logs. Collected 
+metrics before and after 3 fix attempts.
+
+Confirmed NOT the cause:
+- Auto-rotation rAF loop (rotation paused, lag persists)
+- DOM mutations in EngineSlot.applyOpacity (prevStateKey guard blocks 
+  mutations, lag persists)
+- AppShell re-renders during zoom (AppShell renders 1 time, not more)
+- XState snapshot emission through subscribe callback (unsubscribe from 
+  actor at active.idle made it WORSE due to polling interval overhead)
+- globe-countries GeoJsonLayer (commented out, lag persists)
+- ENTITY_HOVER emission flood (disabled, lag persists)
+
+Unverified hypotheses for future investigation:
+- Vite dev mode overhead (test with `npm run build && npx serve dist`)
+- CSS `transition: opacity 400ms` on .engineSlot siblings forcing layout recalc
+- React 19 concurrent reconciler interfering with DeckGL canvas
+- DeckGL r128 `_GlobeView` + `controller: true` specific known issue
+
+Next session: either fresh eyes with DeckGL GitHub issues search, or proceed 
+to Phase 4 and reassess if lag persists with real entities.
