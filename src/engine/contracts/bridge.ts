@@ -13,24 +13,23 @@ export type Unsubscribe = () => void;
  * Guaranteed emission order per engine lifecycle:
  *   1. ENGINE.READY     — exactly once, unless ENGINE.ERROR fires instead
  *   2. ENGINE.ENTITY_CLICK / ENGINE.ENTITY_HOVER — zero or more, only after READY
- *   3. ENGINE.DISPOSED  — exactly once, terminal
+ *   3. ENGINE.DISPOSED  removed (YAGNI — add back when a consumer needs it)
  *
  * Implementors (GlobeBridge, future bridges) MUST buffer or drop any
  * interaction events that would fire before ENGINE.READY is emitted.
  */
 export type BridgeEvent =
-  | { type: 'ENGINE.READY'; engineId: EngineId }
-  | { type: 'ENGINE.ERROR'; engineId: EngineId; error: Error }
+  | { type: 'ENGINE.READY';        engineId: EngineId }
+  | { type: 'ENGINE.ERROR';        engineId: EngineId; error: Error }
   | { type: 'ENGINE.ENTITY_CLICK'; entity: EntityRef }
-  | { type: 'ENGINE.ENTITY_HOVER'; entity: EntityRef | null }
-  | { type: 'ENGINE.DISPOSED'; engineId: EngineId };
+  | { type: 'ENGINE.ENTITY_HOVER'; entity: EntityRef | null };
 
 /**
  * Commands app.machine sends DOWN to an engine via EngineManager → bridge.
  * One-directional: machine → engine only.
  */
 export type BridgeCommand =
-  | { type: 'CMD.SET_VIEW'; view: AtlasView }
+  | { type: 'CMD.SET_VIEW';  view: AtlasView }
   | { type: 'CMD.SET_FOCUS'; target: EntityRef | null }
   | { type: 'CMD.SUSPEND' }
   | { type: 'CMD.RESUME' }

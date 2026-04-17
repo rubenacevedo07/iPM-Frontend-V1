@@ -3,9 +3,10 @@
 
 import type { EngineId, EngineInitInput } from './contracts/inputs';
 import type { IEngineBridge, BridgeEvent, BridgeCommand, Unsubscribe } from './contracts/bridge';
+import { GlobeBridge } from './GlobeBridge';
 
 // ---------------------------------------------------------------------------
-// Base bridge implementation — shared by all engine stubs
+// Base bridge implementation — shared by stub engines
 // ---------------------------------------------------------------------------
 
 class BaseBridge implements IEngineBridge {
@@ -47,28 +48,8 @@ class BaseBridge implements IEngineBridge {
 }
 
 // ---------------------------------------------------------------------------
-// Engine stubs
+// Engine stubs — network + force (real impl Phase 4+)
 // ---------------------------------------------------------------------------
-
-class GlobeBridge extends BaseBridge {
-  constructor(input: EngineInitInput) {
-    super('globe');
-    this._init(input);
-  }
-
-  private async _init(input: EngineInitInput): Promise<void> {
-    try {
-      // TODO Phase 3: replace with real DeckGL imperative init (new Deck({...}), deck.setProps())
-      await Promise.resolve();
-      input.container.dataset.engine = 'globe';
-      this.setStatus('ready');
-      this.emit({ type: 'ENGINE.READY', engineId: 'globe' });
-    } catch (error) {
-      this.setStatus('failed');
-      this.emit({ type: 'ENGINE.ERROR', engineId: 'globe', error: error as Error });
-    }
-  }
-}
 
 class NetworkBridge extends BaseBridge {
   constructor(input: EngineInitInput) {
@@ -115,9 +96,9 @@ class ForceBridge extends BaseBridge {
 // ---------------------------------------------------------------------------
 
 const engines: Record<EngineId, (input: EngineInitInput) => IEngineBridge> = {
-  globe:   (input) => new GlobeBridge(input),
-  network: (input) => new NetworkBridge(input),
-  force:   (input) => new ForceBridge(input),
+  globe:   (input) => new GlobeBridge(input),   // real DeckGL bridge
+  network: (input) => new NetworkBridge(input), // stub Phase 4+
+  force:   (input) => new ForceBridge(input),   // stub Phase 4+
 };
 
 /**
