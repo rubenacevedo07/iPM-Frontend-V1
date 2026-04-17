@@ -9,6 +9,7 @@ import type {
   EngineInitInput,
   EngineViewInput,
   EngineFocusInput,
+  EngineEntityData,
 } from './contracts/inputs';
 import type {
   IEngineBridge,
@@ -73,6 +74,10 @@ export class GlobeBridge implements IEngineBridge {
   // CONTRACT: drained ONLY by onEvent() when a handler registers. Never flushed
   // or cleared by init() or any other method. See Phase 3 post-mortem.
   private _pendingEvents: BridgeEvent[] = [];
+
+  // Phase 4.1: entity data received via CMD.SET_ENTITIES.
+  // Fed into globe-rings ScatterplotLayer. Mutated in send(), rendered via _redraw().
+  private _entities: EngineEntityData['entities'] = [];
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -224,6 +229,10 @@ export class GlobeBridge implements IEngineBridge {
       case 'CMD.SET_FOCUS':
         this.setFocus({ target: command.target });
         break;
+      case 'CMD.SET_ENTITIES':
+        this._entities = command.data.entities;
+        this._redraw();
+        break;
       case 'CMD.SUSPEND':
         this.suspend();
         break;
@@ -287,18 +296,20 @@ export class GlobeBridge implements IEngineBridge {
       }),
       new ScatterplotLayer({
         id: 'globe-rings',
-        data: [],
+        data: this._entities,
         pickable: true,
         radiusUnits: 'meters',
-        getRadius: 80_000,
-        getFillColor: [0, 229, 255, 40],
-        getLineColor: [0, 229, 255, 180],
+        getPosition:  (d: any) => [d.longitude, d.latitude],
+        getRadius:    (d: any) => (d.isChokepoint ? 120_000 : 80_000),
+        getFillColor: (d: any) => (d.isChokepoint ? [255, 180, 0, 120] : [0, 229, 255, 80]),
+        getLineColor: (d: any) => (d.isChokepoint ? [255, 200, 40, 220] : [0, 229, 255, 200]),
         stroked: true,
         lineWidthUnits: 'pixels',
         getLineWidth: 1.5,
         updateTriggers: {
-          getFillColor: [this._focusedId],
-          getRadius: [this._focusedId],
+          getFillColor: [this._focusedId, this._entities.length],
+          getRadius:    [this._focusedId, this._entities.length],
+          getPosition:  [this._entities.length],
         },
       }),
     ];

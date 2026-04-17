@@ -2,7 +2,7 @@
 // Single createBridgeAndSubscribe action (as designed in Phase 2b)
 
 import { setup, assign, sendParent }                        from 'xstate';
-import type { EngineId, EngineInitInput }                   from './contracts/inputs';
+import type { EngineId, EngineInitInput, EngineEntityData } from './contracts/inputs';
 import type { IEngineBridge, BridgeEvent, Unsubscribe }     from './contracts/bridge';
 import { createEngine }                                     from './engineFactory';
 
@@ -17,10 +17,11 @@ interface EngineManagerContext {
 }
 
 type EngineManagerEvent =
-  | { type: 'ENGINE.REQUEST'; engineId: EngineId; input: EngineInitInput }
-  | { type: 'ENGINE.SWAP';    engineId: EngineId; input: EngineInitInput }
+  | { type: 'ENGINE.REQUEST';   engineId: EngineId; input: EngineInitInput }
+  | { type: 'ENGINE.SWAP';      engineId: EngineId; input: EngineInitInput }
   | { type: 'ENGINE.DISPOSE' }
-  | { type: '_BRIDGE.EVENT';  event: BridgeEvent };
+  | { type: '_BRIDGE.EVENT';    event: BridgeEvent }
+  | { type: 'CMD.SET_ENTITIES'; data: EngineEntityData };
 
 function isBridgeReady(event: EngineManagerEvent): boolean {
   return event.type === '_BRIDGE.EVENT' && event.event.type === 'ENGINE.READY';
@@ -131,7 +132,15 @@ export const engineManagerMachine = setup({
         'ENGINE.DISPOSE': { target: 'idle', actions: ['disposeBridge', 'clearBridge'] },
       },
       states: {
-        idle: {},
+        idle: {
+          on: {
+            'CMD.SET_ENTITIES': {
+              actions: ({ context, event }) => {
+                context.bridge?.send({ type: 'CMD.SET_ENTITIES', data: event.data });
+              },
+            },
+          },
+        },
         crossfading: {
           initial: 'waiting',
           states: {

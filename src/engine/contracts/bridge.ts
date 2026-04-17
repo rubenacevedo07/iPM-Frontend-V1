@@ -2,7 +2,7 @@
 // Bridge contract — communication channel between AtlasView and an engine instance (Rule 4)
 
 import type { EntityRef, AtlasView } from '@/domain/types';
-import type { EngineId } from './inputs';
+import type { EngineId, EngineEntityData } from './inputs';
 
 /** Canonical unsubscribe handle — matches XState/nanostores/zustand convention */
 export type Unsubscribe = () => void;
@@ -29,8 +29,9 @@ export type BridgeEvent =
  * One-directional: machine → engine only.
  */
 export type BridgeCommand =
-  | { type: 'CMD.SET_VIEW';  view: AtlasView }
-  | { type: 'CMD.SET_FOCUS'; target: EntityRef | null }
+  | { type: 'CMD.SET_VIEW';     view: AtlasView }
+  | { type: 'CMD.SET_FOCUS';    target: EntityRef | null }
+  | { type: 'CMD.SET_ENTITIES'; data: EngineEntityData }
   | { type: 'CMD.SUSPEND' }
   | { type: 'CMD.RESUME' }
   | { type: 'CMD.DISPOSE' };

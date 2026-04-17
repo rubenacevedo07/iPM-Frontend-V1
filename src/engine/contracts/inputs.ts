@@ -33,3 +33,22 @@ export interface EngineCrossfadeInput {
   /** Duration in ms */
   durationMs: number;
 }
+
+/**
+ * Phase 4.1: entity data pushed imperatively from React into the bridge.
+ * Each entity is EntityRef-shaped (id, nodeId, type, slug, name) plus the
+ * coordinate + secondary fields deck.gl needs at the layer level.
+ */
+export interface EngineEntityData {
+  entities: Array<{
+    id:            number;
+    nodeId:        string;
+    type:          'PERSON' | 'COMPANY' | 'COUNTRY';
+    slug:          string;
+    name:          string;
+    latitude:      number;
+    longitude:     number;
+    marketCapUsd?: number | null;
+    isChokepoint?: boolean;
+  }>;
+}
