@@ -97,11 +97,11 @@ export interface CompanyPersonSummary {
 }
 
 export interface CompanyProduct {
-  id: number;
-  companyId: number;
-  name: string;
-  description: string;
-  category: string;
+  id:                  number;
+  companyId:           number;
+  productName:         string;
+  sku:                 string;
+  productDescription:  string;
 }
 
 export interface CompanyFabric {

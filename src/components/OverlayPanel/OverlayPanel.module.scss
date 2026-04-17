@@ -3,7 +3,7 @@
   top: 50%;
   right: 24px;
   transform: translateY(-50%);
-  width: 360px;
+  width: 480px;
   max-height: calc(100vh - 48px);
   background: rgba(9, 11, 16, 0.92);
   border: 1px solid rgba(0, 229, 255, 0.3);
@@ -204,4 +204,160 @@
     color: #e8eaed;
     word-break: break-word;
   }
+}
+
+// --- Expandable sections --------------------------------------------------
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+  border-top: 1px solid rgba(0, 229, 255, 0.1);
+}
+
+.section {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 4px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+
+  &::-webkit-details-marker { display: none; }
+
+  &:hover {
+    .sectionTitle { color: rgba(0, 229, 255, 0.85); }
+  }
+}
+
+.sectionCaret {
+  font-size: 10px;
+  color: rgba(0, 229, 255, 0.6);
+  width: 10px;
+  flex-shrink: 0;
+  transition: color 150ms;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(232, 234, 237, 0.75);
+  flex: 1;
+  transition: color 150ms;
+}
+
+.sectionCount {
+  font-size: 11px;
+  color: rgba(0, 229, 255, 0.7);
+  font-family: ui-monospace, monospace;
+  padding: 1px 8px;
+  background: rgba(0, 229, 255, 0.08);
+  border-radius: 3px;
+  border: 1px solid rgba(0, 229, 255, 0.15);
+}
+
+.sectionLoading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px 14px;
+  font-size: 11px;
+  color: rgba(232, 234, 237, 0.5);
+}
+
+.spinnerSmall {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid rgba(0, 229, 255, 0.15);
+  border-top-color: rgba(0, 229, 255, 0.85);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.sectionEmpty,
+.sectionError {
+  padding: 4px 18px 14px;
+  font-size: 11px;
+  color: rgba(232, 234, 237, 0.4);
+  font-style: italic;
+}
+
+.sectionError {
+  color: rgba(255, 120, 120, 0.7);
+}
+
+// --- Item list -----------------------------------------------------------
+
+.itemList {
+  list-style: none;
+  padding: 0 2px 10px 20px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+}
+
+.itemTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.itemTitle {
+  font-size: 12px;
+  color: #e8eaed;
+  font-weight: 500;
+}
+
+.itemSub {
+  font-size: 11px;
+  color: rgba(0, 229, 255, 0.7);
+  font-family: ui-monospace, monospace;
+}
+
+.itemDesc {
+  font-size: 11px;
+  color: rgba(232, 234, 237, 0.6);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.itemFooter {
+  padding: 4px 20px 14px;
+  font-size: 11px;
+  color: rgba(232, 234, 237, 0.45);
+  font-style: italic;
+}
+
+.badgeMajor {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  background: rgba(0, 229, 255, 0.12);
+  color: rgba(0, 229, 255, 0.9);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 3px;
 }
