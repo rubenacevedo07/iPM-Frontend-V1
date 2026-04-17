@@ -1,0 +1,25 @@
+// src/components/EngineSlot/EngineSlot.module.scss
+
+.engineSlotRoot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.engineSlot {
+  position: absolute;
+  inset: 0;
+
+  // Default hidden — JS actor subscription writes opacity directly to DOM
+  opacity: 0;
+
+  // MUST match crossfading.settling `after: { 400 }` in engineManager.machine.ts
+  // If these diverge: disposePreviousBridge fires before animation completes → flash
+  transition: opacity 400ms ease-in-out;
+
+  // Disable interaction when visually hidden
+  &[aria-hidden] {
+    pointer-events: none;
+  }
+}

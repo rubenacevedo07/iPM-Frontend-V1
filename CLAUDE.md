@@ -49,3 +49,36 @@ Read docs/skills/ipm-frontend-v1-sprint.md for the live progress tracker.
 - No file-based plugin installed — do NOT use `createFileRoute` API
 - Route files: `src/routes/{router.ts, __root.tsx, index.tsx, workstation.tsx}`
 - Each new route: add to `router.ts`'s `routeTree` chain explicitly
+
+
+## Non-negotiable rules (sprint 1, frozen until v1-phase-5)
+
+### Rule 1 — NO handwritten types
+Use only types from `src/types/` (v3 verbatim, 43 files). Any new type 
+inference happens at the service/contract boundary — never in components.
+If a type seems missing, search v3 first. Last resort: add to 
+`src/types/_ext/` with justification in the commit message.
+
+### Rule 2 — NO fetch() outside apiClient.ts  
+Services layer is the single network egress point. All HTTP goes through 
+`apiClient.ts`. No `fetch`, no `axios`, no direct `new Request()` anywhere 
+in `features/`, `components/`, or machines.
+
+### Rule 3 — NO router.navigate() from components
+URL mutations go through `navigationActor` only (single-writer pattern). 
+Components `send()` events to the actor; the actor owns `router.navigate`. 
+This makes URL the derived state of machine state, not the source.
+
+### Rule 4 — NO DTOs in features/engine
+Contracts in `engine/contracts/` are pure: no wire format, no API shape. 
+Mappers live at the service boundary. Engine never knows the server exists.
+
+### Rule 5 — NO R3F (React Three Fiber)
+DeckGL imperative only: `new Deck({...})`, `deck.setProps()`, manual 
+lifecycle. No `<DeckGL />` JSX, no reconciler. This applies to all future 
+3D/canvas engines too — the engine layer owns its own render loop.
+
+### Rule 6 — NO refactor of v3-copied code
+v3 code ships verbatim. Corrections documented case-by-case in commit 
+messages with rationale. Refactoring window opens post-sprint-1 (tag 
+v1-phase-5 or later).
