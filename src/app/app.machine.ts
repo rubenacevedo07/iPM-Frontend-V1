@@ -3,16 +3,20 @@ import { createActorContext } from '@xstate/react'
 import type { ActorRefFrom } from 'xstate'
 import deepEqual from 'fast-deep-equal'
 import { navigationActor } from '@/navigation/navigationActor'
+import { engineManagerMachine } from '@/engine/engineManager.machine'
 import { deriveContextFromSearchParams } from './deriveContextFromSearchParams'
 import type { AppEvent, EntityRef } from './app.events'
 import type { WorkstationSearch } from '@/routes/workstation'
+import type { AtlasView } from '@/types/atlas'
 
 type AppContext = {
-  overlayId:     number | null
-  overlayIdB:    number | null
-  query:         string
-  focusedEntity: EntityRef | null
-  navRef:        ActorRefFrom<typeof navigationActor>
+  overlayId:        number | null
+  overlayIdB:       number | null
+  query:            string
+  focusedEntity:    EntityRef | null
+  navRef:           ActorRefFrom<typeof navigationActor>
+  engineManagerRef: ActorRefFrom<typeof engineManagerMachine>
+  atlasView:        AtlasView
 }
 
 // Type-safe extractor — guard in setup() ensures event.type === 'URL_CHANGED' before use
@@ -25,7 +29,10 @@ const appMachine = setup({
     context: {} as AppContext,
     events:  {} as AppEvent,
   },
-  actors: { navigationActor },
+  actors: {
+    navigationActor,
+    engineManagerMachine,
+  },
   guards: {
     urlActuallyChanged: ({ context, event }) => {
       if (event.type !== 'URL_CHANGED') return false
@@ -44,11 +51,13 @@ const appMachine = setup({
   id: 'app',
   type: 'parallel',
   context: ({ spawn }) => ({
-    overlayId:     null,
-    overlayIdB:    null,
-    query:         '',
-    focusedEntity: null,
-    navRef:        spawn(navigationActor, { id: 'nav' }),
+    overlayId:        null,
+    overlayIdB:       null,
+    query:            '',
+    focusedEntity:    null,
+    navRef:           spawn(navigationActor,      { id: 'nav' }),
+    engineManagerRef: spawn(engineManagerMachine, { id: 'engineManager' }),
+    atlasView:        'globe' as AtlasView,
   }),
   states: {
     overlay: {
@@ -204,6 +213,41 @@ const appMachine = setup({
       states: {
         idle:    { on: { FOCUS_ENTITY: { target: 'focused', actions: assign({ focusedEntity: ({ event }) => event.entity }) } } },
         focused: { on: { BLUR_ENTITY:  { target: 'idle',    actions: assign({ focusedEntity: null }) } } },
+      },
+    },
+
+    // 5th region — flat event router (Decision B: no lifecycle duplication)
+    // Engine lifecycle lives in engineManagerMachine (spawned in context).
+    atlasView: {
+      on: {
+        'ATLAS_VIEW.SET': {
+          actions: assign({ atlasView: ({ event }) => event.view }),
+        },
+        'ATLAS.ENTITY_CLICK': [
+          {
+            guard: ({ event }) => event.entity.type === 'PERSON',
+            actions: sendTo(
+              ({ context }) => context.navRef,
+              ({ event }) => ({
+                type: 'NAVIGATE',
+                search: { overlay: 'person' as const, id: event.entity.id },
+              })
+            ),
+          },
+          {
+            guard: ({ event }) => event.entity.type === 'COMPANY',
+            actions: sendTo(
+              ({ context }) => context.navRef,
+              ({ event }) => ({
+                type: 'NAVIGATE',
+                search: { overlay: 'company' as const, id: event.entity.id },
+              })
+            ),
+          },
+        ],
+        'ATLAS.ENGINE_FAILED': {
+          actions: ({ event }) => console.error('[EngineManager] engine failed', event),
+        },
       },
     },
   },

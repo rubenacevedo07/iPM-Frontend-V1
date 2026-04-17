@@ -1,4 +1,6 @@
 import type { WorkstationSearch } from '@/routes/workstation'
+import type { AtlasView } from '@/types/atlas'
+import type { EngineId } from '@/engine/contracts/inputs'
 
 export type EntityRef = {
   id:     number
@@ -19,3 +21,7 @@ export type AppEvent =
   | { type: 'SEARCH_QUERY'; q: string }
   | { type: 'FOCUS_ENTITY'; entity: EntityRef }
   | { type: 'BLUR_ENTITY' }
+  // AtlasView engine events
+  | { type: 'ATLAS_VIEW.SET';      view: AtlasView }
+  | { type: 'ATLAS.ENTITY_CLICK';  entity: EntityRef }
+  | { type: 'ATLAS.ENGINE_FAILED'; engineId: EngineId; error: Error }
