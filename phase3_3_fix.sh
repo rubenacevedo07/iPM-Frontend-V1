@@ -1,5 +1,14 @@
+#!/bin/bash
+# Phase 3.3 FIX — restore createBridgeAndSubscribe (Sonnet did unauthorized refactor)
+# Keeps [DIAG] logs active for verification after fix
+set -e
+
+echo "Restoring engineManager.machine.ts with single createBridgeAndSubscribe action..."
+
+cat > src/engine/engineManager.machine.ts << 'EOF'
 // src/engine/engineManager.machine.ts — RESTORED from unauthorized split
 // Single createBridgeAndSubscribe action (as designed in Phase 2b)
+// [DIAG] logs kept for verification — remove after globe renders
 
 import { setup, assign, sendParent }                        from 'xstate';
 import type { EngineId, EngineInitInput }                   from './contracts/inputs';
@@ -39,11 +48,16 @@ export const engineManagerMachine = setup({
     // Subscription registered BEFORE init() emits ENGINE.READY because
     // init() is async (void this.init) and onEvent is synchronous
     createBridgeAndSubscribe: assign(({ event, self }) => {
+      console.log('[DIAG] createBridgeAndSubscribe called, event:', event.type);
       const e = event as Extract<EngineManagerEvent, { type: 'ENGINE.REQUEST' | 'ENGINE.SWAP' }>;
+      console.log('[DIAG] creating engine:', e.engineId);
       const bridge = createEngine(e.engineId, e.input);
+      console.log('[DIAG] bridge created, registering subscription');
       const unsubscribe = bridge.onEvent((bridgeEvent) => {
+        console.log('[DIAG] bridge event received in manager:', bridgeEvent.type);
         self.send({ type: '_BRIDGE.EVENT', event: bridgeEvent });
       });
+      console.log('[DIAG] subscription active, handlers registered');
       return { bridge, unsubscribe, engineId: e.engineId, container: e.input.container };
     }),
 
@@ -157,3 +171,16 @@ export const engineManagerMachine = setup({
     },
   },
 });
+EOF
+
+echo "✅ engineManager.machine.ts restored with createBridgeAndSubscribe + [DIAG] logs"
+echo ""
+echo "Next steps:"
+echo "  1. Clear Vite cache:  rm -rf node_modules/.vite"
+echo "  2. Restart dev server: npm run dev"
+echo "  3. Hard reload browser: Ctrl+Shift+R"
+echo "  4. Check console — should see:"
+echo "     [DIAG] createBridgeAndSubscribe called"
+echo "     [DIAG] bridge event received in manager: ENGINE.READY"
+echo "     [DIAG] engineManager state: {\"active\":\"idle\"}"
+echo "     ← globe should appear rotating"
