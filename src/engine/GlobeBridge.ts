@@ -41,7 +41,6 @@ export class GlobeBridge implements IEngineBridge {
     this._container = input.container;
     try {
       const { width, height } = input.container.getBoundingClientRect();
-        offsetW: input.container.offsetWidth, offsetH: input.container.offsetHeight });
       const resolvedW = width  || input.container.offsetWidth  || window.innerWidth;
       const resolvedH = height || input.container.offsetHeight || window.innerHeight;
 
