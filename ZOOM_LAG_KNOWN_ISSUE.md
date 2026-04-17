@@ -46,3 +46,24 @@ Unverified hypotheses for future investigation:
 
 Next session: either fresh eyes with DeckGL GitHub issues search, or proceed 
 to Phase 4 and reassess if lag persists with real entities.
+
+## RESOLVED 2026-04-17 21:40
+
+Root cause identified: `this._startRotation()` called in `init()` runs a rAF 
+loop that calls `this._deck.setProps({ viewState: {...} })` every frame. This 
+competes with DeckGL's internal controller during zoom gestures, causing 
+~500ms-1s lag.
+
+Fix: commented out `this._startRotation()` in init(). Globe no longer 
+auto-rotates but zoom/pan are fluid.
+
+Code evidence: HTML vanilla (no rAF, no React, no XState) ran at 58fps.
+Moment of diagnosis: temporarily disabled _startRotation() → zoom became smooth.
+2-hour debugging detour in same session: kept trying to coexist rotation with 
+zoom via throttling, conditional stops, etc. All failed. Simplest fix was to 
+remove the rotation.
+
+Future work: re-enable auto-rotation via non-competing mechanism in Phase 4+.
+Candidates: DeckGL's `transitionInterpolator` for gentle one-shot animations, 
+or strictly-gated rAF that only activates when interaction has been idle for 
+>5 seconds.
