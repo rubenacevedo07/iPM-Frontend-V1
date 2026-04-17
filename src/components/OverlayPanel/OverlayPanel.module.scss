@@ -1,0 +1,61 @@
+.overlayPanelRoot {
+  position: fixed;
+  top: 50%;
+  right: 24px;
+  transform: translateY(-50%);
+  width: 360px;
+  min-height: 200px;
+  background: rgba(9, 11, 16, 0.92);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  padding: 24px;
+  color: #e8eaed;
+  font-family: system-ui, sans-serif;
+  z-index: 100;
+}
+
+.closeButton {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: rgba(0, 229, 255, 0.7);
+  font-size: 24px;
+  font-weight: 300;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+
+  &:hover {
+    color: #00e5ff;
+  }
+}
+
+.overlayContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.overlayType {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: rgba(0, 229, 255, 0.9);
+  font-weight: 500;
+}
+
+.overlayId {
+  font-size: 18px;
+  color: #e8eaed;
+  font-weight: 400;
+}
+
+.overlayHint {
+  margin-top: 16px;
+  font-size: 11px;
+  color: rgba(232, 234, 237, 0.5);
+  font-style: italic;
+}

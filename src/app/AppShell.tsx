@@ -3,6 +3,7 @@ import { useSearch }  from '@tanstack/react-router'
 import { AppActor }   from './app.machine'
 import { EngineSlot } from '@/components/EngineSlot/EngineSlot'
 import type { EngineSlotRefs } from '@/components/EngineSlot/EngineSlot'
+import { OverlayPanel } from '@/components/OverlayPanel/OverlayPanel'
 
 function RouterSync() {
   const search = useSearch({ from: '/workstation' })
@@ -42,6 +43,7 @@ export function AppShell() {
     <div style={{ width: '100vw', height: '100vh', background: '#090b10', position: 'relative' }}>
       <RouterSync />
       <EngineSlot actorRef={engineRef} onRefsReady={handleRefsReady} />
+      <OverlayPanel />
     </div>
   )
 }
