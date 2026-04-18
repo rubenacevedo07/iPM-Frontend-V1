@@ -11,8 +11,15 @@ import {
   useCompanyFabrics,
   useCompanyMarkets,
   useCompanyOwnership,
+  useCompanyProviders,
+  useCompanyClients,
+  useCompanyCommodities,
+  useCompanyRiskProfile,
   formatMarketCap,
   formatEmployees,
+  formatUsdc,
+  dependencyColor,
+  riskColor,
 } from '@/hooks/useCompanyData';
 import { useState } from 'react';
 import styles from './OverlayPanel.module.scss';
@@ -132,6 +139,10 @@ function CompanyOverlay({ companyId }: CompanyOverlayProps) {
         <FacilitiesSection companyId={companyId} />
         <MarketsSection companyId={companyId} />
         <ShareholdersSection companyId={companyId} />
+        <SuppliersSection companyId={companyId} />
+        <ClientsSection companyId={companyId} />
+        <CommoditiesSection companyId={companyId} />
+        <RiskProfileSection companyId={companyId} />
       </div>
     </div>
   );
@@ -318,6 +329,213 @@ function ShareholdersSection({ companyId }: SectionProps) {
             <div className={styles.itemFooter}>+ {extraCount} more</div>
           )}
         </>
+      )}
+    </details>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Suppliers section — GET /api/CompanyProviders/company/{id}
+// Shape: { id, companyId, providerId, serviceType, category, contractValue,
+//          description, provider: { id, name, ... } }
+// ---------------------------------------------------------------------------
+
+function SuppliersSection({ companyId }: SectionProps) {
+  const [open, setOpen] = useState(false);
+  const { data, loading, error } = useCompanyProviders(open ? companyId : 0);
+  const items = data ?? [];
+
+  return (
+    <details
+      className={styles.section}
+      open={open}
+      onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
+    >
+      <SectionHeader title="Suppliers" count={open && !loading ? items.length : null} open={open} />
+      {open && (loading ? <SectionLoading /> :
+        error ? <div className={styles.sectionError}>Failed to load</div> :
+        items.length === 0 ? <SectionEmpty label="suppliers" /> :
+        <ul className={styles.itemList}>
+          {items.map((p, i) => {
+            const providerName = p.provider?.name ?? 'Unknown provider';
+            const subParts = [p.serviceType, p.category].filter(Boolean);
+            return (
+              <li key={`supplier-${i}`} className={styles.item}>
+                <div className={styles.itemTitleRow}>
+                  <span className={styles.itemTitle}>{providerName}</span>
+                  {typeof p.contractValue === 'number' && p.contractValue > 0 && (
+                    <span className={styles.itemValue}>{formatUsdc(p.contractValue)}</span>
+                  )}
+                </div>
+                {subParts.length > 0 && (
+                  <div className={styles.itemSub}>{subParts.join(' · ')}</div>
+                )}
+                {p.description && <div className={styles.itemDesc}>{p.description}</div>}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </details>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Clients section — GET /api/CompanyClients/company/{id}
+// Flat shape: { id, companyId, clientId, clientName, contractValue, description }
+// Sort by contractValue desc, top 10, overflow indicator.
+// ---------------------------------------------------------------------------
+
+function ClientsSection({ companyId }: SectionProps) {
+  const [open, setOpen] = useState(false);
+  const { data, loading, error } = useCompanyClients(open ? companyId : 0);
+  const items = data ?? [];
+
+  const sorted = [...items].sort(
+    (a, b) => (b.contractValue ?? 0) - (a.contractValue ?? 0),
+  );
+  const displayed = sorted.slice(0, 10);
+  const extraCount = sorted.length - displayed.length;
+
+  return (
+    <details
+      className={styles.section}
+      open={open}
+      onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
+    >
+      <SectionHeader title="Clients" count={open && !loading ? items.length : null} open={open} />
+      {open && (loading ? <SectionLoading /> :
+        error ? <div className={styles.sectionError}>Failed to load</div> :
+        items.length === 0 ? <SectionEmpty label="clients" /> :
+        <>
+          <ul className={styles.itemList}>
+            {displayed.map((c, i) => (
+              <li key={`client-${i}`} className={styles.item}>
+                <div className={styles.itemTitleRow}>
+                  <span className={styles.itemTitle}>{c.clientName ?? 'Unknown client'}</span>
+                  {typeof c.contractValue === 'number' && c.contractValue > 0 && (
+                    <span className={styles.itemValue}>{formatUsdc(c.contractValue)}</span>
+                  )}
+                </div>
+                {c.description && <div className={styles.itemDesc}>{c.description}</div>}
+              </li>
+            ))}
+          </ul>
+          {extraCount > 0 && <div className={styles.itemFooter}>+ {extraCount} more</div>}
+        </>
+      )}
+    </details>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Commodities section — GET /api/CompanyCommodities/company/{id}
+// Flat shape: { companyId, commodityId, commodityName, dependencyLevel,
+//               exposurePercentage, contractType, notes }
+// ---------------------------------------------------------------------------
+
+function CommoditiesSection({ companyId }: SectionProps) {
+  const [open, setOpen] = useState(false);
+  const { data, loading, error } = useCompanyCommodities(open ? companyId : 0);
+  const items = data ?? [];
+
+  const sorted = [...items].sort(
+    (a, b) => (b.exposurePercentage ?? 0) - (a.exposurePercentage ?? 0),
+  );
+
+  return (
+    <details
+      className={styles.section}
+      open={open}
+      onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
+    >
+      <SectionHeader title="Commodities" count={open && !loading ? items.length : null} open={open} />
+      {open && (loading ? <SectionLoading /> :
+        error ? <div className={styles.sectionError}>Failed to load</div> :
+        items.length === 0 ? <SectionEmpty label="commodities" /> :
+        <ul className={styles.itemList}>
+          {sorted.map((c, i) => {
+            const colors = c.dependencyLevel ? dependencyColor(c.dependencyLevel) : null;
+            return (
+              <li key={`commodity-${i}`} className={styles.item}>
+                <div className={styles.itemTitleRow}>
+                  <span className={styles.itemTitle}>{c.commodityName}</span>
+                  {c.dependencyLevel && colors && (
+                    <span
+                      className={styles.depBadge}
+                      style={{ background: colors.bg, color: colors.text }}
+                    >
+                      {c.dependencyLevel}
+                    </span>
+                  )}
+                </div>
+                <div className={styles.itemSub}>
+                  {typeof c.exposurePercentage === 'number' && `${c.exposurePercentage.toFixed(1)}% exposure`}
+                  {c.contractType ? ` · ${c.contractType}` : ''}
+                </div>
+                {c.notes && <div className={styles.itemDesc}>{c.notes}</div>}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </details>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Risk Profile section — GET /api/CompanyRiskProfile/company/{id}
+// Single object: { overallRiskScore(0-10), riskTier, concentrationRisk(0-10),
+//   criticalDependencies, highDependencies, totalCommodities, totalProviders,
+//   avgSustainabilityScore }
+// ---------------------------------------------------------------------------
+
+function RiskProfileSection({ companyId }: SectionProps) {
+  const [open, setOpen] = useState(false);
+  const { data, loading, error } = useCompanyRiskProfile(open ? companyId : 0);
+
+  return (
+    <details
+      className={styles.section}
+      open={open}
+      onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
+    >
+      <SectionHeader title="Risk Profile" count={null} open={open} />
+      {open && (loading ? <SectionLoading /> :
+        error ? <div className={styles.sectionError}>Failed to load</div> :
+        !data ? <SectionEmpty label="risk profile data" /> :
+        <div className={styles.riskProfileBody}>
+          <div className={styles.riskTopRow}>
+            <div className={styles.riskScoreBlock}>
+              <div className={styles.riskScoreLabel}>Risk Score</div>
+              <div
+                className={styles.riskScoreValue}
+                style={{ color: riskColor(data.riskTier ?? data.overallRiskScore) }}
+              >
+                {data.overallRiskScore.toFixed(1)}<span className={styles.riskScoreOutOf}> / 10</span>
+              </div>
+            </div>
+            <div className={styles.riskTierBlock}>
+              <div className={styles.riskScoreLabel}>Tier</div>
+              <div
+                className={styles.riskTierValue}
+                style={{ color: riskColor(data.riskTier) }}
+              >
+                {data.riskTier}
+              </div>
+            </div>
+          </div>
+          <dl className={styles.riskFieldList}>
+            <dt>Concentration</dt><dd>{data.concentrationRisk.toFixed(1)} / 10</dd>
+            <dt>Critical Deps</dt><dd>{data.criticalDependencies}</dd>
+            <dt>High Deps</dt><dd>{data.highDependencies}</dd>
+            <dt>Total Commodities</dt><dd>{data.totalCommodities}</dd>
+            <dt>Total Providers</dt><dd>{data.totalProviders}</dd>
+            {typeof data.avgSustainabilityScore === 'number' && (
+              <><dt>Sustainability</dt><dd>{data.avgSustainabilityScore.toFixed(1)}</dd></>
+            )}
+          </dl>
+        </div>
       )}
     </details>
   );

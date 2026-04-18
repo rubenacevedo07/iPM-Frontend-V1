@@ -361,3 +361,99 @@
   border: 1px solid rgba(0, 229, 255, 0.3);
   border-radius: 3px;
 }
+
+// --- Phase 4.3c additions ------------------------------------------------
+
+.itemValue {
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  color: rgba(0, 229, 255, 0.85);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.depBadge {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  opacity: 0.9;
+}
+
+.riskProfileBody {
+  padding: 4px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.riskTopRow {
+  display: flex;
+  gap: 24px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+}
+
+.riskScoreBlock,
+.riskTierBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.riskScoreLabel {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(232, 234, 237, 0.45);
+}
+
+.riskScoreValue {
+  font-size: 26px;
+  font-weight: 500;
+  font-family: ui-monospace, monospace;
+  line-height: 1;
+}
+
+.riskScoreOutOf {
+  font-size: 12px;
+  color: rgba(232, 234, 237, 0.4);
+  font-weight: 400;
+}
+
+.riskTierValue {
+  font-size: 18px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.riskFieldList {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0 2px;
+  font-size: 12px;
+
+  dt {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(232, 234, 237, 0.45);
+    align-self: baseline;
+    padding-top: 2px;
+  }
+
+  dd {
+    margin: 0;
+    color: #e8eaed;
+    font-family: ui-monospace, monospace;
+  }
+}

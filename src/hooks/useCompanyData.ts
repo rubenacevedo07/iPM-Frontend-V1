@@ -122,30 +122,35 @@ export interface CompanyMarket {
   company: null;
 }
 
-/** CompanyClientSimple — lightweight, null nested company objects (faster) */
+/**
+ * CompanyClientSimple — flat response from GET /api/CompanyClients/company/{id}
+ * Backend contract (verified 2026-04-18, after backend commit 801d352):
+ *   { id, companyId, clientId, clientName, contractValue, description }
+ */
 export interface CompanyClientSimple {
-  id: number;
-  companyId: number;
-  clientId: number;
-  contractValue: number;
-  description: string;
-  company: null;
-  client: null;
+  id:             number;
+  companyId:      number;
+  clientId:       number | null;
+  clientName:     string | null;
+  contractValue:  number | null;
+  description:    string | null;
 }
 
 /**
- * CompanyProvider — mirrors CompanyClient but reversed direction.
- * Inferred from usage in CompanyNetworkGlobePage + CompanyIntelligenceMapPage.
- * Confirm field names from src/types/companyProvider.ts if they differ.
+ * CompanyProvider — GET /api/CompanyProviders/company/{id} returns the entity
+ * with .Include(Provider), so the nested provider holds the full Company.
+ * Verified against backend 2026-04-18.
  */
 export interface CompanyProvider {
-  id: number;
-  companyId: number;
-  providerId: number;
-  contractValue: number;
-  description: string;
-  company: null;
-  provider: null;
+  id:            number;
+  companyId:     number;
+  providerId:    number;
+  serviceType:   string | null;
+  category:      string | null;
+  contractValue: number | null;
+  description:   string | null;
+  company:       null;
+  provider:      { id: number; name: string; country?: string; logo?: string | null } | null;
 }
 
 export interface CompanyInCommodity {
@@ -188,16 +193,25 @@ export interface CommodityBreakdownItem {
   riskContribution: number;
 }
 
+/**
+ * CompanyRiskProfile — GET /api/CompanyRiskProfile/company/{id}
+ * Verified against backend 2026-04-18 (commit 801d352).
+ * Scales: overallRiskScore and concentrationRisk are 0-10 (NOT 0-100).
+ * companyName + commodityBreakdown stay optional for other legacy consumers
+ * that rely on the broader shape; new endpoint does not populate them.
+ */
 export interface CompanyRiskProfile {
-  companyId: number;
-  companyName: string;
-  overallRiskScore: number;
-  riskTier: 'Critical' | 'High' | 'Medium' | 'Low';
-  criticalDependencies: number;
-  highDependencies: number;
-  avgSustainabilityScore: number;
-  concentrationRisk: number;
-  commodityBreakdown: CommodityBreakdownItem[];
+  companyId:               number;
+  overallRiskScore:        number;
+  riskTier:                'Critical' | 'High' | 'Medium' | 'Low' | 'Unknown';
+  concentrationRisk:       number;
+  criticalDependencies:    number;
+  highDependencies:        number;
+  totalCommodities:        number;
+  totalProviders:          number;
+  avgSustainabilityScore:  number | null;
+  companyName?:            string;
+  commodityBreakdown?:     CommodityBreakdownItem[];
 }
 
 /**
@@ -512,14 +526,22 @@ export function useCompanySectors(companyId: number): UseCompanyResult<CompanySe
 }
 
 /**
- * useCompanyRiskProfile — commodity risk score, tier, breakdown
- * GET /api/CommodityDependency/companies/{id}
+ * useCompanyRiskProfile — risk score (0-10), tier, dependency & concentration metrics.
+ * GET /api/CompanyRiskProfile/company/{id}   (backend commit 801d352)
+ *
+ * NOTE: previously pointed at /CommodityDependency/companies/{id} which uses
+ * a 0-100 score scale. The 4.3c overlay requires the 0-10 scale from the new
+ * endpoint; see Phase 4.3c post-mortem.
  */
 export function useCompanyRiskProfile(companyId: number): UseCompanyResult<CompanyRiskProfile> {
   return useService(
-    () => commodityDependencyService.getCompanyById(companyId) as Promise<CompanyRiskProfile>,
+    async () => {
+      const r = await fetch(`/api/CompanyRiskProfile/company/${companyId}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json() as Promise<CompanyRiskProfile>;
+    },
     [companyId],
-    !!companyId
+    !!companyId,
   );
 }
 
