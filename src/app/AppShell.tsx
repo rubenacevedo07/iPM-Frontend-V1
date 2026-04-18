@@ -16,17 +16,9 @@ function RouterSync() {
 }
 
 export function AppShell() {
-  const actor          = AppActor.useActorRef()
   const engineRef      = AppActor.useSelector(s => s.context.engineManagerRef)
   const atlasView      = AppActor.useSelector(s => s.context.atlasView)
   const requestSentRef = useRef(false)
-
-  useEffect(() => {
-    const sub = actor.subscribe((snap) => {
-      const engineSnap = engineRef.getSnapshot()
-    })
-    return () => sub.unsubscribe()
-  }, [actor, engineRef])
 
   const handleRefsReady = useCallback((refs: EngineSlotRefs) => {
     if (requestSentRef.current) {

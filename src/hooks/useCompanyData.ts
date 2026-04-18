@@ -50,7 +50,6 @@ import { companyClientSimpleService } from '@/services/companyClientSimpleServic
 import { companyProviderService }     from '@/services/companyProviderService';
 import { companyCommodityService }    from '@/services/companyCommodityService';
 import { companySectorService }       from '@/services/companySectorService';
-import { commodityDependencyService } from '@/services/commodityDependencyService';
 import { assetManagerCompanyService } from '@/services/assetManagerCompanyService';
 import { alphaEarningsService }       from '@/services/alphaEarningsService';
 import { cashFlowService }            from '@/services/alphaCashFlowService';

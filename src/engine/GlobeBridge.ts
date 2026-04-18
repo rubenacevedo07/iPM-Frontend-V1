@@ -23,7 +23,6 @@ import type {
 // ---------------------------------------------------------------------------
 
 const INITIAL_VIEW = { longitude: 20, latitude: 25, zoom: 0.7, minZoom: 0, maxZoom: 5 };
-const ROTATE_SPEED = 3.5; // degrees per second — reserved for future auto-rotation
 
 // External CDN: naturalearth 110m countries GeoJSON. No auth required.
 // If CDN unavailable, globe-countries layer silently renders empty (non-fatal).
@@ -58,18 +57,12 @@ export class GlobeBridge implements IEngineBridge {
   private _deck: Deck<any> | null = null;
   private _ro: ResizeObserver | null = null;
   private _rafHandle: number | null = null;
-  private _container: HTMLDivElement | null = null;
-  private _interactionTimeout: number | null = null;
 
   private _longitude = INITIAL_VIEW.longitude;
   private _latitude = INITIAL_VIEW.latitude;
   private _zoom = INITIAL_VIEW.zoom;
 
-  private _interacting = false;
-  private _suspended = false;
   private _focusedId: string | null = null;
-  private _lastT = 0;
-
   // Event buffer — populated by _emitOrBuffer when no handlers are registered yet.
   // CONTRACT: drained ONLY by onEvent() when a handler registers. Never flushed
   // or cleared by init() or any other method. See Phase 3 post-mortem.
@@ -88,8 +81,6 @@ export class GlobeBridge implements IEngineBridge {
   }
 
   async init(input: EngineInitInput): Promise<void> {
-    this._container = input.container;
-
     try {
       const { width, height } = input.container.getBoundingClientRect();
       const resolvedW = width || input.container.offsetWidth || window.innerWidth;
@@ -112,18 +103,9 @@ export class GlobeBridge implements IEngineBridge {
 
         // TODO Phase 4: replace `any` with typed imports from @deck.gl/core
         onViewStateChange: ({ viewState }: any) => {
-          this._interacting = true;
           this._longitude = viewState.longitude ?? this._longitude;
           this._latitude = viewState.latitude ?? this._latitude;
           this._zoom = viewState.zoom ?? this._zoom;
-
-          if (this._interactionTimeout !== null) {
-            window.clearTimeout(this._interactionTimeout);
-          }
-          this._interactionTimeout = window.setTimeout(() => {
-            this._interacting = false;
-            this._interactionTimeout = null;
-          }, 2000);
         },
 
         onClick: (info: any) => {
@@ -145,12 +127,8 @@ export class GlobeBridge implements IEngineBridge {
       });
       this._ro.observe(input.container);
 
-      // Auto-rotation disabled. Running a rAF loop with setProps({ viewState })
-      // competes with DeckGL's internal controller during zoom gestures, causing
-      // ~500ms-1s lag. Re-enable in Phase 4+ using a non-competing mechanism
-      // (e.g., DeckGL transitionInterpolator, or a rAF gated strictly on no-interaction).
-      // See ZOOM_LAG_KNOWN_ISSUE.md for diagnosis trail.
-      // this._startRotation();
+      // Auto-rotation removed — caused zoom lag (see ZOOM_LAG_KNOWN_ISSUE.md).
+      // Restore from git history if re-enabled via a non-competing mechanism.
 
       this._status = 'ready';
 
@@ -184,26 +162,24 @@ export class GlobeBridge implements IEngineBridge {
   }
 
   suspend(): void {
-    this._suspended = true;
+    // No-op — rotation apparatus removed (see init() comment).
+    // Kept for IEngineBridge contract compatibility; engineManager sends
+    // CMD.SUSPEND to previousBridge during crossfade.
     this._stopRotation();
   }
 
   resume(): void {
-    this._suspended = false;
-    // Rotation intentionally not resumed — see init() comment on auto-rotation.
+    // No-op — rotation apparatus removed (see init() comment).
+    // Kept for IEngineBridge contract compatibility; engineManager sends
+    // CMD.RESUME to current bridge on crossfade rollback.
   }
 
   dispose(): void {
     this._stopRotation();
-    if (this._interactionTimeout !== null) {
-      window.clearTimeout(this._interactionTimeout);
-      this._interactionTimeout = null;
-    }
     this._ro?.disconnect();
     this._deck?.finalize();
     this._deck = null;
     this._ro = null;
-    this._container = null;
     this._status = 'disposed';
     this._handlers = [];
   }
@@ -320,34 +296,14 @@ export class GlobeBridge implements IEngineBridge {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — rotation (kept but not called) + flyTo (stub)
+  // Private — rotation cleanup + flyTo (stub)
   // ---------------------------------------------------------------------------
 
-  private _startRotation(): void {
-    if (this._rafHandle !== null) return;
-    this._lastT = 0;
-
-    const tick = (t: number) => {
-      if (!this._interacting && !this._suspended && !this._focusedId) {
-        const dt = this._lastT ? (t - this._lastT) / 1000 : 0;
-        this._longitude += dt * ROTATE_SPEED;
-        this._deck?.setProps({
-          viewState: {
-            longitude: this._longitude,
-            latitude: this._latitude,
-            zoom: this._zoom,
-            minZoom: 0,
-            maxZoom: 5,
-          },
-        });
-      }
-      this._lastT = t;
-      this._rafHandle = requestAnimationFrame(tick);
-    };
-
-    this._rafHandle = requestAnimationFrame(tick);
-  }
-
+  /**
+   * Safe no-op cleanup — _rafHandle is always null in the current code path
+   * (auto-rotation was removed in response to a zoom-lag regression). Kept so
+   * that dispose()/suspend() remain correct if rotation is restored later.
+   */
   private _stopRotation(): void {
     if (this._rafHandle !== null) {
       cancelAnimationFrame(this._rafHandle);
