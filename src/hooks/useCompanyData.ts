@@ -41,6 +41,10 @@ export type {
   TopNodeDto,
 } from '@/types/graph';
 
+// ── Canonical AssetManagerCompanyFull (nested shape matches backend)
+import type { AssetManagerCompanyFull } from '@/types/assetManagerCompany';
+export type { AssetManagerCompanyFull };
+
 // ── Services (all real, from src/services/) ───────────────────────────────
 import { companyService }             from '@/services/companyService';
 import { companyProductService }      from '@/services/companyProductService';
@@ -211,26 +215,6 @@ export interface CompanyRiskProfile {
   avgSustainabilityScore:  number | null;
   companyName?:            string;
   commodityBreakdown?:     CommodityBreakdownItem[];
-}
-
-/**
- * AssetManagerCompanyFull — full institutional holding.
- * Fields inferred from AssetManagersPage usage.
- * Confirm from src/types/assetManagerCompany.ts if field names differ.
- */
-export interface AssetManagerCompanyFull {
-  id: number;
-  managerId: number;
-  companyId: number;
-  managerName: string;
-  managerLogo?: string | null;
-  companyType?: string;
-  ownershipPercentage: number;
-  sharesHeld?: number | null;
-  marketValue?: number | null;
-  changeQoQ?: number | null;
-  filingDate?: string | null;
-  holdingType?: string;
 }
 
 /**
@@ -550,7 +534,7 @@ export function useCompanyRiskProfile(companyId: number): UseCompanyResult<Compa
  */
 export function useCompanyOwnership(companyId: number): UseCompanyResult<AssetManagerCompanyFull[]> {
   return useService(
-    () => assetManagerCompanyService.getFull(companyId) as unknown as Promise<AssetManagerCompanyFull[]>,
+    () => assetManagerCompanyService.getFull(companyId),
     [companyId],
     !!companyId
   );
