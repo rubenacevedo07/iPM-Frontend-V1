@@ -1,7 +1,8 @@
 // src/engine/contracts/inputs.ts
 // Pure engine input contracts — NO DTOs, NO wire format, NO API shapes (Rule 4)
 
-import type { EntityRef, AtlasView } from '@/domain/types';
+import type { EntityRef } from '@/app/app.events';
+import type { AtlasView } from '@/types/atlas';
 
 /** Canonical identifier for a registered engine implementation */
 export type EngineId = 'globe' | 'network' | 'force';

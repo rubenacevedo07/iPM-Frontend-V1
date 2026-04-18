@@ -1,7 +1,7 @@
 // src/engine/contracts/engine.ts
 // Engine capability contract — what every engine implementation must satisfy (Rule 4, Rule 5)
 
-import type { AtlasView } from '@/domain/types';
+import type { AtlasView } from '@/types/atlas';
 import type { EngineInitInput, EngineViewInput, EngineFocusInput } from './inputs';
 
 /**

@@ -1,7 +1,8 @@
 // src/engine/contracts/bridge.ts
 // Bridge contract — communication channel between AtlasView and an engine instance (Rule 4)
 
-import type { EntityRef, AtlasView } from '@/domain/types';
+import type { EntityRef } from '@/app/app.events';
+import type { AtlasView } from '@/types/atlas';
 import type { EngineId, EngineEntityData } from './inputs';
 
 /** Canonical unsubscribe handle — matches XState/nanostores/zustand convention */
