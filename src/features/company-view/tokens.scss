@@ -1,0 +1,62 @@
+/**
+ * CompanyView design tokens
+ * Extracted from old frontend shared.ts (verbatim values)
+ * Prefix: --cv-* = company-view feature scope
+ *
+ * DO NOT use these tokens outside src/features/company-view/
+ * Other features (person-overlay, scenario-impact) get their own tokens files.
+ */
+
+:root, .company-view {
+  /* ── Typography ────────────────────────────────────────── */
+  --cv-font-display: 'Inter', system-ui, -apple-system, sans-serif;
+  --cv-font-mono:    'JetBrains Mono', 'Fira Mono', monospace;
+
+  /* ── Accent colors ─────────────────────────────────────── */
+  --cv-accent-cyan:   #00d1ff;
+  --cv-accent-purple: #a855f7;
+  --cv-accent-green:  #00d4aa;
+  --cv-accent-amber:  #ffaa00;
+  --cv-accent-red:    #e53935;
+  --cv-accent-blue:   #378ADD;
+  --cv-accent-orange: #ff8c00;
+
+  /* Purpose-colored — supply chain network */
+  --cv-hq:       #00D1FF;
+  --cv-provider: #FF4D4D;
+  --cv-client:   #a064ff;
+
+  /* ── Text ──────────────────────────────────────────────── */
+  --cv-text-primary:   #e8edf5;
+  --cv-text-secondary: #8a9bb5;
+  --cv-text-muted:     #4a5568;
+  --cv-text-faint:     rgba(255, 255, 255, 0.28);
+
+  /* ── Surfaces ──────────────────────────────────────────── */
+  --cv-bg-canvas:       #090b10;
+  --cv-bg-deep:         #030710;
+  --cv-bg-panel:        rgba(10, 12, 18, 0.98);
+  --cv-bg-panel-subtle: rgba(8, 11, 17, 0.94);
+  --cv-bg-card:         rgba(4, 6, 9, 0.84);
+  --cv-bg-card-alt:     #111620;
+
+  /* ── Borders ───────────────────────────────────────────── */
+  --cv-border-subtle:    rgba(255, 255, 255, 0.07);
+  --cv-border-faint:     rgba(255, 255, 255, 0.04);
+  --cv-border-accent:    rgba(0, 209, 255, 0.12);
+  --cv-border-accent-2:  rgba(0, 209, 255, 0.25);
+  --cv-border-strong:    rgba(255, 255, 255, 0.12);
+
+  /* ── Layout ────────────────────────────────────────────── */
+  --cv-header-h:      84px;
+  --cv-sub-header-h:  36px;
+  --cv-bottom-bar-h:  30px;
+  --cv-chart-strip-h: 150px;
+  --cv-col-left:      260px;
+  --cv-col-right:     290px;
+  --cv-panel-top:     calc(var(--cv-header-h) + var(--cv-sub-header-h));  /* 120px */
+
+  /* ── Effects ───────────────────────────────────────────── */
+  --cv-glass-blur:     blur(20px);
+  --cv-glass-backdrop: rgba(4, 6, 9, 0.84);
+}

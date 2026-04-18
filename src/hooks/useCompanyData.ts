@@ -47,6 +47,7 @@ export type { AssetManagerCompanyFull };
 
 // ── Services (all real, from src/services/) ───────────────────────────────
 import { companyService }             from '@/services/companyService';
+import { commodityDependencyService }  from '@/services/commodityDependencyService';
 import { companyProductService }      from '@/services/companyProductService';
 import { companyFabricService }       from '@/services/companyFabricService';
 import { companyMarketsService }      from '@/services/companyMarketsService';
@@ -982,4 +983,45 @@ export function computeFCF(q: QuarterlyCashFlow): number | null {
   const capex = parseAlpha(q.capitalExpenditures);
   if (op === null || capex === null) return null;
   return op - Math.abs(capex);
+}
+
+// ── Phase 5.0a — detailed risk profile ──────────────────────────────────
+// Distinct from CompanyRiskProfile (simple shape, used by compact OverlayPanel).
+// Used by CompanyView (RiskProfileCard + LeftPanel RISK tab) from Phase 5.0b+.
+
+/**
+ * Detailed commodity-risk variant with full commodityBreakdown.
+ * Source: GET /api/CommodityDependency/companies/{id}
+ *
+ * Scales: overallRiskScore is 0-100 (NOT 0-10 like the simple shape).
+ */
+export interface CompanyRiskProfileDetailed {
+  companyId:              number;
+  companyName:            string;
+  overallRiskScore:       number;          // 0-100 scale
+  riskTier:               'Critical' | 'High' | 'Medium' | 'Low';
+  criticalDependencies:   number;
+  highDependencies:       number;
+  avgSustainabilityScore: number;
+  concentrationRisk:      number;
+  commodityBreakdown:     CommodityBreakdownItem[];
+}
+
+/**
+ * useCompanyRiskProfileDetailed — full commodity risk profile with breakdown.
+ * GET /api/CommodityDependency/companies/{id}
+ *
+ * Distinct from useCompanyRiskProfile (simple shape, used by compact OverlayPanel).
+ * Reuses commodityDependencyService.getCompanyById — the runtime payload is the
+ * detailed shape; the cast bridges the locally-declared sibling interface.
+ */
+export function useCompanyRiskProfileDetailed(
+  companyId: number,
+): UseCompanyResult<CompanyRiskProfileDetailed> {
+  return useService(
+    () =>
+      commodityDependencyService.getCompanyById(companyId) as unknown as Promise<CompanyRiskProfileDetailed>,
+    [companyId],
+    !!companyId,
+  );
 }

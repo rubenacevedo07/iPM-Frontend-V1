@@ -1,0 +1,32 @@
+/**
+ * App-wide design primitives.
+ * Only values that are truly global to the app.
+ * Feature-specific tokens live in src/features/{feature}/tokens.scss
+ */
+
+:root {
+  /* ── Spacing scale ─────────────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── Z-index layers ────────────────────────────────────── */
+  --z-background: 0;
+  --z-canvas:     1;
+  --z-panel:      10;
+  --z-overlay:    50;
+  --z-modal:      100;
+  --z-toast:      200;
+  --z-tooltip:    300;
+
+  /* ── Breakpoints (for reference only — use in media queries) ─ */
+  /* --bp-mobile:  768px */
+  /* --bp-tablet:  1024px */
+  /* --bp-desktop: 1280px */
+}
