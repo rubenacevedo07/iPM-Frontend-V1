@@ -55,8 +55,8 @@ const appMachine = setup({
     overlayIdB:       null,
     query:            '',
     focusedEntity:    null,
-    navRef:           spawn(navigationActor,      { id: 'nav' }),
-    engineManagerRef: spawn(engineManagerMachine, { id: 'engineManager' }),
+    navRef:           spawn('navigationActor',      { id: 'nav' }),
+    engineManagerRef: spawn('engineManagerMachine', { id: 'engineManager' }),
     atlasView:        'globe' as AtlasView,
   }),
   states: {
