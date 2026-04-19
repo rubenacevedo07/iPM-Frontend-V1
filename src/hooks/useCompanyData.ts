@@ -49,6 +49,10 @@ export type { AssetManagerCompanyFull };
 import type { CompanyProduct } from '@/types/companyProduct';
 export type { CompanyProduct };
 
+// ── Canonical CompanySector (field names were wrong in local: id→sectorId, name→sectorName)
+import type { CompanySector } from '@/types/companySector';
+export type { CompanySector };
+
 // ── Services (all real, from src/services/) ───────────────────────────────
 import { companyService }             from '@/services/companyService';
 import { commodityDependencyService }  from '@/services/commodityDependencyService';
@@ -172,15 +176,6 @@ export interface CompanyCommodity {
   exposurePercentage: number;
   contractType: string;
   notes: string;
-}
-
-export interface CompanySector {
-  id: number;
-  name: string;
-  code?: string;
-  description?: string;
-  isActive?: boolean;
-  isPrimary?: boolean;
 }
 
 export interface CommodityBreakdownItem {
@@ -467,7 +462,7 @@ export function useCompanyCommodities(companyId: number): UseCompanyResult<Compa
  */
 export function useCompanySectors(companyId: number): UseCompanyResult<CompanySector[]> {
   return useService(
-    () => companySectorService.getByCompanyId(companyId) as unknown as Promise<CompanySector[]>,
+    () => companySectorService.getByCompanyId(companyId),
     [companyId],
     !!companyId
   );
