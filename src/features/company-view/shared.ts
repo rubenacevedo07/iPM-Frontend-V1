@@ -157,9 +157,7 @@ const STRENGTH_ORDER: Record<Strength, number> = {
 
 export function sortByStrength(edges: RelationEdgeDto[]): RelationEdgeDto[] {
   return [...edges].sort(
-    (a, b) =>
-      (STRENGTH_ORDER[a.strength] ?? 99) -
-      (STRENGTH_ORDER[b.strength] ?? 99),
+    (a, b) => STRENGTH_ORDER[a.strength] - STRENGTH_ORDER[b.strength],
   )
 }
 

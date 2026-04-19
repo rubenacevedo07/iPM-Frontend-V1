@@ -7,15 +7,15 @@
  *
  * The backend enriches each edge with source/target entity names + ticker
  * + photo (batch-lookup inside the controller). Title fields are NOT
- * populated by the DTO in this iteration — Person edges must look up title
- * separately via /api/Persons/{id} if needed.
+ * populated by the DTO — the `label` field on the edge itself carries rich
+ * context like "CEO & Co-founder of NVIDIA" or "NVIDIA single-source TSMC".
  *
  * baselineRiskScore / baselineSeverity were omitted by the backend (Option A
  * per the RelationEdge vs EdgeRiskScore discussion). Frontend sorting falls
  * back to the categorical Strength enum.
  */
 
-/** Node types supported by the backend validation list */
+/** Node types supported by the backend validation list (11 values) */
 export type NodeType =
   | 'Company'
   | 'Person'
@@ -40,24 +40,24 @@ export type Strength = 'Critical' | 'High' | 'Medium' | 'Low';
  * RelationEdgeDto in the backend controller.
  */
 export interface RelationEdgeDto {
-  id:          number;
-  sourceId:    number;
-  targetId:    number;
+  id:           number;
 
-  sourceType:  NodeType;
-  targetType:  NodeType;
+  sourceType:   NodeType;
+  sourceId:     number;
+  targetType:   NodeType;
+  targetId:     number;
 
-  edgeType:    string;      // e.g. "Owns" | "DependsOn" | "Supplies" | "Governs" | "Competes" | "Partners" | "Regulates" | "Exports" | "Sanctions" (keeping wide until full enum enumerated)
-  strength:    Strength;
+  edgeType:     string;      // e.g. "Owns" | "DependsOn" | "Supplies" | "Governs" | "Competes" | "Partners" | "Regulates" | "Exports" | "Sanctions" (keeping wide until full enum enumerated)
+  strength:     Strength;
 
-  label:       string;
-  description: string;
-  value:       number | null;
-  sourceUrl:   string | null;
-  isVerified:  boolean;
+  label:        string | null;
+  description:  string | null;
+  value:        number | null;
+  sourceUrl:    string | null;
+  isVerified:   boolean;
 
-  createdAt:   string;      // ISO timestamp
-  updatedAt:   string;      // ISO timestamp
+  createdAt:    string;      // ISO timestamp
+  updatedAt:    string;      // ISO timestamp
 
   /** Enriched source identity (batch-looked-up in backend controller) */
   sourceName:   string | null;
