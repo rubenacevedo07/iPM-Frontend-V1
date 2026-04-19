@@ -37,9 +37,10 @@ export const C = {
   text3:    '#4a5568',
 
   // Fonts
-  fontUI:   "'Rajdhani', sans-serif",
-  fontMono: "'JetBrains Mono', monospace",
-  fontBody: "'DM Sans', sans-serif",
+  fontUI:      "'Rajdhani', sans-serif",
+  fontDisplay: "'Rajdhani', sans-serif",  // alias for display/name headings (Phase 5.0b.1)
+  fontMono:    "'JetBrains Mono', monospace",
+  fontBody:    "'DM Sans', sans-serif",
 } as const
 
 export type TopNav = 'powermap' | 'globe' | 'events' | 'commodities' | 'rankings' | 'supplychain' | 'relstudio'
