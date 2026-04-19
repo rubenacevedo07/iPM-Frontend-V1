@@ -69,6 +69,26 @@ export type { CashFlowResponse, CashFlowQuarterly };
 import type { CompanyProvider } from '@/types/companyProvider';
 export type { CompanyProvider };
 
+// ── Canonical CompanyRiskProfileDetailed + CommodityBreakdownItem.
+// Canonical type file has `CompanyRiskProfile` (detailed 0-100 shape for
+// /CommodityDependency/companies/{id}). Local simple `CompanyRiskProfile`
+// below (0-10 shape, /CompanyRiskProfile/company/{id}) stays as-is.
+// Import canonical detailed under alias to avoid name collision.
+import type {
+  CompanyRiskProfile as CompanyRiskProfileDetailed,
+  CommodityBreakdownItem,
+  RiskTier,
+  DependencyLevel,
+  SubstitutionRisk,
+} from '@/types/commodityDependency';
+export type {
+  CompanyRiskProfileDetailed,
+  CommodityBreakdownItem,
+  RiskTier,
+  DependencyLevel,
+  SubstitutionRisk,
+};
+
 // ── Services (all real, from src/services/) ───────────────────────────────
 import { companyService }             from '@/services/companyService';
 import { commodityDependencyService }  from '@/services/commodityDependencyService';
@@ -175,16 +195,6 @@ export interface CompanyCommodity {
   exposurePercentage: number;
   contractType: string;
   notes: string;
-}
-
-export interface CommodityBreakdownItem {
-  commodityId: number;
-  commodityName: string;
-  category: string;
-  dependencyLevel: 'Critical' | 'High' | 'Medium' | 'Low';
-  exposurePercentage: number;
-  substitutionRisk: 'Very High' | 'High' | 'Medium' | 'Low' | 'Very Low';
-  riskContribution: number;
 }
 
 /**
@@ -898,26 +908,9 @@ export function computeFCF(q: CashFlowQuarterly): number | null {
 }
 
 // ── Phase 5.0a — detailed risk profile ──────────────────────────────────
-// Distinct from CompanyRiskProfile (simple shape, used by compact OverlayPanel).
-// Used by CompanyView (RiskProfileCard + LeftPanel RISK tab) from Phase 5.0b+.
-
-/**
- * Detailed commodity-risk variant with full commodityBreakdown.
- * Source: GET /api/CommodityDependency/companies/{id}
- *
- * Scales: overallRiskScore is 0-100 (NOT 0-10 like the simple shape).
- */
-export interface CompanyRiskProfileDetailed {
-  companyId:              number;
-  companyName:            string;
-  overallRiskScore:       number;          // 0-100 scale
-  riskTier:               'Critical' | 'High' | 'Medium' | 'Low';
-  criticalDependencies:   number;
-  highDependencies:       number;
-  avgSustainabilityScore: number;
-  concentrationRisk:      number;
-  commodityBreakdown:     CommodityBreakdownItem[];
-}
+// CompanyRiskProfileDetailed type is re-exported from @/types/commodityDependency
+// (imported as alias near top of this file). Used by CompanyView
+// (RiskProfileCard + LeftPanel RISK tab) from Phase 5.0b+.
 
 /**
  * useCompanyRiskProfileDetailed — full commodity risk profile with breakdown.
@@ -932,7 +925,7 @@ export function useCompanyRiskProfileDetailed(
 ): UseCompanyResult<CompanyRiskProfileDetailed> {
   return useService(
     () =>
-      commodityDependencyService.getCompanyById(companyId) as unknown as Promise<CompanyRiskProfileDetailed>,
+      commodityDependencyService.getCompanyById(companyId),
     [companyId],
     !!companyId,
   );
