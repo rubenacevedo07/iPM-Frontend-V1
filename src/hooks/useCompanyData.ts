@@ -65,6 +65,10 @@ export type { EarningsResponse, AlphaEarningQuarterly };
 import type { CashFlowResponse, CashFlowQuarterly } from '@/types/alphaCashFlow';
 export type { CashFlowResponse, CashFlowQuarterly };
 
+// ── Canonical CompanyProvider (canonical expanded with 5 signals fields + escape hatch)
+import type { CompanyProvider } from '@/types/companyProvider';
+export type { CompanyProvider };
+
 // ── Services (all real, from src/services/) ───────────────────────────────
 import { companyService }             from '@/services/companyService';
 import { commodityDependencyService }  from '@/services/commodityDependencyService';
@@ -150,23 +154,6 @@ export interface CompanyClientSimple {
   clientName:     string | null;
   contractValue:  number | null;
   description:    string | null;
-}
-
-/**
- * CompanyProvider — GET /api/CompanyProviders/company/{id} returns the entity
- * with .Include(Provider), so the nested provider holds the full Company.
- * Verified against backend 2026-04-18.
- */
-export interface CompanyProvider {
-  id:            number;
-  companyId:     number;
-  providerId:    number;
-  serviceType:   string | null;
-  category:      string | null;
-  contractValue: number | null;
-  description:   string | null;
-  company:       null;
-  provider:      { id: number; name: string; country?: string; logo?: string | null } | null;
 }
 
 export interface CompanyInCommodity {
@@ -404,7 +391,7 @@ export function useCompanyClients(companyId: number): UseCompanyResult<CompanyCl
  */
 export function useCompanyProviders(companyId: number): UseCompanyResult<CompanyProvider[]> {
   return useService(
-    () => companyProviderService.getByCompanyId(companyId) as unknown as Promise<CompanyProvider[]>,
+    () => companyProviderService.getByCompanyId(companyId),
     [companyId],
     !!companyId
   );
