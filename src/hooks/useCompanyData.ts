@@ -53,6 +53,10 @@ export type { CompanyProduct };
 import type { CompanySector } from '@/types/companySector';
 export type { CompanySector };
 
+// ── Canonical CompanyOci (backend returns { companyId, oci } only; local had fictional fields)
+import type { CompanyOci } from '@/types/assetManagerCompany';
+export type { CompanyOci };
+
 // ── Services (all real, from src/services/) ───────────────────────────────
 import { companyService }             from '@/services/companyService';
 import { commodityDependencyService }  from '@/services/commodityDependencyService';
@@ -207,19 +211,6 @@ export interface CompanyRiskProfile {
   avgSustainabilityScore:  number | null;
   companyName?:            string;
   commodityBreakdown?:     CommodityBreakdownItem[];
-}
-
-/**
- * CompanyOci — Ownership Concentration Index.
- * Confirm from src/types/assetManagerCompany.ts.
- */
-export interface CompanyOci {
-  companyId: number;
-  ociScore: number;           // 0–100
-  top5OwnershipPct: number;   // % held by top 5 asset managers
-  top10OwnershipPct?: number;
-  institutionalPct?: number;
-  totalHolders?: number;
 }
 
 // ── Alpha Vantage types ───────────────────────────────────────────────────
@@ -523,7 +514,7 @@ export function useCompanyPersons(companyId: number | null): UseCompanyResult<Co
  */
 export function useCompanyOci(companyId: number): UseCompanyResult<CompanyOci> {
   return useService(
-    () => assetManagerCompanyService.getOci(companyId) as unknown as Promise<CompanyOci>,
+    () => assetManagerCompanyService.getOci(companyId),
     [companyId],
     !!companyId
   );
