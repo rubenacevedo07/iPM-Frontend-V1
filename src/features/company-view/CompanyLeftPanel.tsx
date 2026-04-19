@@ -13,6 +13,8 @@ import { useCompanyById } from '@/hooks/useCompanyData'
 import { useCompanyPowerIndex } from '@/hooks/useCompanyPowerIndex'
 import { useCompanyTiers } from '@/hooks/useCompanyTiers'
 import { useCompanyRelationEdges } from '@/hooks/useCompanyRelationEdges'
+import { useCompanyQuote } from '@/hooks/useCompanyQuote'
+import { useCompanyFundamentals } from '@/hooks/useCompanyFundamentals'
 
 import { CompanyPowerSignalsCard } from './cards/CompanyPowerSignalsCard'
 import { CompanyKeyPeopleCard } from './cards/CompanyKeyPeopleCard'
@@ -32,6 +34,15 @@ export function CompanyLeftPanel({ companyId, nodeId }: Props) {
   const { data: tiers }      = useCompanyTiers(companyId)
   const { data: edges }      = useCompanyRelationEdges('Company', companyId)
 
+  // Live market data — only fetched when ticker exists
+  const { data: quote }        = useCompanyQuote(company?.ticker)
+  const { data: fundamentals } = useCompanyFundamentals(company?.ticker)
+
+  // Market cap: prefer live fundamentals, fallback to static company.marketCapUsd
+  const displayMarketCap =
+    fundamentals?.marketCapitalization ?? company?.marketCapUsd ?? null
+  const marketCapIsLive = fundamentals?.marketCapitalization != null
+
   return (
     <aside className={styles.leftPanel}>
       {/* ── Identity ────────────────────────────────────────────── */}
@@ -46,11 +57,29 @@ export function CompanyLeftPanel({ companyId, nodeId }: Props) {
         <h1 className={styles.companyName}>{company?.name ?? 'Loading…'}</h1>
         <div className={styles.tickerRow}>
           {company?.ticker && <span className={styles.ticker}>{company.ticker}</span>}
-          {/* Price pill slot — Track C Fase C2 integration point */}
+          {quote && (
+            <span className={quote.change >= 0 ? styles.pricePillUp : styles.pricePillDown}>
+              ${quote.price.toFixed(2)}{' '}
+              <span className={styles.priceChange}>
+                {quote.change >= 0 ? '▲' : '▼'}
+                {Math.abs(quote.changePercent).toFixed(2)}%
+              </span>
+            </span>
+          )}
         </div>
         <div className={styles.metaRow}>
-          {company?.marketCapUsd !== undefined && company?.marketCapUsd !== null && (
-            <div className={styles.meta}>{formatMarketCap(company.marketCapUsd)}</div>
+          {displayMarketCap !== null && (
+            <div className={styles.meta}>
+              {formatMarketCap(displayMarketCap)}
+              {marketCapIsLive && (
+                <span
+                  className={styles.liveIndicator}
+                  title="Live from Alpha Vantage"
+                >
+                  {' '}●
+                </span>
+              )}
+            </div>
           )}
           {company?.employees && (
             <div className={styles.meta}>{company.employees.toLocaleString('en-US')} employees</div>

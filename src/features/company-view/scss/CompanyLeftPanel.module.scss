@@ -101,3 +101,42 @@
   color: #5a6b80;
   font-style: italic;
 }
+
+/* ── Track C Fase C2 — live price pill + live-data indicator ───────── */
+
+.pricePillUp,
+.pricePillDown {
+  font-family: var(--cv-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  margin-left: 8px;
+  border-radius: 3px;
+}
+
+.pricePillUp {
+  background: rgba(0, 212, 170, 0.15);
+  color: #00d4aa;
+}
+
+.pricePillDown {
+  background: rgba(229, 57, 53, 0.15);
+  color: #e53935;
+}
+
+.priceChange {
+  font-size: 11px;
+  opacity: 0.9;
+  margin-left: 2px;
+}
+
+.liveIndicator {
+  color: #00d4aa;
+  font-size: 8px;
+  animation: cv-live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes cv-live-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1.0; }
+}
