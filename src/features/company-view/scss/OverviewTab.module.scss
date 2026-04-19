@@ -1,0 +1,145 @@
+/**
+ * OverviewTab styles — Phase 5.0b.1 Step 12
+ */
+@use '../tokens.scss';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 8px 0;
+  color: #e8edf5;
+  font-family: var(--cv-font-body), 'DM Sans', sans-serif;
+}
+
+.quadGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.quad {
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quadTitle {
+  margin: 0 0 6px;
+  font-family: var(--cv-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5a6b80;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.04);
+  font-size: 12px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.name {
+  color: #e0e6ef;
+  font-weight: 500;
+  flex-grow: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticker {
+  font-family: var(--cv-font-mono);
+  font-size: 10px;
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.badge {
+  font-family: var(--cv-font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: #090b10;
+}
+
+.subtle {
+  font-family: var(--cv-font-body), 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: #8a9bb5;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  font-family: var(--cv-font-mono);
+  font-size: 11px;
+  color: #5a6b80;
+  font-style: italic;
+}
+
+/* ── Key metrics ───────────────────────────────────────────────────── */
+
+.metrics {
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
+
+.metricsTitle {
+  margin: 0 0 10px;
+  font-family: var(--cv-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5a6b80;
+}
+
+.kvGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px 18px;
+}
+
+.kv {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kvLabel {
+  font-family: var(--cv-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5a6b80;
+}
+
+.kvValue {
+  font-family: var(--cv-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: #e0e6ef;
+}
