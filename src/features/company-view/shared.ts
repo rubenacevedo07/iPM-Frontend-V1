@@ -97,3 +97,82 @@ export type CanvasMode = 'MAP' | 'SUPPLY CHAIN' | 'RELATIONS' | 'EVENTS' | 'POWE
 export const LEFT_TABS:    LeftTab[]    = ['KEY DATA', 'RISK', 'OWNERSHIP', 'FACTORIES']
 export const PCC_TABS:     PCCTab[]     = ['PERSONS', 'CLIENTS', 'COMMODITIES']
 export const CANVAS_MODES: CanvasMode[] = ['MAP', 'SUPPLY CHAIN', 'RELATIONS', 'EVENTS', 'POWER MAPS', 'INFRA']
+
+/* ── RelationEdge helpers (Phase 5.0b.1) ─────────────────────────────── */
+
+import type { RelationEdgeDto, Strength } from '@/types/relationEdge'
+
+/**
+ * Canonical 9-bucket classification of edges connected to a company.
+ * Component consumers read the bucket they need; zero coupling between tabs.
+ */
+export interface CategorizedEdges {
+  suppliers:    RelationEdgeDto[]  // this company DependsOn X (upstream)
+  clients:      RelationEdgeDto[]  // this company Supplies X (downstream)
+  holders:      RelationEdgeDto[]  // X Owns this company (institutional holders)
+  competitors:  RelationEdgeDto[]  // Competes (bidirectional)
+  partners:     RelationEdgeDto[]  // Partners (bidirectional)
+  regulators:   RelationEdgeDto[]  // X Regulates this company
+  governance:   RelationEdgeDto[]  // Person Governs this company (key people)
+  exports:      RelationEdgeDto[]  // this company Exports to X
+  sanctions:    RelationEdgeDto[]  // X Sanctions this company
+}
+
+export function categorizeEdges(
+  edges:     RelationEdgeDto[],
+  companyId: number,
+): CategorizedEdges {
+  const isSource = (e: RelationEdgeDto) =>
+    e.sourceType === 'Company' && e.sourceId === companyId
+  const isTarget = (e: RelationEdgeDto) =>
+    e.targetType === 'Company' && e.targetId === companyId
+
+  return {
+    suppliers:    edges.filter(e => isSource(e) && e.edgeType === 'DependsOn'),
+    clients:      edges.filter(e => isSource(e) && e.edgeType === 'Supplies'),
+    holders:      edges.filter(e => isTarget(e) && e.edgeType === 'Owns'),
+    competitors:  edges.filter(e => e.edgeType === 'Competes'),
+    partners:     edges.filter(e => e.edgeType === 'Partners'),
+    regulators:   edges.filter(e => isTarget(e) && e.edgeType === 'Regulates'),
+    governance:   edges.filter(
+      e => e.sourceType === 'Person' && e.targetId === companyId && e.edgeType === 'Governs',
+    ),
+    exports:      edges.filter(e => isSource(e) && e.edgeType === 'Exports'),
+    sanctions:    edges.filter(e => isTarget(e) && e.edgeType === 'Sanctions'),
+  }
+}
+
+/**
+ * Sort edges by strength, Critical → High → Medium → Low.
+ * Any unrecognized strength lands at the bottom.
+ * Since backend dropped baselineRiskScore from the DTO (Option A), strength
+ * is the only continuous-ish signal available for ordering.
+ */
+const STRENGTH_ORDER: Record<Strength, number> = {
+  Critical: 0,
+  High:     1,
+  Medium:   2,
+  Low:      3,
+}
+
+export function sortByStrength(edges: RelationEdgeDto[]): RelationEdgeDto[] {
+  return [...edges].sort(
+    (a, b) =>
+      (STRENGTH_ORDER[a.strength] ?? 99) -
+      (STRENGTH_ORDER[b.strength] ?? 99),
+  )
+}
+
+/**
+ * Strength → hex color. Matches PersonOverlay convention per plan:
+ * Critical red, High orange, Medium amber, Low gray.
+ */
+export function strengthColor(strength: string): string {
+  switch (strength) {
+    case 'Critical': return '#e53935'
+    case 'High':     return '#ff6b35'
+    case 'Medium':   return '#f9a825'
+    case 'Low':      return '#6b7280'
+    default:         return '#6b7280'
+  }
+}
