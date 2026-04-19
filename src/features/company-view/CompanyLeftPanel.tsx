@@ -17,20 +17,13 @@ import { useCompanyRelationEdges } from '@/hooks/useCompanyRelationEdges'
 import { CompanyPowerSignalsCard } from './cards/CompanyPowerSignalsCard'
 import { CompanyKeyPeopleCard } from './cards/CompanyKeyPeopleCard'
 import { CompanySignalsCard } from './cards/CompanySignalsCard'
+import { formatMarketCap } from './shared'
 
 import styles from './scss/CompanyLeftPanel.module.scss'
 
 interface Props {
   companyId: number
   nodeId:    string  // e.g. "company:1"
-}
-
-function formatMarketCap(usd: number | null | undefined): string {
-  if (usd === null || usd === undefined) return '—'
-  if (usd >= 1e12) return `$${(usd / 1e12).toFixed(2)}T`
-  if (usd >= 1e9)  return `$${(usd / 1e9).toFixed(1)}B`
-  if (usd >= 1e6)  return `$${(usd / 1e6).toFixed(1)}M`
-  return `$${usd.toLocaleString('en-US')}`
 }
 
 export function CompanyLeftPanel({ companyId, nodeId }: Props) {

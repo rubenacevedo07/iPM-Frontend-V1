@@ -5,20 +5,12 @@
 
 import type { Company } from '@/hooks/useCompanyData'
 import type { CategorizedEdges } from '../shared'
-import { sortByStrength, strengthColor } from '../shared'
+import { sortByStrength, strengthColor, formatMarketCap } from '../shared'
 import styles from '../scss/OverviewTab.module.scss'
 
 interface Props {
   company:     Company | null
   categorized: CategorizedEdges
-}
-
-function formatMarketCap(usd: number | null | undefined): string {
-  if (usd === null || usd === undefined) return '—'
-  if (usd >= 1e12) return `$${(usd / 1e12).toFixed(2)}T`
-  if (usd >= 1e9)  return `$${(usd / 1e9).toFixed(1)}B`
-  if (usd >= 1e6)  return `$${(usd / 1e6).toFixed(1)}M`
-  return `$${usd.toLocaleString('en-US')}`
 }
 
 function KV({ label, value }: { label: string; value: string }) {

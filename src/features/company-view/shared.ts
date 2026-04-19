@@ -36,12 +36,20 @@ export const FONT_SERIF = "'Instrument Serif', Georgia, serif"
 export const FONT_IBM   = "'IBM Plex Mono', monospace"
 
 /* ── Formatters ─────────────────────────────────────────────────────── */
-export function fmtCap(n: number | null | undefined): string {
-  if (!n) return '—'
-  if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`
-  if (n >= 1e9)  return `$${(n / 1e9).toFixed(1)}B`
-  if (n >= 1e6)  return `$${(n / 1e6).toFixed(0)}M`
-  return `$${n.toLocaleString('en-US')}`
+
+/**
+ * formatMarketCap — USD market cap with en-US locale separators.
+ * Single source of truth; CompanyLeftPanel + OverviewTab + any future
+ * consumer should import from here instead of redeclaring locally.
+ *
+ * $4.34T / $187.1B / $350.5M / $12,345  (en-US thousand separators below M).
+ */
+export function formatMarketCap(usd: number | null | undefined): string {
+  if (usd === null || usd === undefined) return '—'
+  if (usd >= 1e12) return `$${(usd / 1e12).toFixed(2)}T`
+  if (usd >= 1e9)  return `$${(usd / 1e9).toFixed(1)}B`
+  if (usd >= 1e6)  return `$${(usd / 1e6).toFixed(1)}M`
+  return `$${usd.toLocaleString('en-US')}`
 }
 
 /* ── Country → Flag emoji ───────────────────────────────────────────── */
