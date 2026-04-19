@@ -13,8 +13,9 @@ import { useCompanyById } from '@/hooks/useCompanyData'
 import { useCompanyPowerIndex } from '@/hooks/useCompanyPowerIndex'
 import { useCompanyTiers } from '@/hooks/useCompanyTiers'
 import { useCompanyRelationEdges } from '@/hooks/useCompanyRelationEdges'
-import { useCompanyQuote } from '@/hooks/useCompanyQuote'
-import { useCompanyFundamentals } from '@/hooks/useCompanyFundamentals'
+
+import type { MarketQuoteDto } from '@/types/marketQuote'
+import type { CompanyFundamentalsDto } from '@/types/companyFundamentals'
 
 import { CompanyPowerSignalsCard } from './cards/CompanyPowerSignalsCard'
 import { CompanyKeyPeopleCard } from './cards/CompanyKeyPeopleCard'
@@ -24,19 +25,17 @@ import { formatMarketCap } from './shared'
 import styles from './scss/CompanyLeftPanel.module.scss'
 
 interface Props {
-  companyId: number
-  nodeId:    string  // e.g. "company:1"
+  companyId:     number
+  nodeId:        string  // e.g. "company:1"
+  quote:         MarketQuoteDto | null
+  fundamentals:  CompanyFundamentalsDto | null
 }
 
-export function CompanyLeftPanel({ companyId, nodeId }: Props) {
+export function CompanyLeftPanel({ companyId, nodeId, quote, fundamentals }: Props) {
   const { data: company }    = useCompanyById(companyId)
   const { data: powerIndex } = useCompanyPowerIndex(companyId)
   const { data: tiers }      = useCompanyTiers(companyId)
   const { data: edges }      = useCompanyRelationEdges('Company', companyId)
-
-  // Live market data — only fetched when ticker exists
-  const { data: quote }        = useCompanyQuote(company?.ticker)
-  const { data: fundamentals } = useCompanyFundamentals(company?.ticker)
 
   // Market cap: prefer live fundamentals, fallback to static company.marketCapUsd
   const displayMarketCap =

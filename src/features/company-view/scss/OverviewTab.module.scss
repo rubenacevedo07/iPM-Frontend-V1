@@ -143,3 +143,39 @@
   font-weight: 600;
   color: #e0e6ef;
 }
+
+/* ── Track C Fase C2 — live fundamentals section ───────────────── */
+
+.fundamentals {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.kvUp {
+  color: #00d4aa;
+  font-weight: 600;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+.kvDown {
+  color: #e53935;
+  font-weight: 600;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+.kvExtra {
+  opacity: 0.9;
+  font-family: var(--cv-font-mono);
+  font-size: 11px;
+}
+
+.fundamentalsFooter {
+  margin-top: 12px;
+  font-size: 10px;
+  color: #666;
+  font-family: var(--cv-font-mono);
+  letter-spacing: 0.04em;
+}

@@ -7,6 +7,8 @@ import { useMemo, useState } from 'react'
 import type { Company } from '@/hooks/useCompanyData'
 import type { CompanyPowerIndex } from '@/types/companyPowerIndex'
 import type { RelationEdgeDto } from '@/types/relationEdge'
+import type { MarketQuoteDto } from '@/types/marketQuote'
+import type { CompanyFundamentalsDto } from '@/types/companyFundamentals'
 import { categorizeEdges } from './shared'
 import { OverviewTab } from './tabs/OverviewTab'
 import { SupplyChainTab } from './tabs/SupplyChainTab'
@@ -24,13 +26,22 @@ const TABS: { key: TabKey; label: string }[] = [
 ]
 
 interface Props {
-  company:    Company | null
-  edges:      RelationEdgeDto[]
-  powerIndex: CompanyPowerIndex | null
-  companyId:  number
+  company:       Company | null
+  edges:         RelationEdgeDto[]
+  powerIndex:    CompanyPowerIndex | null
+  companyId:     number
+  quote:         MarketQuoteDto | null
+  fundamentals:  CompanyFundamentalsDto | null
 }
 
-export function CompanyCenterTabs({ company, edges, powerIndex, companyId }: Props) {
+export function CompanyCenterTabs({
+  company,
+  edges,
+  powerIndex,
+  companyId,
+  quote,
+  fundamentals,
+}: Props) {
   const [activeTab, setActiveTab] = useState<TabKey>('overview')
   const categorized = useMemo(
     () => categorizeEdges(edges, companyId),
@@ -56,7 +67,12 @@ export function CompanyCenterTabs({ company, edges, powerIndex, companyId }: Pro
 
       <div className={styles.tabContent}>
         {activeTab === 'overview' && (
-          <OverviewTab company={company} categorized={categorized} />
+          <OverviewTab
+            company={company}
+            categorized={categorized}
+            quote={quote}
+            fundamentals={fundamentals}
+          />
         )}
         {activeTab === 'supply-chain' && (
           <SupplyChainTab
