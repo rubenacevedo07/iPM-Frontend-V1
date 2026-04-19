@@ -1,10 +1,181 @@
 /**
- * CompanyRiskProfileCard styles (detailed risk with commodityBreakdown)
- * Migrate from ov__* + sr__* classes in styles/reference/overlay-legacy.scss.
- * Phase 5.0b will populate this.
+ * CompanyPowerSignalsCard styles — Phase 5.0b.1 Step 8
+ * Composite + trend + archetype + tier grid + 6 dimensions bars.
  */
 @use '../tokens.scss';
 
-.riskProfileCard {
-  /* Will be populated in Phase 5.0b */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Composite section ─────────────────────────────────────────────── */
+
+.compositeLabel {
+  font-family: var(--cv-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5a6b80;
+  margin-bottom: 4px;
+}
+
+.compositeRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.compositeValue {
+  font-family: var(--cv-font-display);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.trend {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.delta {
+  font-family: var(--cv-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ── Archetype row ─────────────────────────────────────────────────── */
+
+.archetypeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.archetypeLabel {
+  font-family: var(--cv-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5a6b80;
+}
+
+.archetypeValue {
+  font-family: var(--cv-font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: #00e5ff;
+  letter-spacing: 0.04em;
+}
+
+/* ── Tier grid ─────────────────────────────────────────────────────── */
+
+.tierGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.tierChip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+.tierLabel {
+  font-family: var(--cv-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: #5a6b80;
+  margin-bottom: 2px;
+}
+
+.tierValue {
+  font-family: var(--cv-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── 6 dimensions bars ─────────────────────────────────────────────── */
+
+.dims {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dimRow {
+  display: grid;
+  grid-template-columns: 92px 1fr 28px;
+  align-items: center;
+  gap: 8px;
+}
+
+.dimLabel {
+  font-family: var(--cv-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a9bb5;
+}
+
+.dimBarTrack {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.dimBarFill {
+  height: 100%;
+  transition: width 400ms ease-out;
+}
+
+.dimScore {
+  font-family: var(--cv-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: #e0e6ef;
+  text-align: right;
+}
+
+/* ── Skeleton ──────────────────────────────────────────────────────── */
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.skelBar {
+  height: 8px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 200% 100%;
+  border-radius: 2px;
+  animation: skel-pulse 1.4s ease-in-out infinite;
+}
+
+.skelLabel {
+  font-family: var(--cv-font-mono);
+  font-size: 10px;
+  color: #5a6b80;
+  text-align: center;
+  margin-top: 8px;
+}
+
+@keyframes skel-pulse {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
