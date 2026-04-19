@@ -18,7 +18,7 @@ function formatMarketCap(usd: number | null | undefined): string {
   if (usd >= 1e12) return `$${(usd / 1e12).toFixed(2)}T`
   if (usd >= 1e9)  return `$${(usd / 1e9).toFixed(1)}B`
   if (usd >= 1e6)  return `$${(usd / 1e6).toFixed(1)}M`
-  return `$${usd.toLocaleString()}`
+  return `$${usd.toLocaleString('en-US')}`
 }
 
 function KV({ label, value }: { label: string; value: string }) {
@@ -125,7 +125,7 @@ export function OverviewTab({ company, categorized }: Props) {
         <h3 className={styles.metricsTitle}>KEY METRICS</h3>
         <div className={styles.kvGrid}>
           <KV label="Market Cap"   value={formatMarketCap(company?.marketCapUsd)} />
-          <KV label="Employees"    value={company?.employees?.toLocaleString() ?? '—'} />
+          <KV label="Employees"    value={company?.employees?.toLocaleString('en-US') ?? '—'} />
           <KV label="Founded"      value={company?.founded?.toString() ?? '—'} />
           <KV label="Headquarters" value={company?.headquarters ?? '—'} />
           <KV label="CEO"          value={company?.ceo ?? '—'} />

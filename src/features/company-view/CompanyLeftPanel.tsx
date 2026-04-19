@@ -30,7 +30,7 @@ function formatMarketCap(usd: number | null | undefined): string {
   if (usd >= 1e12) return `$${(usd / 1e12).toFixed(2)}T`
   if (usd >= 1e9)  return `$${(usd / 1e9).toFixed(1)}B`
   if (usd >= 1e6)  return `$${(usd / 1e6).toFixed(1)}M`
-  return `$${usd.toLocaleString()}`
+  return `$${usd.toLocaleString('en-US')}`
 }
 
 export function CompanyLeftPanel({ companyId, nodeId }: Props) {
@@ -60,7 +60,7 @@ export function CompanyLeftPanel({ companyId, nodeId }: Props) {
             <div className={styles.meta}>{formatMarketCap(company.marketCapUsd)}</div>
           )}
           {company?.employees && (
-            <div className={styles.meta}>{company.employees.toLocaleString()} employees</div>
+            <div className={styles.meta}>{company.employees.toLocaleString('en-US')} employees</div>
           )}
           {company?.headquarters && (
             <div className={styles.meta}>{company.headquarters}</div>
