@@ -1,0 +1,130 @@
+/**
+ * SupplyChainTab styles — Phase 5.0b.1 Step 13
+ * List form. Canvas graph in Phase 5.0b.2.
+ */
+@use '../tokens.scss';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 8px 0;
+  color: #e8edf5;
+  font-family: var(--cv-font-body), 'DM Sans', sans-serif;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: var(--cv-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5a6b80;
+}
+
+.count {
+  color: #8a9bb5;
+  margin-left: 4px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.groupHeader {
+  font-family: var(--cv-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.groupCount {
+  margin-left: 6px;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.edgeList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  padding: 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.04);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.mainLine {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.targetName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #e0e6ef;
+}
+
+.targetTicker {
+  font-family: var(--cv-font-mono);
+  font-size: 10px;
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.context {
+  font-family: var(--cv-font-body), 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: #8a9bb5;
+  line-height: 1.4;
+  padding-left: 2px;
+}
+
+.empty {
+  font-family: var(--cv-font-mono);
+  font-size: 11px;
+  color: #5a6b80;
+  font-style: italic;
+  padding: 4px 0;
+}
+
+.futurePlaceholder {
+  padding: 14px;
+  text-align: center;
+  font-family: var(--cv-font-mono);
+  font-size: 10px;
+  color: #5a6b80;
+  font-style: italic;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
