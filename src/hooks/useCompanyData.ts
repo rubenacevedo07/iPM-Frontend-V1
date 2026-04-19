@@ -45,6 +45,10 @@ export type {
 import type { AssetManagerCompanyFull } from '@/types/assetManagerCompany';
 export type { AssetManagerCompanyFull };
 
+// ── Canonical CompanyProduct (productDescription is nullable per backend)
+import type { CompanyProduct } from '@/types/companyProduct';
+export type { CompanyProduct };
+
 // ── Services (all real, from src/services/) ───────────────────────────────
 import { companyService }             from '@/services/companyService';
 import { commodityDependencyService }  from '@/services/commodityDependencyService';
@@ -98,14 +102,6 @@ export interface CompanyPersonSummary {
   title?: string | null;
   photoUrl?: string | null;
   companyName?: string | null;
-}
-
-export interface CompanyProduct {
-  id:                  number;
-  companyId:           number;
-  productName:         string;
-  sku:                 string;
-  productDescription:  string;
 }
 
 export interface CompanyFabric {
@@ -399,7 +395,7 @@ export function useCompanyById(companyId: number): UseCompanyResult<Company> {
  */
 export function useCompanyProducts(companyId: number): UseCompanyResult<CompanyProduct[]> {
   return useService(
-    () => companyProductService.getByCompanyId(companyId) as unknown as Promise<CompanyProduct[]>,
+    () => companyProductService.getByCompanyId(companyId),
     [companyId],
     !!companyId
   );
