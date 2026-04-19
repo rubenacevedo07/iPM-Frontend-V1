@@ -57,6 +57,14 @@ export type { CompanySector };
 import type { CompanyOci } from '@/types/assetManagerCompany';
 export type { CompanyOci };
 
+// ── Canonical Alpha Vantage earnings (local had wrong field names)
+import type { EarningsResponse, AlphaEarningQuarterly } from '@/types/alphaEarnings';
+export type { EarningsResponse, AlphaEarningQuarterly };
+
+// ── Canonical Alpha Vantage cash flow (same wrong-field-names pattern as earnings)
+import type { CashFlowResponse, CashFlowQuarterly } from '@/types/alphaCashFlow';
+export type { CashFlowResponse, CashFlowQuarterly };
+
 // ── Services (all real, from src/services/) ───────────────────────────────
 import { companyService }             from '@/services/companyService';
 import { commodityDependencyService }  from '@/services/commodityDependencyService';
@@ -211,39 +219,6 @@ export interface CompanyRiskProfile {
   avgSustainabilityScore:  number | null;
   companyName?:            string;
   commodityBreakdown?:     CommodityBreakdownItem[];
-}
-
-// ── Alpha Vantage types ───────────────────────────────────────────────────
-
-export interface QuarterlyEarning {
-  fiscalDateEnding: string;
-  reportedDate?: string;
-  reportedEPS: string;        // Alpha Vantage returns strings
-  estimatedEPS: string;
-  surprise: string;
-  surprisePercentage: string;
-}
-
-export interface EarningsResponse {
-  symbol: string;
-  annualEarnings?: unknown[];
-  quarterlyEarnings: QuarterlyEarning[];
-}
-
-export interface QuarterlyCashFlow {
-  fiscalDateEnding: string;
-  reportedCurrency?: string;
-  operatingCashflow: string;
-  capitalExpenditures: string;
-  freeCashFlow?: string;       // may be computed client-side: operating - capex
-  dividendPayout?: string;
-  netIncome?: string;
-}
-
-export interface CashFlowResponse {
-  symbol: string;
-  annualReports?: unknown[];
-  quarterlyReports: QuarterlyCashFlow[];
 }
 
 // ── New endpoint types (stubs — backend TODO) ─────────────────────────────
@@ -526,7 +501,7 @@ export function useCompanyOci(companyId: number): UseCompanyResult<CompanyOci> {
  */
 export function useCompanyEarnings(ticker: string | null | undefined): UseCompanyResult<EarningsResponse> {
   return useService(
-    () => alphaEarningsService.getBySymbol(ticker!) as unknown as Promise<EarningsResponse>,
+    () => alphaEarningsService.getBySymbol(ticker!),
     [ticker],
     !!ticker
   );
@@ -538,7 +513,7 @@ export function useCompanyEarnings(ticker: string | null | undefined): UseCompan
  */
 export function useCompanyCashFlow(ticker: string | null | undefined): UseCompanyResult<CashFlowResponse> {
   return useService(
-    () => cashFlowService.getBySymbol(ticker!) as unknown as Promise<CashFlowResponse>,
+    () => cashFlowService.getBySymbol(ticker!),
     [ticker],
     !!ticker
   );
@@ -928,7 +903,7 @@ export function parseAlpha(s: string | undefined | null): number | null {
 }
 
 /** Compute FCF from Alpha Vantage quarterly: operatingCashflow - |capitalExpenditures| */
-export function computeFCF(q: QuarterlyCashFlow): number | null {
+export function computeFCF(q: CashFlowQuarterly): number | null {
   const op    = parseAlpha(q.operatingCashflow);
   const capex = parseAlpha(q.capitalExpenditures);
   if (op === null || capex === null) return null;
