@@ -1,10 +1,103 @@
 /**
- * CompanyLeftPanel styles (KEY DATA / RISK / OWNERSHIP / FACTORIES tabs)
- * Migrate from co-first__* + ov__* classes in styles/reference/overlay-legacy.scss.
- * Phase 5.0b will populate this.
+ * CompanyLeftPanel styles — Phase 5.0b.1 Step 11
+ * Fixed 320px left column: identity block + 3 cards + 1 stub.
  */
 @use '../tokens.scss';
 
 .leftPanel {
-  /* Will be populated in Phase 5.0b */
+  width: 320px;
+  flex-shrink: 0;
+  padding: 16px;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: #090b10;
+  color: #e8edf5;
+  font-family: var(--cv-font-body), 'DM Sans', sans-serif;
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.04);
+  margin-bottom: 4px;
+}
+
+.companyName {
+  margin: 4px 0 2px;
+  font-family: var(--cv-font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+
+.tickerRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.ticker {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 3px;
+  font-family: var(--cv-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: #00e5ff;
+  letter-spacing: 0.06em;
+}
+
+.metaRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.meta {
+  font-family: var(--cv-font-mono);
+  font-size: 11px;
+  color: #8a9bb5;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin: 14px 0;
+}
+
+.ownershipStub {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.stubTitle {
+  font-family: var(--cv-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5a6b80;
+  margin-bottom: 4px;
+}
+
+.stubText {
+  margin: 0;
+  font-family: var(--cv-font-mono);
+  font-size: 11px;
+  color: #5a6b80;
+  font-style: italic;
 }
