@@ -318,13 +318,10 @@ export interface CompanyEdgeRisk {
   scoreHistory: number[];
 }
 
-// ── Hook result type ──────────────────────────────────────────────────────
+// ── Hook result type + useService — imported from shared module ───────────
 
-export interface UseCompanyResult<T> {
-  data: T | null;
-  loading: boolean;
-  error: string | null;
-}
+import { useService, type UseCompanyResult } from './_useService';
+export type { UseCompanyResult };
 
 // ── nodeId utility ────────────────────────────────────────────────────────
 
@@ -369,35 +366,6 @@ export const EDGE_TYPE_COLORS: Record<string, [number, number, number, number]> 
   investment: [212, 168, 83,  180],
   leadership: [136, 135, 128, 160],
 };
-
-// ── Shared async hook factory ─────────────────────────────────────────────
-
-function useService<T>(
-  fetcher: () => Promise<T>,
-  deps: unknown[],
-  enabled = true
-): UseCompanyResult<T> {
-  const [data, setData]       = useState<T | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!enabled) return;
-    let cancelled = false;
-
-    setLoading(true);
-    setError(null);
-
-    fetcher()
-      .then(d => { if (!cancelled) setData(d); })
-      .catch((err: Error) => { if (!cancelled) { setError(err.message ?? 'Error'); setData(null); } })
-      .finally(() => { if (!cancelled) setLoading(false); });
-
-    return () => { cancelled = true; };
-  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
-
-  return { data, loading, error };
-}
 
 // ── Real hooks — 13 endpoints ─────────────────────────────────────────────
 
