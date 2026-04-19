@@ -52,3 +52,17 @@ export interface CompanyPowerIndex {
   /** Previous composite — null on first computation */
   compositeScorePrev:  number | null;
 }
+
+/**
+ * Observed tiers — shape for GET /api/CompanyPowerIndex/{companyId}/tiers.
+ * Backend verified via curl 2026-04-19. Returns the *observed* tier per
+ * dimension, which can diverge from the declared tier in CompanyPowerIndex
+ * (e.g. NVIDIA politicalTier declared=2, observed=3 due to edge density).
+ */
+export interface CompanyTiers {
+  companyId:     number;
+  companyName:   string;
+  politicalTier: number | null;
+  militaryTier:  number | null;
+  financialTier: number | null;
+}
