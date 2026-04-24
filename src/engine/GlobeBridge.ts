@@ -63,11 +63,15 @@ export class GlobeBridge implements IEngineBridge {
   private _zoom = INITIAL_VIEW.zoom;
 
   // Phase 7.3: auto-rotation with non-competing pause during user interaction.
-  // The 5009c61 removal was caused by rAF loop racing with zoom events. This
-  // version pauses the rotation while isDragging / isZooming / isPanning is true,
-  // eliminating the competition. Degrees added to _longitude per rAF tick.
+  // Pause mechanism: isDragging/isZooming/isPanning flags from interactionState
+  // (covers drag + touch-pinch) PLUS a debounced timer re-triggered by every
+  // viewState change (covers mouse-wheel zoom, which does not reliably set
+  // isZooming in deck.gl). Either path flips _isInteracting true; timer releases
+  // after INTERACTION_RELEASE_MS of no further viewState activity.
   private _isInteracting = false;
-  private readonly _rotationDegPerSec = 3; // ~6min for a full revolution at 60fps
+  private _interactionReleaseTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly _rotationDegPerSec = 3; // ~2min for a full revolution
+  private static readonly INTERACTION_RELEASE_MS = 300;
 
   private _focusedId: string | null = null;
   // Phase 7: hover state tracked by onHover, consumed by _buildLayers for visual feedback.
@@ -116,13 +120,27 @@ export class GlobeBridge implements IEngineBridge {
           this._longitude = viewState.longitude ?? this._longitude;
           this._latitude = viewState.latitude ?? this._latitude;
           this._zoom = viewState.zoom ?? this._zoom;
-          // Phase 7.3: pause auto-rotation during user interaction. Non-competing
-          // with zoom/drag events — eliminates the 5009c61 zoom-lag regression.
-          this._isInteracting = !!(
+          // Phase 7.3: pause auto-rotation via EITHER
+          //   (a) interactionState flags (reliable for drag + touch-pinch)
+          //   (b) debounced timer bumped on every viewState change (catches
+          //       mouse-wheel zoom, which does NOT set isZooming consistently
+          //       in deck.gl — this was the missed case in the first attempt).
+          // Timer clears after INTERACTION_RELEASE_MS of no new changes.
+          const flagActive = !!(
             interactionState?.isDragging ||
             interactionState?.isZooming  ||
             interactionState?.isPanning
           );
+          this._isInteracting = true;
+          if (this._interactionReleaseTimer !== null) {
+            clearTimeout(this._interactionReleaseTimer);
+          }
+          if (!flagActive) {
+            this._interactionReleaseTimer = setTimeout(() => {
+              this._isInteracting = false;
+              this._interactionReleaseTimer = null;
+            }, GlobeBridge.INTERACTION_RELEASE_MS);
+          }
         },
 
         onClick: (info: any) => {
@@ -413,6 +431,11 @@ export class GlobeBridge implements IEngineBridge {
       cancelAnimationFrame(this._rafHandle);
       this._rafHandle = null;
     }
+    if (this._interactionReleaseTimer !== null) {
+      clearTimeout(this._interactionReleaseTimer);
+      this._interactionReleaseTimer = null;
+    }
+    this._isInteracting = false;
   }
 
   /** Keep longitude in [-180, 180] to avoid unbounded growth across long sessions. */
