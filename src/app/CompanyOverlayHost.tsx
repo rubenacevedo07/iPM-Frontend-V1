@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { AnimatePresence } from 'framer-motion'
 import { AppActor } from './app.machine'
@@ -19,6 +19,7 @@ import {
   useCompanyClients,
 } from '@/hooks/useCompanyData'
 import { useCompanies } from '@/hooks/useCompanies'
+import { mapCompanyNetworkToArcs } from '@/services/companyNetworkMapper'
 import type { Company } from '@/types/company'
 
 export function CompanyOverlayHost() {
@@ -34,8 +35,8 @@ export function CompanyOverlayHost() {
   const { data: marketsData } = useCompanyMarkets(fetchId)
   const { data: fabricsData } = useCompanyFabrics(fetchId)
   const { data: productsData } = useCompanyProducts(fetchId)
-  const { data: providersData } = useCompanyProviders(fetchId)
-  const { data: clientsData } = useCompanyClients(fetchId)
+  const { data: providersData, loading: providersLoading } = useCompanyProviders(fetchId)
+  const { data: clientsData,   loading: clientsLoading   } = useCompanyClients(fetchId)
   const { companies } = useCompanies()
 
   const [activeTab, setActiveTab] = useState<NavTab>('Overview')
@@ -45,6 +46,35 @@ export function CompanyOverlayHost() {
     companies.forEach(c => { m[c.id] = c })
     return m
   }, [companies])
+
+  // Phase 8: when provider + client fetches have settled, push EngineArc[] into
+  // app.machine (stale-id guard + CMD.SET_ARCS to GlobeBridge). TanStack-style
+  // dedup is the hook layer; the machine still validates companyId.
+  useEffect(() => {
+    if (!isCompany || id == null) return
+    if (loading || error || !company) return
+    if (company.id !== id) return
+    if (providersLoading || clientsLoading) return
+    const arcs = mapCompanyNetworkToArcs({
+      focalCompany: company,
+      providers: providersData ?? [],
+      clients:   clientsData ?? [],
+      companyById,
+    })
+    actor.send({ type: 'NETWORK_RESOLVED', companyId: id, arcs })
+  }, [
+    actor,
+    isCompany,
+    id,
+    company,
+    loading,
+    error,
+    providersData,
+    clientsData,
+    providersLoading,
+    clientsLoading,
+    companyById,
+  ])
 
   const clients = useMemo(() => {
     return (clientsData ?? [])

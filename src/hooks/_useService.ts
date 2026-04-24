@@ -34,6 +34,10 @@ export function useService<T>(
     if (!enabled) return;
     let cancelled = false;
 
+    // When deps (e.g. companyId) change, clear previous data before refetch so
+    // one render cannot pair the new id with the old payload. Consumers that
+    // wait on { loading, data } (e.g. Phase 8 NETWORK_RESOLVED) stay consistent.
+    setData(null);
     setLoading(true);
     setError(null);
 
