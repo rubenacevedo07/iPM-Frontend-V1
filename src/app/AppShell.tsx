@@ -52,7 +52,9 @@ export function AppShell() {
       return bCap - aCap
     })
 
-    const top50 = sorted.slice(0, 50).map(c => ({
+    // Phase 7: 30 company dots — scope discipline (P.C decision:
+    // persons skipped until backend /api/persons/with-location exists).
+    const top30 = sorted.slice(0, 30).map(c => ({
       id:           c.id,
       nodeId:       `company:${c.id}`,
       type:         'COMPANY' as const,
@@ -64,7 +66,7 @@ export function AppShell() {
       isChokepoint: c.isChokepoint ?? false,
     }))
 
-    engineRef.send({ type: 'CMD.SET_ENTITIES', data: { entities: top50 } })
+    engineRef.send({ type: 'CMD.SET_ENTITIES', data: { entities: top30 } })
   }, [companies, companiesLoading, engineRef])
 
   return (

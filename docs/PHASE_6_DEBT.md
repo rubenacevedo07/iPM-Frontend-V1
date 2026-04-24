@@ -35,11 +35,9 @@
 
 **Protocol:** Same as Phase 5 entry (d). Open/close `?overlay=person&id=7` 20× + forced GC + delta measurement. Threshold `<5 MB`.
 
-**Current status:** **Not yet measured.** Browser-interactive test; cannot be automated.
+**Current status:** **PENDING — deferred to Phase 9 memory sweep.**
 
-**Action required before v1-phase-6 production ship:** User runs 20× cycle in Chrome, updates this entry with:
-- `PASS — residual <5 MB (measured YYYY-MM-DD)` OR
-- `FAIL — residual X MB → investigate XState sub-machine cleanup (entity-inspector, graph-interaction, tabs spawned from person-overlay.machine)`
+Consolidated audit will cover both Phase 5 (borderline 5.1 MB) and Phase 6 results together. Rationale: one measurement campaign is cheaper than two aisladas, and Phase 9 already includes CSS leak audit + listener cleanup as adjacent work.
 
 **Phase 6-specific leak suspects (if delta fails):**
 - `personOverlayMachine` spawns 3 sub-machines (inspector, graph, tabs) on every mount via `spawn()`. XState v5 auto-stops when parent stops, but nested ActorRef leaks are non-trivial to audit.

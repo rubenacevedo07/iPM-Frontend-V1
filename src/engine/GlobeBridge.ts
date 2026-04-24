@@ -63,6 +63,9 @@ export class GlobeBridge implements IEngineBridge {
   private _zoom = INITIAL_VIEW.zoom;
 
   private _focusedId: string | null = null;
+  // Phase 7: hover state tracked by onHover, consumed by _buildLayers for visual feedback.
+  // Also drives ENGINE.ENTITY_HOVER dispatch (null on hover-out).
+  private _hoveredId: string | null = null;
   // Event buffer — populated by _emitOrBuffer when no handlers are registered yet.
   // CONTRACT: drained ONLY by onEvent() when a handler registers. Never flushed
   // or cleared by init() or any other method. See Phase 3 post-mortem.
@@ -114,10 +117,20 @@ export class GlobeBridge implements IEngineBridge {
           }
         },
 
-        onHover: (_info: any) => {
-          // PHASE 4 TODO: re-enable hover emission when ScatterplotLayer has entities.
-          // Disabled now because globe-rings is empty and hover would flood with null events.
-          return;
+        onHover: (info: any) => {
+          // Phase 7: hover emission wired. Only globe-rings is pickable.
+          // Dispatch EntityRef on hover-in (info.object is the entity), null on hover-out.
+          // Dedup: only emit when _hoveredId changes (avoids flood for same-object hovers).
+          const hoveredNodeId = info.layer?.id === 'globe-rings' && info.object
+            ? info.object.nodeId
+            : null;
+          if (hoveredNodeId === this._hoveredId) return;
+          this._hoveredId = hoveredNodeId;
+          this._emitOrBuffer({
+            type: 'ENGINE.ENTITY_HOVER',
+            entity: info.object && info.layer?.id === 'globe-rings' ? info.object : null,
+          });
+          this._redraw();
         },
       });
 
@@ -253,6 +266,18 @@ export class GlobeBridge implements IEngineBridge {
   }
 
   private _buildLayers() {
+    // Phase 7: color table — informed by v3 useLayers3D.ts dotColor() (reference,
+    // not verbatim port). V1-authored; EntityType here uses V1's UPPERCASE EntityRef
+    // convention (app.events.ts EntityRef), not v3 @/types/overlays.EntityType lowercase.
+    const dotColor = (type: string): [number, number, number, number] => {
+      switch (type) {
+        case 'PERSON':  return [0, 229, 255, 220]; // cyan — reserved for Phase 7.1
+        case 'COMPANY': return [0, 212, 170, 220]; // teal
+        case 'COUNTRY': return [245, 166, 35, 220]; // amber — unused in Phase 7
+        default:        return [138, 155, 181, 200];
+      }
+    };
+
     return [
       new GeoJsonLayer({
         id: 'globe-base',
@@ -270,21 +295,55 @@ export class GlobeBridge implements IEngineBridge {
         getLineColor: [0, 229, 255, 25],
         lineWidthMinPixels: 0.5,
       }),
+      // Phase 7: globe-rings — pickable entity dots, ring stroke, hover/focus-aware radius.
       new ScatterplotLayer({
         id: 'globe-rings',
         data: this._entities,
         pickable: true,
         radiusUnits: 'meters',
         getPosition:  (d: any) => [d.longitude, d.latitude],
-        getRadius:    (d: any) => (d.isChokepoint ? 120_000 : 80_000),
-        getFillColor: (d: any) => (d.isChokepoint ? [255, 180, 0, 120] : [0, 229, 255, 80]),
-        getLineColor: (d: any) => (d.isChokepoint ? [255, 200, 40, 220] : [0, 229, 255, 200]),
+        getRadius:    (d: any) => {
+          if (d.nodeId === this._focusedId) return 120_000;
+          if (d.nodeId === this._hoveredId) return 100_000;
+          return 80_000;
+        },
+        getFillColor: (d: any) => {
+          if (d.nodeId === this._focusedId) return [255, 255, 255, 240];
+          if (d.nodeId === this._hoveredId) return [255, 255, 255, 180];
+          const c = dotColor(d.type);
+          // Slightly transparent fill so the decorative inner dot reads through
+          return [c[0], c[1], c[2], 80];
+        },
+        getLineColor: (d: any) => {
+          const c = dotColor(d.type);
+          return [c[0], c[1], c[2], 255];
+        },
+        getLineWidth: (d: any) => (d.nodeId === this._focusedId ? 3 : 1.5),
         stroked: true,
         lineWidthUnits: 'pixels',
-        getLineWidth: 1.5,
         updateTriggers: {
-          getFillColor: [this._focusedId, this._entities.length],
-          getRadius:    [this._focusedId, this._entities.length],
+          getFillColor: [this._focusedId, this._hoveredId, this._entities.length],
+          getRadius:    [this._focusedId, this._hoveredId, this._entities.length],
+          getLineColor: [this._entities.length],
+          getLineWidth: [this._focusedId],
+          getPosition:  [this._entities.length],
+        },
+      }),
+      // Phase 7: globe-dots — decorative inner fill, non-pickable. Reads through the
+      // ring's translucent fill to give the "ring + dot" visual pattern from v3.
+      new ScatterplotLayer({
+        id: 'globe-dots',
+        data: this._entities,
+        pickable: false,
+        radiusUnits: 'meters',
+        getPosition:  (d: any) => [d.longitude, d.latitude],
+        getRadius:    30_000,
+        getFillColor: (d: any) => {
+          const c = dotColor(d.type);
+          return [c[0], c[1], c[2], 200];
+        },
+        updateTriggers: {
+          getFillColor: [this._entities.length],
           getPosition:  [this._entities.length],
         },
       }),
