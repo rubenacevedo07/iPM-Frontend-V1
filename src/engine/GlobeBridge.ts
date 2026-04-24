@@ -3,13 +3,14 @@
 // Rule 5: new Deck({...}) only. No <DeckGL />, no reconciler, no R3F.
 
 import { Deck, _GlobeView as DeckGlobeView } from '@deck.gl/core';
-import { GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
+import { ArcLayer, GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
 import type {
   EngineId,
   EngineInitInput,
   EngineViewInput,
   EngineFocusInput,
   EngineEntityData,
+  EngineArc,
 } from './contracts/inputs';
 import type {
   IEngineBridge,
@@ -82,6 +83,14 @@ export class GlobeBridge implements IEngineBridge {
   private static readonly ROTATION_DEG_PER_SEC = 3;
   private static readonly IDLE_RESUME_MS = 800;
 
+  // Phase 8: ArcLayer styling. Colors match Phase 5/7 palette — amber for
+  // upstream/supplier risk, cyan for downstream/client edges. Width clamps
+  // are pixels at any zoom (widthUnits: 'pixels' on the layer).
+  private static readonly ARC_COLOR_SUPPLIER: [number, number, number] = [245, 166, 35];
+  private static readonly ARC_COLOR_CLIENT:   [number, number, number] = [0, 229, 255];
+  private static readonly ARC_WIDTH_MIN = 1;
+  private static readonly ARC_WIDTH_MAX = 4;
+
   private _focusedId: string | null = null;
   // Phase 7: hover state tracked by onHover, consumed by _buildLayers for visual feedback.
   // Also drives ENGINE.ENTITY_HOVER dispatch (null on hover-out).
@@ -94,6 +103,14 @@ export class GlobeBridge implements IEngineBridge {
   // Phase 4.1: entity data received via CMD.SET_ENTITIES.
   // Fed into globe-rings ScatterplotLayer. Mutated in send(), rendered via _redraw().
   private _entities: EngineEntityData['entities'] = [];
+
+  // Phase 8: network arcs received via CMD.SET_ARCS.
+  // Fed into globe-arcs ArcLayer. _arcsRevision is a monotonic counter used in
+  // updateTriggers — bumps every commit even when arcs.length stays the same
+  // (A→B navigation with identical arc counts but different targets), so
+  // deck.gl re-evaluates accessors. Using .length alone misses that case.
+  private _arcs: EngineArc[] = [];
+  private _arcsRevision = 0;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -255,6 +272,8 @@ export class GlobeBridge implements IEngineBridge {
     this._ro = null;
     this._status = 'disposed';
     this._handlers = [];
+    this._entities = [];
+    this._arcs = [];
   }
 
   // ---------------------------------------------------------------------------
@@ -282,6 +301,17 @@ export class GlobeBridge implements IEngineBridge {
         this._entities = command.data.entities;
         this._redraw();
         break;
+      case 'CMD.SET_ARCS': {
+        // Short-circuit: incoming and current both empty → no rebuild. Prevents
+        // redundant layer churn on repeated CLOSE_OVERLAY dispatches and on
+        // initial mount when no overlay is open.
+        const incoming = command.data.arcs;
+        if (this._arcs.length === 0 && incoming.length === 0) break;
+        this._arcs = incoming;
+        this._arcsRevision++;
+        this._redraw();
+        break;
+      }
       case 'CMD.SUSPEND':
         this.suspend();
         break;
@@ -354,6 +384,42 @@ export class GlobeBridge implements IEngineBridge {
         getFillColor: [8, 20, 48, 80],
         getLineColor: [0, 229, 255, 25],
         lineWidthMinPixels: 0.5,
+      }),
+      // Phase 8: globe-arcs — supplier (amber) + client (cyan) network edges.
+      // Inserted BELOW globe-rings so picking on entity dots stays unaffected
+      // (arcs are non-pickable — they're decorative context for the open
+      // company overlay). greatCircle: true makes arcs follow globe curvature
+      // (verified to work on _GlobeView, unlike LinearInterpolator transitions
+      // — see docs/deck-gl-9-reference.md §5).
+      new ArcLayer<EngineArc>({
+        id: 'globe-arcs',
+        data: this._arcs,
+        pickable: false,
+        greatCircle: true,
+        widthUnits: 'pixels',
+        getSourcePosition: (a) => a.source,
+        getTargetPosition: (a) => a.target,
+        getSourceColor: (a) => {
+          const c = a.kind === 'supplier'
+            ? GlobeBridge.ARC_COLOR_SUPPLIER
+            : GlobeBridge.ARC_COLOR_CLIENT;
+          return [c[0], c[1], c[2], Math.round(a.intensity * 255)];
+        },
+        getTargetColor: (a) => {
+          const c = a.kind === 'supplier'
+            ? GlobeBridge.ARC_COLOR_SUPPLIER
+            : GlobeBridge.ARC_COLOR_CLIENT;
+          return [c[0], c[1], c[2], Math.round(a.intensity * 255)];
+        },
+        getWidth: (a) => GlobeBridge.ARC_WIDTH_MIN +
+          a.intensity * (GlobeBridge.ARC_WIDTH_MAX - GlobeBridge.ARC_WIDTH_MIN),
+        updateTriggers: {
+          getSourcePosition: [this._arcsRevision],
+          getTargetPosition: [this._arcsRevision],
+          getSourceColor:    [this._arcsRevision],
+          getTargetColor:    [this._arcsRevision],
+          getWidth:          [this._arcsRevision],
+        },
       }),
       // Phase 7: globe-rings — pickable entity dots, ring stroke, hover/focus-aware radius.
       new ScatterplotLayer({
