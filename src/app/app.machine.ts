@@ -1,4 +1,4 @@
-import { setup, assign, sendTo } from 'xstate'
+import { setup, assign, sendTo, enqueueActions } from 'xstate'
 import { createActorContext } from '@xstate/react'
 import type { ActorRefFrom } from 'xstate'
 import deepEqual from 'fast-deep-equal'
@@ -8,6 +8,7 @@ import { deriveContextFromSearchParams } from './deriveContextFromSearchParams'
 import type { AppEvent, EntityRef } from './app.events'
 import type { WorkstationSearch } from '@/routes/workstation'
 import type { AtlasView } from '@/types/atlas'
+import type { EngineArc } from '@/engine/contracts/inputs'
 
 type AppContext = {
   overlayId:        number | null
@@ -17,6 +18,11 @@ type AppContext = {
   navRef:           ActorRefFrom<typeof navigationActor>
   engineManagerRef: ActorRefFrom<typeof engineManagerMachine>
   atlasView:        AtlasView
+  // Phase 8: arcs reflecting the currently-open company's network. Mirrors
+  // what the active engine bridge has via CMD.SET_ARCS. Cleared on overlay
+  // close, on overlay-id change (top-level URL_CHANGED), and dropped if a
+  // late NETWORK_RESOLVED arrives for a non-current overlay (stale-id guard).
+  companyArcs:      EngineArc[]
 }
 
 // Type-safe extractor — guard in setup() ensures event.type === 'URL_CHANGED' before use
@@ -33,6 +39,17 @@ const appMachine = setup({
     navigationActor,
     engineManagerMachine,
   },
+  // Phase 8: named actions. clearOverlay + navigateHome + dispatchClearArcs
+  // are reused by all 6 sub-state CLOSE_OVERLAY / ENTITY.CLOSE handlers
+  // (person, company, vs × CLOSE_OVERLAY + ENTITY.CLOSE alias).
+  // dispatchClearArcs is idempotent thanks to the short-circuit gate in
+  // GlobeBridge.send (no layer rebuild when both incoming and current arc
+  // arrays are empty).
+  actions: {
+    clearOverlay:      assign({ overlayId: null, overlayIdB: null, companyArcs: [] }),
+    navigateHome:      sendTo(({ context }) => context.navRef,           { type: 'NAVIGATE', search: {} }),
+    dispatchClearArcs: sendTo(({ context }) => context.engineManagerRef, { type: 'CMD.SET_ARCS', data: { arcs: [] } }),
+  },
   guards: {
     urlActuallyChanged: ({ context, event }) => {
       if (event.type !== 'URL_CHANGED') return false
@@ -46,6 +63,11 @@ const appMachine = setup({
     isCompanyUrl: ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'company',
     isVsUrl:      ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'vs',
     noOverlayUrl: ({ event }) => event.type === 'URL_CHANGED' && !event.search.overlay,
+    // Phase 8: stale-id guard for NETWORK_RESOLVED. Drops events whose
+    // companyId no longer matches the open overlay (user closed/switched
+    // overlays while the fetch was in flight).
+    networkMatchesOverlay: ({ context, event }) =>
+      event.type === 'NETWORK_RESOLVED' && event.companyId === context.overlayId,
   },
 }).createMachine({
   id: 'app',
@@ -58,6 +80,7 @@ const appMachine = setup({
     navRef:           spawn('navigationActor',      { id: 'nav' }),
     engineManagerRef: spawn('engineManagerMachine', { id: 'engineManager' }),
     atlasView:        'globe' as AtlasView,
+    companyArcs:      [],
   }),
   states: {
     overlay: {
@@ -97,19 +120,13 @@ const appMachine = setup({
           on: {
             CLOSE_OVERLAY: {
               target: 'closed',
-              actions: [
-                assign({ overlayId: null, overlayIdB: null }),
-                sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
-              ],
+              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
             },
             // Phase 6: v3 canonical PersonOverlay dispatches ENTITY.CLOSE on close.
             // Handled as alias for CLOSE_OVERLAY so canonical stays untouched (Rule 6).
             'ENTITY.CLOSE': {
               target: 'closed',
-              actions: [
-                assign({ overlayId: null, overlayIdB: null }),
-                sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
-              ],
+              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
             },
             OPEN_COMPANY: {
               target: 'company',
@@ -136,19 +153,13 @@ const appMachine = setup({
           on: {
             CLOSE_OVERLAY: {
               target: 'closed',
-              actions: [
-                assign({ overlayId: null, overlayIdB: null }),
-                sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
-              ],
+              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
             },
             // Phase 6: v3 canonical PersonOverlay dispatches ENTITY.CLOSE on close.
             // Handled as alias for CLOSE_OVERLAY so canonical stays untouched (Rule 6).
             'ENTITY.CLOSE': {
               target: 'closed',
-              actions: [
-                assign({ overlayId: null, overlayIdB: null }),
-                sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
-              ],
+              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
             },
             OPEN_PERSON: {
               target: 'person',
@@ -175,19 +186,13 @@ const appMachine = setup({
           on: {
             CLOSE_OVERLAY: {
               target: 'closed',
-              actions: [
-                assign({ overlayId: null, overlayIdB: null }),
-                sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
-              ],
+              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
             },
             // Phase 6: v3 canonical PersonOverlay dispatches ENTITY.CLOSE on close.
             // Handled as alias for CLOSE_OVERLAY so canonical stays untouched (Rule 6).
             'ENTITY.CLOSE': {
               target: 'closed',
-              actions: [
-                assign({ overlayId: null, overlayIdB: null }),
-                sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
-              ],
+              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
             },
             OPEN_PERSON: {
               target: 'person',
@@ -282,11 +287,45 @@ const appMachine = setup({
   on: {
     URL_CHANGED: {
       guard: 'urlActuallyChanged',
-      actions: assign(({ event }) => {
+      // Phase 8: keep context.companyArcs and the active bridge in sync.
+      // - overlayId changed (close, open-different, switch-overlay-kind):
+      //   clear arcs in context AND dispatch CMD.SET_ARCS empty to bridge.
+      // - only query / overlayIdB changed: assign new context, keep arcs.
+      actions: enqueueActions(({ enqueue, context, event }) => {
         const e = event as Extract<AppEvent, { type: 'URL_CHANGED' }>
         const d = deriveContextFromSearchParams(e.search)
-        return { overlayId: d.overlayId, overlayIdB: d.overlayIdB, query: d.searchQuery }
+        const overlayChanged = d.overlayId !== context.overlayId
+        if (overlayChanged) {
+          enqueue.assign({
+            overlayId: d.overlayId, overlayIdB: d.overlayIdB,
+            query: d.searchQuery, companyArcs: [],
+          })
+          enqueue('dispatchClearArcs')
+        } else {
+          enqueue.assign({
+            overlayId: d.overlayId, overlayIdB: d.overlayIdB, query: d.searchQuery,
+          })
+        }
       }),
+    },
+    // Phase 8: provider/client network resolved by CompanyOverlayHost. Guard
+    // checks the event's companyId against the currently open overlay; if the
+    // user switched/closed before the fetch settled, the event is dropped.
+    NETWORK_RESOLVED: {
+      guard: 'networkMatchesOverlay',
+      actions: [
+        assign({
+          companyArcs: ({ event }) =>
+            event.type === 'NETWORK_RESOLVED' ? event.arcs : [],
+        }),
+        sendTo(
+          ({ context }) => context.engineManagerRef,
+          ({ event }) => ({
+            type: 'CMD.SET_ARCS' as const,
+            data: { arcs: event.type === 'NETWORK_RESOLVED' ? event.arcs : [] },
+          }),
+        ),
+      ],
     },
   },
 })

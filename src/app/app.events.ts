@@ -1,6 +1,6 @@
 import type { WorkstationSearch } from '@/routes/workstation'
 import type { AtlasView } from '@/types/atlas'
-import type { EngineId } from '@/engine/contracts/inputs'
+import type { EngineId, EngineArc } from '@/engine/contracts/inputs'
 
 export type EntityRef = {
   id:     number
@@ -28,3 +28,7 @@ export type AppEvent =
   | { type: 'ATLAS_VIEW.SET';      view: AtlasView }
   | { type: 'ATLAS.ENTITY_CLICK';  entity: EntityRef }
   | { type: 'ATLAS.ENGINE_FAILED'; engineId: EngineId; error: Error }
+  // Phase 8: CompanyOverlayHost emits NETWORK_RESOLVED when provider/client
+  // hooks settle. app.machine validates the companyId against the open overlay
+  // (stale-id guard) and forwards CMD.SET_ARCS to the active bridge.
+  | { type: 'NETWORK_RESOLVED';    companyId: number; arcs: EngineArc[] }

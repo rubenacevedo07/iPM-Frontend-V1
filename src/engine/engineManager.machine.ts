@@ -2,7 +2,7 @@
 // Single createBridgeAndSubscribe action (as designed in Phase 2b)
 
 import { setup, assign, sendParent }                        from 'xstate';
-import type { EngineId, EngineInitInput, EngineEntityData } from './contracts/inputs';
+import type { EngineId, EngineInitInput, EngineEntityData, EngineArcData } from './contracts/inputs';
 import type { IEngineBridge, BridgeEvent, Unsubscribe }     from './contracts/bridge';
 import { createEngine }                                     from './engineFactory';
 
@@ -21,7 +21,8 @@ type EngineManagerEvent =
   | { type: 'ENGINE.SWAP';      engineId: EngineId; input: EngineInitInput }
   | { type: 'ENGINE.DISPOSE' }
   | { type: '_BRIDGE.EVENT';    event: BridgeEvent }
-  | { type: 'CMD.SET_ENTITIES'; data: EngineEntityData };
+  | { type: 'CMD.SET_ENTITIES'; data: EngineEntityData }
+  | { type: 'CMD.SET_ARCS';     data: EngineArcData };
 
 function isBridgeReady(event: EngineManagerEvent): boolean {
   return event.type === '_BRIDGE.EVENT' && event.event.type === 'ENGINE.READY';
@@ -137,6 +138,11 @@ export const engineManagerMachine = setup({
             'CMD.SET_ENTITIES': {
               actions: ({ context, event }) => {
                 context.bridge?.send({ type: 'CMD.SET_ENTITIES', data: event.data });
+              },
+            },
+            'CMD.SET_ARCS': {
+              actions: ({ context, event }) => {
+                context.bridge?.send({ type: 'CMD.SET_ARCS', data: event.data });
               },
             },
           },
