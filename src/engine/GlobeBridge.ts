@@ -62,6 +62,13 @@ export class GlobeBridge implements IEngineBridge {
   private _latitude = INITIAL_VIEW.latitude;
   private _zoom = INITIAL_VIEW.zoom;
 
+  // Phase 7.3: auto-rotation with non-competing pause during user interaction.
+  // The 5009c61 removal was caused by rAF loop racing with zoom events. This
+  // version pauses the rotation while isDragging / isZooming / isPanning is true,
+  // eliminating the competition. Degrees added to _longitude per rAF tick.
+  private _isInteracting = false;
+  private readonly _rotationDegPerSec = 3; // ~6min for a full revolution at 60fps
+
   private _focusedId: string | null = null;
   // Phase 7: hover state tracked by onHover, consumed by _buildLayers for visual feedback.
   // Also drives ENGINE.ENTITY_HOVER dispatch (null on hover-out).
@@ -105,10 +112,17 @@ export class GlobeBridge implements IEngineBridge {
         layers: this._buildLayers(),
 
         // TODO Phase 4: replace `any` with typed imports from @deck.gl/core
-        onViewStateChange: ({ viewState }: any) => {
+        onViewStateChange: ({ viewState, interactionState }: any) => {
           this._longitude = viewState.longitude ?? this._longitude;
           this._latitude = viewState.latitude ?? this._latitude;
           this._zoom = viewState.zoom ?? this._zoom;
+          // Phase 7.3: pause auto-rotation during user interaction. Non-competing
+          // with zoom/drag events — eliminates the 5009c61 zoom-lag regression.
+          this._isInteracting = !!(
+            interactionState?.isDragging ||
+            interactionState?.isZooming  ||
+            interactionState?.isPanning
+          );
         },
 
         onClick: (info: any) => {
@@ -140,8 +154,9 @@ export class GlobeBridge implements IEngineBridge {
       });
       this._ro.observe(input.container);
 
-      // Auto-rotation removed — caused zoom lag (see ZOOM_LAG_KNOWN_ISSUE.md).
-      // Restore from git history if re-enabled via a non-competing mechanism.
+      // Phase 7.3: auto-rotation restored with non-competing pause logic.
+      // See _isInteracting flag (onViewStateChange) + _startRotation().
+      this._startRotation();
 
       this._status = 'ready';
 
@@ -175,16 +190,16 @@ export class GlobeBridge implements IEngineBridge {
   }
 
   suspend(): void {
-    // No-op — rotation apparatus removed (see init() comment).
-    // Kept for IEngineBridge contract compatibility; engineManager sends
-    // CMD.SUSPEND to previousBridge during crossfade.
+    // Phase 7.3: stop auto-rotation during crossfade. engineManager sends
+    // CMD.SUSPEND to previousBridge so its rAF loop doesn't waste frames.
     this._stopRotation();
   }
 
   resume(): void {
-    // No-op — rotation apparatus removed (see init() comment).
-    // Kept for IEngineBridge contract compatibility; engineManager sends
-    // CMD.RESUME to current bridge on crossfade rollback.
+    // Phase 7.3: restart auto-rotation on crossfade rollback.
+    if (this._status === 'ready' && this._rafHandle === null) {
+      this._startRotation();
+    }
   }
 
   dispose(): void {
@@ -355,19 +370,55 @@ export class GlobeBridge implements IEngineBridge {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — rotation cleanup + flyTo (stub)
+  // Private — auto-rotation (Phase 7.3) + flyTo (stub)
   // ---------------------------------------------------------------------------
 
   /**
-   * Safe no-op cleanup — _rafHandle is always null in the current code path
-   * (auto-rotation was removed in response to a zoom-lag regression). Kept so
-   * that dispose()/suspend() remain correct if rotation is restored later.
+   * Start the auto-rotation rAF loop. Advances _longitude by _rotationDegPerSec
+   * per second (scaled by delta-time between frames so fps fluctuation doesn't
+   * accelerate/decelerate the spin). Paused when _isInteracting is true — the
+   * key change vs the 5009c61 removal, which looped unconditionally and caused
+   * zoom lag by racing user-initiated viewState updates.
+   *
+   * Safe to call multiple times: noop if _rafHandle already set.
    */
+  private _startRotation(): void {
+    if (this._rafHandle !== null) return;
+    let lastMs = performance.now();
+    const tick = (nowMs: number) => {
+      const dtSec = (nowMs - lastMs) / 1000;
+      lastMs = nowMs;
+      if (!this._isInteracting && this._deck && this._status === 'ready') {
+        this._longitude = this._normalizeLongitude(
+          this._longitude + this._rotationDegPerSec * dtSec,
+        );
+        this._deck.setProps({
+          viewState: {
+            longitude: this._longitude,
+            latitude:  this._latitude,
+            zoom:      this._zoom,
+            minZoom:   0,
+            maxZoom:   5,
+          },
+        });
+      }
+      this._rafHandle = requestAnimationFrame(tick);
+    };
+    this._rafHandle = requestAnimationFrame(tick);
+  }
+
+  /** Cancel the auto-rotation rAF loop. Called from suspend() + dispose(). */
   private _stopRotation(): void {
     if (this._rafHandle !== null) {
       cancelAnimationFrame(this._rafHandle);
       this._rafHandle = null;
     }
+  }
+
+  /** Keep longitude in [-180, 180] to avoid unbounded growth across long sessions. */
+  private _normalizeLongitude(lng: number): number {
+    const wrapped = ((lng + 180) % 360 + 360) % 360 - 180;
+    return wrapped;
   }
 
   private _flyTo(_target: { nodeId: string }): void {
