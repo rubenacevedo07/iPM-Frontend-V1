@@ -91,7 +91,9 @@ export interface CommodityChokepoint {
 
 **Protocol:** Same pattern as Phase 5 entry (d) / Phase 6 entry (c). Open `/workstation`, DevTools Memory baseline → 20× open/close `?overlay=company&id=1` (or toggle any dot-triggering navigation) → GC → final. Threshold <5 MB.
 
-**Current status:** **PENDING — deferred to Phase 9 memory sweep** (aligns with Phase 6 entry (c) strategy — consolidate measurement across phases).
+**Current status:** **PENDING — heap protocol still manual** (aligns with Phase 6 entry (c) strategy — consolidate measurement across phases).
+
+**Code-side (Phase 9, `master` ≥ unload commit):** `AppShell` sends `ENGINE.DISPOSE` on `pagehide` / `beforeunload` once; `engineManager` disposes from `initializing` / `failed` / `idle` / `active` so the deck and WebGL release on full navigation or tab close. This does **not** replace the 20× DevTools measurement — run the protocol in `docs/PHASE_9.md` to close (f) and GATE C.
 
 **Phase 7-specific leak suspects if delta fails:**
 - `_hoveredId` state updates trigger `_redraw()` on every distinct hover — high-frequency. Check if deck.gl `setProps({ layers })` leaks between frames.
@@ -102,7 +104,7 @@ export interface CommodityChokepoint {
 
 ## Implementation notes (for reference, not debt)
 
-- `GlobeBridge._buildLayers()` now composes 4 layers: `globe-base`, `globe-countries`, `globe-rings` (pickable, hover/focus-aware), `globe-dots` (decorative inner). v3 has 6 (adds `globe-arcs` ArcLayer + `globe-labels` TextLayer) — both deferred per scope.
+- `GlobeBridge._buildLayers()` composes 5 layers: `globe-base`, `globe-countries`, `globe-arcs` (Phase 8), `globe-rings` (pickable, hover/focus-aware), `globe-dots` (decorative inner). v3’s `TextLayer` labels still deferred per scope.
 - `dotColor()` helper inline in `_buildLayers` matches v3 table byte-for-byte except for scope reservation comment on PERSON (unused in Phase 7).
 - `_hoveredId` dedup at onHover prevents ENGINE.ENTITY_HOVER flood on repeat hover events for same entity.
 - EntityRef passed through `info.object` — V1's flat shape already matches what ENGINE.ENTITY_HOVER expects.

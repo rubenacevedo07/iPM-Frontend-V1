@@ -320,7 +320,7 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 ## PROGRESS TRACKER (LIVE STATE)
 
 **Last updated:** 2026-04-25
-**Current phase:** Phase 9 planning (next: polish + memory sweep) — deferred: Phase 7.1 (persons on globe, backend), 7.2 (country risk fills), 7b (MapView)
+**Current phase:** Phase 9 in progress — **GATE C** open until manual 20× heap + FPS (see `docs/PHASE_9.md`) — deferred: Phase 7.1 (persons on globe, backend), 7.2 (country risk fills), 7b (MapView)
 **Phases complete:** 9+ / 11 (through Phase 8 + prior phase tags on `master` / `phase8-arclayer`; numeric “complete” is approximate)
 **Hours consumed:** _tracked per session in notes below_
 **Gates passed:** A [x] B [x] C [ ]
@@ -328,6 +328,7 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 | Tag / milestone | Note |
 |-----------------|------|
 | `v1-phase-8` | ArcLayer (static) + `NETWORK_RESOLVED` + `CMD.SET_ARCS` — supplier/client network on globe when company overlay open. See `PHASE_8_DEBT.md` for follow-ups. |
+| (no tag yet) | Phase 9: page-unload `ENGINE.DISPOSE` on `master` + `docs/PHASE_9.md` checklist. |
 
 ### Phase log
 - [x] Phase 0 — Pre-flight + env + operational docs — ~1h / 2h 30min
@@ -374,6 +375,11 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - Done: Engine contracts `EngineArc` / `CMD.SET_ARCS`; `companyNetworkMapper`; `GlobeBridge` `ArcLayer` + `_arcsRevision`; `app.machine` `NETWORK_RESOLVED` + `companyArcs` + URL/enqueue clear; `engineManager` forward; `CompanyOverlayHost` dispatch; `_useService` clears data on dep change. Docs: `PHASE_8_DEBT.md`, `deck-gl-9-reference` §7 ArcLayer, closed items in `PHASE_5_DEBT` (f) + `PHASE_7_DEBT` (d). Tag `v1-phase-8`.
 - Broke: (fill on manual Stage 6 matrix if any)
 - Next: Phase 9 (memory/GC) or deferred Phase 7.1/7.2 per product priority.
+
+### Session 2026-04-25 — Phase 9 (partial)
+- Done: `AppShell` pagehide/beforeunload → `ENGINE.DISPOSE`; `engineManager` DISPOSE from `idle` / `initializing` / `failed`. Static listener/timer audit (see `PHASE_9.md`). `PHASE_7_DEBT` (f) cross-ref + 5-layer note in implementation notes.
+- Broke: —
+- Next: Run manual **GATE C** (20× heap, 60 fps with arcs) and tick Gate C in this doc when clean; optional `v1-phase-9` tag after Gate C.
 
 ---
 
