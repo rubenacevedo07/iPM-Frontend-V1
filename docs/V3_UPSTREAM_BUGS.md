@@ -124,6 +124,18 @@ Once upstream is fixed, V1 shim's 2-arg fallback branch can be removed in a sing
 
 ## Verification after upstream fix
 
+> **STOP — DO NOT run these steps until both Bug 1 and Bug 2 are patched in the v3
+> canonical repo (`C:/Users/ruben/source/repos/iPM_GV/IPM_Frontend`). Deleting the
+> shim before upstream is fixed breaks Vite's import resolution in V1 and bricks
+> the dev server with `Failed to resolve import "@/components/overlays/sceneMap"`.**
+>
+> **Pre-flight check — both must return empty before proceeding:**
+> ```bash
+> grep -rn "from '@/components/overlays/sceneMap'" C:/Users/ruben/source/repos/iPM_GV/IPM_Frontend/src
+> grep -rnE "getScene\(e\.nodeId|getScene\(e\.target\.nodeId" C:/Users/ruben/source/repos/iPM_GV/IPM_Frontend/src
+> ```
+> If either still has hits, upstream Bug 1 or Bug 2 is still unfixed — stop, the shim must remain.
+
 1. Delete `IPM_Frontend_V1/src/components/overlays/sceneMap.ts` in V1
 2. Re-run `npx tsc --noEmit` — should still pass (Bug 1 fixed by canonical import change)
 3. Open `http://localhost:PORT/workstation?overlay=person&id=7` — should render without runtime TypeError (Bug 2 fixed by canonical arity change)
