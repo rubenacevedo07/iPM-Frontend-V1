@@ -2,7 +2,7 @@
 // Real DeckGL imperative bridge — replaces GlobeBridge stub in engineFactory.ts
 // Rule 5: new Deck({...}) only. No <DeckGL />, no reconciler, no R3F.
 
-import { Deck, _GlobeView as DeckGlobeView, LinearInterpolator } from '@deck.gl/core';
+import { Deck, _GlobeView as DeckGlobeView } from '@deck.gl/core';
 import { GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
 import type {
   EngineId,
@@ -57,23 +57,30 @@ export class GlobeBridge implements IEngineBridge {
   private _deck: Deck<any> | null = null;
   private _ro: ResizeObserver | null = null;
 
-  // Phase 7.3c: auto-rotation via deck.gl's native LinearInterpolator transition
-  // system. We schedule one long segment (ROTATION_SEGMENT_DEG over
-  // ROTATION_SEGMENT_MS), chain via onTransitionEnd, and defer resumption to an
-  // idle window after user interruption via onTransitionInterrupt. This avoids
-  // per-frame setProps({viewState}) entirely — the earlier rAF approach
-  // (b67edd1/eccff9b) forced controlled-viewState mode and clobbered the
-  // controller's wheel/drag proposals. See ZOOM_LAG_KNOWN_ISSUE.md.
+  // Phase 7.3g: auto-rotation via requestAnimationFrame (NOT LinearInterpolator).
+  // 7.3c-7.3f attempted deck.gl's native transition system with LinearInterpolator
+  // but onTransitionStart never fired on _GlobeView in deck.gl 9.3 — the
+  // GlobeController does not drive TransitionManager the same way MapController
+  // does. Empirical: setProps({viewState: {..., transitionDuration, interpolator}})
+  // silently commits the target without animating on globe view.
+  //
+  // Going back to rAF is safe THIS time because we now have the writeback
+  // pattern established in onViewStateChange — user gestures (drag/wheel) fire
+  // onViewStateChange, we writeback their proposal to deck, and rAF resumes
+  // from the updated _viewState on the next tick. The critical new piece is
+  // _selfDriving: we raise it before rAF's own setProps to tell
+  // onViewStateChange "this is my frame, don't writeback" (would cause infinite
+  // recursion). onViewStateChange in controlled mode fires synchronously inside
+  // setProps, so the flag semantics work.
   private _viewState: any = null; // full last-known viewState — never reassembled from scalars
-  private _rotationScheduled = false;
+  private _rafHandle: number | null = null;
+  private _lastTickMs = 0;
+  private _selfDriving = false;
   private _idleResumeTimer: ReturnType<typeof setTimeout> | null = null;
   private _userInteracting = false;
 
   private static readonly ROTATION_DEG_PER_SEC = 3;
-  private static readonly ROTATION_SEGMENT_DEG = 60;
-  // SEGMENT_MS = SEGMENT_DEG / DEG_PER_SEC * 1000
-  private static readonly ROTATION_SEGMENT_MS = 20_000;
-  private static readonly IDLE_RESUME_MS = 1500;
+  private static readonly IDLE_RESUME_MS = 800;
 
   private _focusedId: string | null = null;
   // Phase 7: hover state tracked by onHover, consumed by _buildLayers for visual feedback.
@@ -102,34 +109,52 @@ export class GlobeBridge implements IEngineBridge {
       const resolvedW = width || input.container.offsetWidth || window.innerWidth;
       const resolvedH = height || input.container.offsetHeight || window.innerHeight;
 
+      // Phase 7.3g: start deck in CONTROLLED mode (viewState, not
+      // initialViewState). TransitionManager requires a prior committed
+      // viewState to animate from; starting uncontrolled and later passing
+      // viewState with transitionDuration causes deck to commit the target
+      // silently without running the transition (empirical: 7.3c-7.3f all
+      // failed to rotate because deck had no "from" viewState). With
+      // controlled mode from mount, the starting viewState IS the INITIAL_VIEW
+      // we pass here, and subsequent setProps({viewState: {...,
+      // transitionDuration, interpolator}}) triggers the transition correctly.
+      this._viewState = { ...INITIAL_VIEW };
       this._deck = new Deck({
         canvas: this._createCanvas(input.container),
         width: resolvedW,
         height: resolvedH,
         views: new DeckGlobeView({ id: 'globe' }),
-        initialViewState: { ...INITIAL_VIEW },
+        viewState: { ...INITIAL_VIEW },
         controller: true,
         layers: this._buildLayers(),
 
         // TODO Phase 4: replace `any` with typed imports from @deck.gl/core
         onViewStateChange: ({ viewState, interactionState }: any) => {
-          // Phase 7.3c: capture the FULL viewState verbatim. Never reassemble
-          // from scalar fields — deck.gl treats missing fields as defaults and
-          // would snap bearing/pitch/etc every tick. This value is spread into
-          // the next rotation segment in _scheduleNextSegment().
+          // Phase 7.3g: writeback pattern for controlled mode + rAF rotation.
+          //
+          // Three frame sources land here:
+          // 1. Our rAF tick: _selfDriving=true. Capture viewState only — no
+          //    writeback (would recurse infinitely: writeback → onViewStateChange
+          //    → writeback → ...).
+          // 2. Deck's initial handshake or internal viewState updates:
+          //    _selfDriving=false, interactionState has no gesture flags.
+          //    Writeback so controller's proposal commits; do NOT pause rotation.
+          // 3. User input (drag/wheel/pan): _selfDriving=false, gesture flags
+          //    set (drag/pan/rotate reliable; wheel's isZooming unreliable).
+          //    Writeback + pause rotation + arm idle timer.
+          if (this._selfDriving) {
+            this._viewState = viewState;
+            return;
+          }
           this._viewState = viewState;
-
-          // User-driven changes (drag/pan/touch-pinch) arm the idle-resume
-          // timer. Mouse-wheel zoom does NOT reliably set isZooming in deck.gl
-          // 9, but it still interrupts the active rotation transition via
-          // onTransitionInterrupt — which also arms the idle timer. So either
-          // path converges on the same resume behavior.
+          this._deck?.setProps({ viewState });
           const userDriven = !!(
             interactionState?.isDragging ||
             interactionState?.isPanning  ||
-            interactionState?.isZooming
+            interactionState?.isZooming  ||
+            interactionState?.isRotating
           );
-          if (userDriven) {
+          if (userDriven || this._idleResumeTimer !== null) {
             this._userInteracting = true;
             this._armIdleResume();
           }
@@ -166,10 +191,9 @@ export class GlobeBridge implements IEngineBridge {
 
       this._status = 'ready';
 
-      // Phase 7.3c: auto-rotation via deck.gl LinearInterpolator transitions.
-      // Must run AFTER status='ready' — the guard inside _scheduleNextSegment
-      // would otherwise bail out on the first call.
-      this._scheduleNextSegment();
+      // Phase 7.3g: start rAF-driven rotation. Must run AFTER status='ready' —
+      // _startRAFRotation's tick guard checks status.
+      this._startRAFRotation();
 
       // Defer ENGINE.READY to next microtask. Guarantees any synchronous
       // subscribe() call that happens immediately after the constructor returns
@@ -201,24 +225,21 @@ export class GlobeBridge implements IEngineBridge {
   }
 
   suspend(): void {
-    // Phase 7.3c: hard-pause auto-rotation during crossfade. We set
-    // _userInteracting=true so any in-flight onTransitionEnd/Interrupt (or
-    // the idle timer) won't reschedule. We deliberately do NOT cancel the
-    // in-flight deck.gl transition — it runs to completion on deck's clock
-    // (bounded by ROTATION_SEGMENT_MS) and the guard inside
-    // _scheduleNextSegment prevents any follow-up chain.
+    // Phase 7.3g: hard-pause auto-rotation during crossfade. Stop the rAF
+    // loop and raise _userInteracting so _startRAFRotation's guard bails on
+    // any stray resume path.
     if (this._idleResumeTimer !== null) {
       clearTimeout(this._idleResumeTimer);
       this._idleResumeTimer = null;
     }
     this._userInteracting = true;
+    this._stopRAFRotation();
   }
 
   resume(): void {
-    // Phase 7.3c: release the hard-pause and schedule the next segment.
     if (this._status !== 'ready') return;
     this._userInteracting = false;
-    this._scheduleNextSegment();
+    this._startRAFRotation();
   }
 
   dispose(): void {
@@ -227,7 +248,7 @@ export class GlobeBridge implements IEngineBridge {
       this._idleResumeTimer = null;
     }
     this._userInteracting = true;
-    this._rotationScheduled = false;
+    this._stopRAFRotation();
     this._ro?.disconnect();
     this._deck?.finalize();
     this._deck = null;
@@ -394,53 +415,74 @@ export class GlobeBridge implements IEngineBridge {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — auto-rotation (Phase 7.3c, LinearInterpolator) + flyTo (stub)
+  // Private — auto-rotation (Phase 7.3g, rAF + writeback) + flyTo (stub)
   // ---------------------------------------------------------------------------
 
   /**
-   * Schedule the next rotation segment using deck.gl's native transition
-   * system. The LinearInterpolator(['longitude']) drives the view on deck's
-   * internal animation clock — NOT a custom rAF — so the built-in controller
-   * keeps ownership of user input. A mouse-wheel or drag during the transition
-   * fires onTransitionInterrupt, at which point the controller's proposal
-   * becomes the authoritative viewState and we wait IDLE_RESUME_MS before
-   * chaining the next segment.
+   * Start the rAF rotation loop. Each tick reads the latest _viewState
+   * (updated either by our own prior tick or by a user-gesture writeback from
+   * onViewStateChange), advances longitude by ROTATION_DEG_PER_SEC * dt, and
+   * calls deck.setProps({ viewState: {...base, longitude: newLng} }).
    *
-   * Single-flight guard: no-op if a segment is already in flight. Re-entry is
-   * safe — onTransitionEnd / onTransitionInterrupt always clear the flag.
+   * The _selfDriving flag tells onViewStateChange "this update is mine" so it
+   * skips the writeback branch. In controlled mode, onViewStateChange fires
+   * synchronously during setProps, so the flag is observable when the handler
+   * runs.
+   *
+   * Pause: when _userInteracting is true, the tick skips the setProps step
+   * but keeps requesting frames (cheap) so resumption is immediate once the
+   * idle timer clears _userInteracting.
    */
-  private _scheduleNextSegment(): void {
-    if (!this._deck || this._status !== 'ready') return;
-    if (this._userInteracting) return;
-    if (this._rotationScheduled) return;
+  private _startRAFRotation(): void {
+    if (this._rafHandle !== null) return;
+    this._lastTickMs = 0;
 
-    const base = this._viewState ?? INITIAL_VIEW;
-    this._rotationScheduled = true;
+    const tick = (ts: number) => {
+      this._rafHandle = requestAnimationFrame(tick);
 
-    this._deck.setProps({
-      viewState: {
-        ...base,
-        longitude: base.longitude + GlobeBridge.ROTATION_SEGMENT_DEG,
-        transitionDuration: GlobeBridge.ROTATION_SEGMENT_MS,
-        transitionInterpolator: new LinearInterpolator(['longitude']),
-        onTransitionEnd: () => {
-          this._rotationScheduled = false;
-          this._scheduleNextSegment();
-        },
-        onTransitionInterrupt: () => {
-          this._rotationScheduled = false;
-          this._userInteracting = true;
-          this._armIdleResume();
-        },
-      },
-    });
+      if (!this._deck || this._status !== 'ready') {
+        this._lastTickMs = ts;
+        return;
+      }
+      if (this._userInteracting) {
+        this._lastTickMs = ts;
+        return;
+      }
+
+      const dt = this._lastTickMs === 0 ? 0 : (ts - this._lastTickMs) / 1000;
+      this._lastTickMs = ts;
+
+      const base = this._viewState ?? INITIAL_VIEW;
+      const newLng = base.longitude + GlobeBridge.ROTATION_DEG_PER_SEC * dt;
+
+      this._selfDriving = true;
+      this._deck.setProps({
+        viewState: { ...base, longitude: newLng },
+      });
+      this._selfDriving = false;
+
+      // _selfDriving branch in onViewStateChange captured _viewState already,
+      // but keep a belt-and-braces update in case deck doesn't re-emit in
+      // some edge case (viewState unchanged from deck's perspective).
+      this._viewState = { ...base, longitude: newLng };
+    };
+
+    this._rafHandle = requestAnimationFrame(tick);
+  }
+
+  private _stopRAFRotation(): void {
+    if (this._rafHandle !== null) {
+      cancelAnimationFrame(this._rafHandle);
+      this._rafHandle = null;
+    }
+    this._lastTickMs = 0;
   }
 
   /**
-   * Arm / re-arm the idle-resume timer. Any user interaction (drag/pan/zoom
-   * or wheel-driven transition interrupt) resets the clock; after
-   * IDLE_RESUME_MS of quiescence, we clear _userInteracting and schedule the
-   * next rotation segment from the current viewState.
+   * Arm / re-arm the idle-resume timer. Called from onViewStateChange when a
+   * user gesture is detected. After IDLE_RESUME_MS of quiescence,
+   * _userInteracting clears and the rAF tick resumes advancing longitude
+   * from the current (user-modified) viewState.
    */
   private _armIdleResume(): void {
     if (this._idleResumeTimer !== null) {
@@ -449,7 +491,7 @@ export class GlobeBridge implements IEngineBridge {
     this._idleResumeTimer = setTimeout(() => {
       this._idleResumeTimer = null;
       this._userInteracting = false;
-      this._scheduleNextSegment();
+      this._lastTickMs = 0; // reset dt so first resumed frame doesn't jump
     }, GlobeBridge.IDLE_RESUME_MS);
   }
 
