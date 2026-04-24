@@ -47,6 +47,37 @@ Unverified hypotheses for future investigation:
 Next session: either fresh eyes with DeckGL GitHub issues search, or proceed 
 to Phase 4 and reassess if lag persists with real entities.
 
+## RESOLVED 2026-04-23 — auto-rotation restored via LinearInterpolator (Phase 7.3c)
+
+Root fix: abandoned the rAF + `setProps({viewState})` loop entirely. Auto-rotation
+now runs on deck.gl's native transition system using `LinearInterpolator(['longitude'])`
+with chained segment transitions. No per-frame writes, no controlled-viewState race.
+
+Mechanism (see `src/engine/GlobeBridge.ts`):
+- `_scheduleNextSegment()` sets `viewState` with `transitionDuration=20_000ms`,
+  `transitionInterpolator=new LinearInterpolator(['longitude'])`, `onTransitionEnd`
+  chaining the next segment, and `onTransitionInterrupt` pausing + arming the
+  idle-resume timer.
+- `onViewStateChange` captures the full viewState verbatim (no scalar reassembly)
+  and only flags `_userInteracting=true` when `interactionState` reports drag/pan/zoom.
+- `_armIdleResume()` schedules resumption 1.5s after the last user interaction.
+
+Why this resolves the 2026-04-17 zoom lag:
+- deck.gl transitions run on deck's internal animation clock, coordinated with
+  the controller. User input interrupts the transition cleanly — the controller's
+  proposal becomes the authoritative viewState.
+- No competing rAF loop writing `viewState` every 16ms.
+- Wheel events that don't set `interactionState.isZooming` still interrupt the
+  transition, so the flag-reliability gap is gone.
+
+Failed attempts (branch `phase7.3-auto-rotation`, now superseded):
+- `b67edd1` (Phase 7.3): rAF loop with `_isInteracting` flag — zoom broke.
+- `eccff9b` (Phase 7.3b): added 300ms debounce on viewState changes — worse.
+
+Both demonstrated that flag/debounce gating cannot resolve the race, because
+it's inherent to per-frame controlled-mode writes. The only fix is to not write
+viewState per-frame at all.
+
 ## RESOLVED 2026-04-17 21:40
 
 Root cause identified: `this._startRotation()` called in `init()` runs a rAF 

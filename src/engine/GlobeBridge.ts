@@ -2,7 +2,7 @@
 // Real DeckGL imperative bridge — replaces GlobeBridge stub in engineFactory.ts
 // Rule 5: new Deck({...}) only. No <DeckGL />, no reconciler, no R3F.
 
-import { Deck, _GlobeView as DeckGlobeView } from '@deck.gl/core';
+import { Deck, _GlobeView as DeckGlobeView, LinearInterpolator } from '@deck.gl/core';
 import { GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
 import type {
   EngineId,
@@ -56,22 +56,24 @@ export class GlobeBridge implements IEngineBridge {
 
   private _deck: Deck<any> | null = null;
   private _ro: ResizeObserver | null = null;
-  private _rafHandle: number | null = null;
 
-  private _longitude = INITIAL_VIEW.longitude;
-  private _latitude = INITIAL_VIEW.latitude;
-  private _zoom = INITIAL_VIEW.zoom;
+  // Phase 7.3c: auto-rotation via deck.gl's native LinearInterpolator transition
+  // system. We schedule one long segment (ROTATION_SEGMENT_DEG over
+  // ROTATION_SEGMENT_MS), chain via onTransitionEnd, and defer resumption to an
+  // idle window after user interruption via onTransitionInterrupt. This avoids
+  // per-frame setProps({viewState}) entirely — the earlier rAF approach
+  // (b67edd1/eccff9b) forced controlled-viewState mode and clobbered the
+  // controller's wheel/drag proposals. See ZOOM_LAG_KNOWN_ISSUE.md.
+  private _viewState: any = null; // full last-known viewState — never reassembled from scalars
+  private _rotationScheduled = false;
+  private _idleResumeTimer: ReturnType<typeof setTimeout> | null = null;
+  private _userInteracting = false;
 
-  // Phase 7.3: auto-rotation with non-competing pause during user interaction.
-  // Pause mechanism: isDragging/isZooming/isPanning flags from interactionState
-  // (covers drag + touch-pinch) PLUS a debounced timer re-triggered by every
-  // viewState change (covers mouse-wheel zoom, which does not reliably set
-  // isZooming in deck.gl). Either path flips _isInteracting true; timer releases
-  // after INTERACTION_RELEASE_MS of no further viewState activity.
-  private _isInteracting = false;
-  private _interactionReleaseTimer: ReturnType<typeof setTimeout> | null = null;
-  private readonly _rotationDegPerSec = 3; // ~2min for a full revolution
-  private static readonly INTERACTION_RELEASE_MS = 300;
+  private static readonly ROTATION_DEG_PER_SEC = 3;
+  private static readonly ROTATION_SEGMENT_DEG = 60;
+  // SEGMENT_MS = SEGMENT_DEG / DEG_PER_SEC * 1000
+  private static readonly ROTATION_SEGMENT_MS = 20_000;
+  private static readonly IDLE_RESUME_MS = 1500;
 
   private _focusedId: string | null = null;
   // Phase 7: hover state tracked by onHover, consumed by _buildLayers for visual feedback.
@@ -105,41 +107,31 @@ export class GlobeBridge implements IEngineBridge {
         width: resolvedW,
         height: resolvedH,
         views: new DeckGlobeView({ id: 'globe' }),
-        initialViewState: {
-          longitude: this._longitude,
-          latitude: this._latitude,
-          zoom: this._zoom,
-          minZoom: 0,
-          maxZoom: 5,
-        },
+        initialViewState: { ...INITIAL_VIEW },
         controller: true,
         layers: this._buildLayers(),
 
         // TODO Phase 4: replace `any` with typed imports from @deck.gl/core
         onViewStateChange: ({ viewState, interactionState }: any) => {
-          this._longitude = viewState.longitude ?? this._longitude;
-          this._latitude = viewState.latitude ?? this._latitude;
-          this._zoom = viewState.zoom ?? this._zoom;
-          // Phase 7.3: pause auto-rotation via EITHER
-          //   (a) interactionState flags (reliable for drag + touch-pinch)
-          //   (b) debounced timer bumped on every viewState change (catches
-          //       mouse-wheel zoom, which does NOT set isZooming consistently
-          //       in deck.gl — this was the missed case in the first attempt).
-          // Timer clears after INTERACTION_RELEASE_MS of no new changes.
-          const flagActive = !!(
+          // Phase 7.3c: capture the FULL viewState verbatim. Never reassemble
+          // from scalar fields — deck.gl treats missing fields as defaults and
+          // would snap bearing/pitch/etc every tick. This value is spread into
+          // the next rotation segment in _scheduleNextSegment().
+          this._viewState = viewState;
+
+          // User-driven changes (drag/pan/touch-pinch) arm the idle-resume
+          // timer. Mouse-wheel zoom does NOT reliably set isZooming in deck.gl
+          // 9, but it still interrupts the active rotation transition via
+          // onTransitionInterrupt — which also arms the idle timer. So either
+          // path converges on the same resume behavior.
+          const userDriven = !!(
             interactionState?.isDragging ||
-            interactionState?.isZooming  ||
-            interactionState?.isPanning
+            interactionState?.isPanning  ||
+            interactionState?.isZooming
           );
-          this._isInteracting = true;
-          if (this._interactionReleaseTimer !== null) {
-            clearTimeout(this._interactionReleaseTimer);
-          }
-          if (!flagActive) {
-            this._interactionReleaseTimer = setTimeout(() => {
-              this._isInteracting = false;
-              this._interactionReleaseTimer = null;
-            }, GlobeBridge.INTERACTION_RELEASE_MS);
+          if (userDriven) {
+            this._userInteracting = true;
+            this._armIdleResume();
           }
         },
 
@@ -172,11 +164,12 @@ export class GlobeBridge implements IEngineBridge {
       });
       this._ro.observe(input.container);
 
-      // Phase 7.3: auto-rotation restored with non-competing pause logic.
-      // See _isInteracting flag (onViewStateChange) + _startRotation().
-      this._startRotation();
-
       this._status = 'ready';
+
+      // Phase 7.3c: auto-rotation via deck.gl LinearInterpolator transitions.
+      // Must run AFTER status='ready' — the guard inside _scheduleNextSegment
+      // would otherwise bail out on the first call.
+      this._scheduleNextSegment();
 
       // Defer ENGINE.READY to next microtask. Guarantees any synchronous
       // subscribe() call that happens immediately after the constructor returns
@@ -208,20 +201,33 @@ export class GlobeBridge implements IEngineBridge {
   }
 
   suspend(): void {
-    // Phase 7.3: stop auto-rotation during crossfade. engineManager sends
-    // CMD.SUSPEND to previousBridge so its rAF loop doesn't waste frames.
-    this._stopRotation();
+    // Phase 7.3c: hard-pause auto-rotation during crossfade. We set
+    // _userInteracting=true so any in-flight onTransitionEnd/Interrupt (or
+    // the idle timer) won't reschedule. We deliberately do NOT cancel the
+    // in-flight deck.gl transition — it runs to completion on deck's clock
+    // (bounded by ROTATION_SEGMENT_MS) and the guard inside
+    // _scheduleNextSegment prevents any follow-up chain.
+    if (this._idleResumeTimer !== null) {
+      clearTimeout(this._idleResumeTimer);
+      this._idleResumeTimer = null;
+    }
+    this._userInteracting = true;
   }
 
   resume(): void {
-    // Phase 7.3: restart auto-rotation on crossfade rollback.
-    if (this._status === 'ready' && this._rafHandle === null) {
-      this._startRotation();
-    }
+    // Phase 7.3c: release the hard-pause and schedule the next segment.
+    if (this._status !== 'ready') return;
+    this._userInteracting = false;
+    this._scheduleNextSegment();
   }
 
   dispose(): void {
-    this._stopRotation();
+    if (this._idleResumeTimer !== null) {
+      clearTimeout(this._idleResumeTimer);
+      this._idleResumeTimer = null;
+    }
+    this._userInteracting = true;
+    this._rotationScheduled = false;
     this._ro?.disconnect();
     this._deck?.finalize();
     this._deck = null;
@@ -388,60 +394,63 @@ export class GlobeBridge implements IEngineBridge {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — auto-rotation (Phase 7.3) + flyTo (stub)
+  // Private — auto-rotation (Phase 7.3c, LinearInterpolator) + flyTo (stub)
   // ---------------------------------------------------------------------------
 
   /**
-   * Start the auto-rotation rAF loop. Advances _longitude by _rotationDegPerSec
-   * per second (scaled by delta-time between frames so fps fluctuation doesn't
-   * accelerate/decelerate the spin). Paused when _isInteracting is true — the
-   * key change vs the 5009c61 removal, which looped unconditionally and caused
-   * zoom lag by racing user-initiated viewState updates.
+   * Schedule the next rotation segment using deck.gl's native transition
+   * system. The LinearInterpolator(['longitude']) drives the view on deck's
+   * internal animation clock — NOT a custom rAF — so the built-in controller
+   * keeps ownership of user input. A mouse-wheel or drag during the transition
+   * fires onTransitionInterrupt, at which point the controller's proposal
+   * becomes the authoritative viewState and we wait IDLE_RESUME_MS before
+   * chaining the next segment.
    *
-   * Safe to call multiple times: noop if _rafHandle already set.
+   * Single-flight guard: no-op if a segment is already in flight. Re-entry is
+   * safe — onTransitionEnd / onTransitionInterrupt always clear the flag.
    */
-  private _startRotation(): void {
-    if (this._rafHandle !== null) return;
-    let lastMs = performance.now();
-    const tick = (nowMs: number) => {
-      const dtSec = (nowMs - lastMs) / 1000;
-      lastMs = nowMs;
-      if (!this._isInteracting && this._deck && this._status === 'ready') {
-        this._longitude = this._normalizeLongitude(
-          this._longitude + this._rotationDegPerSec * dtSec,
-        );
-        this._deck.setProps({
-          viewState: {
-            longitude: this._longitude,
-            latitude:  this._latitude,
-            zoom:      this._zoom,
-            minZoom:   0,
-            maxZoom:   5,
-          },
-        });
-      }
-      this._rafHandle = requestAnimationFrame(tick);
-    };
-    this._rafHandle = requestAnimationFrame(tick);
+  private _scheduleNextSegment(): void {
+    if (!this._deck || this._status !== 'ready') return;
+    if (this._userInteracting) return;
+    if (this._rotationScheduled) return;
+
+    const base = this._viewState ?? INITIAL_VIEW;
+    this._rotationScheduled = true;
+
+    this._deck.setProps({
+      viewState: {
+        ...base,
+        longitude: base.longitude + GlobeBridge.ROTATION_SEGMENT_DEG,
+        transitionDuration: GlobeBridge.ROTATION_SEGMENT_MS,
+        transitionInterpolator: new LinearInterpolator(['longitude']),
+        onTransitionEnd: () => {
+          this._rotationScheduled = false;
+          this._scheduleNextSegment();
+        },
+        onTransitionInterrupt: () => {
+          this._rotationScheduled = false;
+          this._userInteracting = true;
+          this._armIdleResume();
+        },
+      },
+    });
   }
 
-  /** Cancel the auto-rotation rAF loop. Called from suspend() + dispose(). */
-  private _stopRotation(): void {
-    if (this._rafHandle !== null) {
-      cancelAnimationFrame(this._rafHandle);
-      this._rafHandle = null;
+  /**
+   * Arm / re-arm the idle-resume timer. Any user interaction (drag/pan/zoom
+   * or wheel-driven transition interrupt) resets the clock; after
+   * IDLE_RESUME_MS of quiescence, we clear _userInteracting and schedule the
+   * next rotation segment from the current viewState.
+   */
+  private _armIdleResume(): void {
+    if (this._idleResumeTimer !== null) {
+      clearTimeout(this._idleResumeTimer);
     }
-    if (this._interactionReleaseTimer !== null) {
-      clearTimeout(this._interactionReleaseTimer);
-      this._interactionReleaseTimer = null;
-    }
-    this._isInteracting = false;
-  }
-
-  /** Keep longitude in [-180, 180] to avoid unbounded growth across long sessions. */
-  private _normalizeLongitude(lng: number): number {
-    const wrapped = ((lng + 180) % 360 + 360) % 360 - 180;
-    return wrapped;
+    this._idleResumeTimer = setTimeout(() => {
+      this._idleResumeTimer = null;
+      this._userInteracting = false;
+      this._scheduleNextSegment();
+    }, GlobeBridge.IDLE_RESUME_MS);
   }
 
   private _flyTo(_target: { nodeId: string }): void {
