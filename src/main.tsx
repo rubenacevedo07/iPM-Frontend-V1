@@ -5,6 +5,7 @@ import { RouterProvider } from '@tanstack/react-router'
 import { router } from '@/routes/router'
 import './index.css'
 import '@/styles/shared/fonts.scss'
+import './app/styles/global.scss'
 
 createRoot(document.getElementById('root')!).render(
   <RouterProvider router={router} />

@@ -3,7 +3,7 @@ import { useSearch }  from '@tanstack/react-router'
 import { AppActor }   from './app.machine'
 import { EngineSlot } from '@/components/EngineSlot/EngineSlot'
 import type { EngineSlotRefs } from '@/components/EngineSlot/EngineSlot'
-import { OverlayPanel } from '@/components/OverlayPanel/OverlayPanel'
+import { CompanyOverlayHost } from './CompanyOverlayHost'
 import { useCompanies } from '@/hooks/useCompanies'
 
 function RouterSync() {
@@ -53,7 +53,7 @@ export function AppShell() {
 
     const top50 = sorted.slice(0, 50).map(c => ({
       id:           c.id,
-      nodeId:       `company-${c.id}`,
+      nodeId:       `company:${c.id}`,
       type:         'COMPANY' as const,
       slug:         c.name.toLowerCase().replace(/\s+/g, '-'),
       name:         c.name,
@@ -70,7 +70,7 @@ export function AppShell() {
     <div style={{ width: '100vw', height: '100vh', background: '#090b10', position: 'relative' }}>
       <RouterSync />
       <EngineSlot actorRef={engineRef} onRefsReady={handleRefsReady} />
-      <OverlayPanel />
+      <CompanyOverlayHost />
     </div>
   )
 }
