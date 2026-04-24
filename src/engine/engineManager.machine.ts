@@ -112,7 +112,12 @@ export const engineManagerMachine = setup({
   },
   states: {
     idle: {
-      on: { 'ENGINE.REQUEST': { target: 'initializing', actions: ['createBridgeAndSubscribe'] } },
+      on: {
+        'ENGINE.REQUEST':  { target: 'initializing', actions: ['createBridgeAndSubscribe'] },
+        // Phase 9: tab close / full navigation — parent may send DISPOSE from any
+        // state; in idle, bridge is already null — dispose is a cheap no-op.
+        'ENGINE.DISPOSE':  { target: 'idle', actions: ['disposeBridge', 'clearBridge'] },
+      },
     },
     initializing: {
       on: {
@@ -120,6 +125,8 @@ export const engineManagerMachine = setup({
           { guard: 'isBridgeReady', target: 'active' },
           { guard: 'isBridgeError', target: 'failed', actions: ['assignError', 'escalateError'] },
         ],
+        // User closed the tab while init() in flight — release WebGL + subscription.
+        'ENGINE.DISPOSE': { target: 'idle', actions: ['disposeBridge', 'clearBridge'] },
       },
     },
     active: {
@@ -168,7 +175,10 @@ export const engineManagerMachine = setup({
       },
     },
     failed: {
-      on: { 'ENGINE.REQUEST': { target: 'initializing', actions: ['clearBridge', 'createBridgeAndSubscribe'] } },
+      on: {
+        'ENGINE.REQUEST':  { target: 'initializing', actions: ['clearBridge', 'createBridgeAndSubscribe'] },
+        'ENGINE.DISPOSE':  { target: 'idle', actions: ['disposeBridge', 'clearBridge'] },
+      },
     },
   },
 });

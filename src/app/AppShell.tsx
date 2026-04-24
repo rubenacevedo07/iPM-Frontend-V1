@@ -35,6 +35,24 @@ export function AppShell() {
 
   const { companies, loading: companiesLoading } = useCompanies()
 
+  // Phase 9 (GATE C): release deck.gl / WebGL when the user leaves the page (tab
+  // close, external nav). Only window unload hooks — not React unmount (StrictMode
+  // in dev would otherwise dispose the engine on the synthetic double-mount).
+  const unloadDisposeSentRef = useRef(false)
+  useEffect(() => {
+    const onPageLeave = () => {
+      if (unloadDisposeSentRef.current) return
+      unloadDisposeSentRef.current = true
+      engineRef.send({ type: 'ENGINE.DISPOSE' })
+    }
+    window.addEventListener('pagehide', onPageLeave)
+    window.addEventListener('beforeunload', onPageLeave)
+    return () => {
+      window.removeEventListener('pagehide', onPageLeave)
+      window.removeEventListener('beforeunload', onPageLeave)
+    }
+  }, [engineRef])
+
   // Phase 4.1: push top-50 companies by marketCap to the globe once loaded.
   // Rows are shaped as EntityRef + coords so that GlobeBridge.onClick produces
   // an ENGINE.ENTITY_CLICK whose entity satisfies app.machine's
