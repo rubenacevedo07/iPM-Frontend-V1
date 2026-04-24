@@ -93,7 +93,7 @@ export interface CommodityChokepoint {
 
 **Current status:** **PENDING — heap protocol still manual** (aligns with Phase 6 entry (c) strategy — consolidate measurement across phases).
 
-**Code-side (Phase 9, `master` ≥ unload commit):** `AppShell` sends `ENGINE.DISPOSE` on `pagehide` / `beforeunload` once; `engineManager` disposes from `initializing` / `failed` / `idle` / `active` so the deck and WebGL release on full navigation or tab close. This does **not** replace the 20× DevTools measurement — run the protocol in `docs/PHASE_9.md` to close (f) and GATE C.
+**Code-side (Phase 9, `master` ≥ unload commit):** `AppShell` sends `ENGINE.DISPOSE` on `pagehide` / `beforeunload` once; `engineManager` disposes from `initializing` / `failed` / `idle` / `active` so the deck and WebGL release on full navigation or tab close. This does **not** replace the 20× DevTools measurement — run the protocol in `docs/PHASE_9.md` to close (f) and GATE C (scheduled with Phase 10 kickoff; see `PHASE_9.md` “Checkpoint deferral”).
 
 **Phase 7-specific leak suspects if delta fails:**
 - `_hoveredId` state updates trigger `_redraw()` on every distinct hover — high-frequency. Check if deck.gl `setProps({ layers })` leaks between frames.

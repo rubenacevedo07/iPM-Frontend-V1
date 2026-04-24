@@ -3,6 +3,10 @@
 **Sprint ref:** `docs/skills/ipm-frontend-v1-sprint.md` (Phase 9 row, GATE C).  
 **Related debt:** `PHASE_7_DEBT.md` §(f) (20× heap — manual protocol).
 
+### Checkpoint deferral (manual work)
+
+**GATE C** and the **DevTools 20× heap + FPS** steps below are **not** required to finish the current coding round. They are **explicitly scheduled for the next etapa** (Phase 10 kickoff: integration / buffer, see `.cursor/plans/phase-10-kickoff.md`). Code-side Phase 9 (unload `ENGINE.DISPOSE`, static listener audit) is **closed**; opening **GATE C** in the sprint tracker waits on that future manual session.
+
 ---
 
 ## Code landed (teardown on leave)
@@ -30,7 +34,7 @@ No extra production fixes required from this pass; re-run if large new `addEvent
 
 ---
 
-## Manual — close **GATE C** and `PHASE_7_DEBT` (f)
+## Manual — close **GATE C** and `PHASE_7_DEBT` (f) *(deferred; run at Phase 10 kickoff)*
 
 1. **Heap (20× cycle)**  
    - Chrome DevTools → Memory → take snapshot → baseline.  

@@ -320,7 +320,7 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 ## PROGRESS TRACKER (LIVE STATE)
 
 **Last updated:** 2026-04-25
-**Current phase:** Phase 9 in progress — **GATE C** open until manual 20× heap + FPS (see `docs/PHASE_9.md`) — deferred: Phase 7.1 (persons on globe, backend), 7.2 (country risk fills), 7b (MapView)
+**Current phase:** **Phase 10 (next):** open with manual **GATE C** (DevTools) then integration / buffer (see `.cursor/plans/phase-10-kickoff.md`). Phase 9 *code* (unload, audit) is done; `GATE C` in the table stays open until that manual run. **Deferred** product: Phase 7.1, 7.2, 7b.
 **Phases complete:** 9+ / 11 (through Phase 8 + prior phase tags on `master` / `phase8-arclayer`; numeric “complete” is approximate)
 **Hours consumed:** _tracked per session in notes below_
 **Gates passed:** A [x] B [x] C [ ]
@@ -328,7 +328,7 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 | Tag / milestone | Note |
 |-----------------|------|
 | `v1-phase-8` | ArcLayer (static) + `NETWORK_RESOLVED` + `CMD.SET_ARCS` — supplier/client network on globe when company overlay open. See `PHASE_8_DEBT.md` for follow-ups. |
-| (no tag yet) | Phase 9: page-unload `ENGINE.DISPOSE` on `master` + `docs/PHASE_9.md` checklist. |
+| (no tag) | Phase 9 code: page-unload `ENGINE.DISPOSE` on `master` + `PHASE_9.md` + static audit. Manual heap/FPS (GATE C) → Phase 10 kickoff. |
 
 ### Phase log
 - [x] Phase 0 — Pre-flight + env + operational docs — ~1h / 2h 30min
@@ -341,8 +341,8 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - [x] Phase 6 — Person overlay — **GATE B** passed
 - [x] Phase 7 — Globe layers (30 company dots + rotation) — `v1-phase-7.3g`
 - [x] Phase 8 — ArcLayer (static network edges) — `v1-phase-8`
-- [ ] Phase 9 — Polish + leak audit — __h / 3h → **GATE C**
-- [ ] Phase 10 — Integration + buffer — __h / 4h
+- [x] Phase 9 — Polish + leak audit (code) — __h / 3h → **GATE C** manual deferred to Phase 10 kickoff (`PHASE_9.md`)
+- [ ] Phase 10 — Integration + buffer — __h / 4h *(starts with `phase-10-kickoff` checklist)*
 
 ### Session notes
 
@@ -380,6 +380,11 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - Done: `AppShell` pagehide/beforeunload → `ENGINE.DISPOSE`; `engineManager` DISPOSE from `idle` / `initializing` / `failed`. Static listener/timer audit (see `PHASE_9.md`). `PHASE_7_DEBT` (f) cross-ref + 5-layer note in implementation notes.
 - Broke: —
 - Next: Run manual **GATE C** (20× heap, 60 fps with arcs) and tick Gate C in this doc when clean; optional `v1-phase-9` tag after Gate C.
+
+### Session 2026-04-25 — Deferral + Phase 10 handoff
+- Done: **Checkpoint deferral** written in `PHASE_9.md` (manual GATE C / heap is **not** blocking); `PHASE_7_DEBT` (f) points to that note. Sprint tracker: Phase 9 code log marked done; **GATE C** table column stays `[ ]` until manual run. **`.cursor/plans/phase-10-kickoff.md`** = first task order for the next etapa.
+- Broke: —
+- Next: **Phase 10** — open with DevTools session from `phase-10-kickoff`, then buffer / bugfix / demo polish per sprint table.
 
 ---
 
