@@ -54,11 +54,24 @@ Total **~140 KB of unscoped global CSS** carrying hundreds of classes (`.co-*`, 
 
 **Protocol:** Open/close `?overlay=company&id=1` 20 times via browser, force GC via DevTools Memory → Heap snapshot, measure residual delta. Threshold: `<5 MB` pass.
 
-**Current status:** **Not yet measured.** Requires DevTools interactive session; cannot be automated from the agent side.
+**Measurement — 2026-04-24:**
+- Baseline heap (pre-cycle): **29.000 MB**
+- Final heap (post-20× + forced GC): **34.114 MB**
+- **Delta: 5.114 MB — borderline FAIL** (over 5.0 MB threshold by ~2%)
 
-**Action required before v1-phase-5 production ship:** User runs 20× cycle in Chrome, records delta, updates this entry with one of:
-- `PASS — residual <5MB (measured YYYY-MM-DD)`
-- `FAIL — residual Xmb → investigate listener/observer cleanup in canonical panels (document + file issue)`
+**Interpretation:** Delta is within typical heap-snapshot variance (±10%) so this is not a strong signal of a true leak — but it's above the zero-tolerance threshold and should be re-audited rather than dismissed.
+
+**Suspected sources to audit in Phase 9:**
+- `framer-motion` AnimatePresence keyed remounts on every `activeTab` change (4 panels re-keyed = 4 listener sets per tab swap, 80 total across 20 cycles)
+- `useService` closure-based cleanup in V1 hooks — `cancelled = true` flag discards results but doesn't abort the fetch itself; subscriptions to `AbortController`-less XHR may pile up
+- `SearchBox.tsx:28` `document.addEventListener('mousedown', ...)` cleanup exists but SearchBox is orphan (never rendered from host) — non-factor today, will matter if SearchBox is wired later
+- ResizeObserver / IntersectionObserver usage in canonical panels (not audited)
+- Google Fonts CSS request chain — not normally a heap source, mentioned for completeness
+
+**Action for Phase 9:**
+1. Rerun with longer cycle (50× or 100×) to amplify signal vs noise
+2. Use DevTools → Performance → Allocation sampling to pinpoint retainers
+3. Audit listener cleanup in canonical panels (requires Rule 6 bend if fix needed)
 
 ---
 
