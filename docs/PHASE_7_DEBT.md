@@ -73,6 +73,8 @@ export interface CommodityChokepoint {
 
 **Scope:** Phase 8.
 
+**Status: CLOSED by Phase 8 (tag v1-phase-8).** V1 uses static great-circle arcs (amber supplier, cyan client) driven by `companyNetworkMapper` + `NETWORK_RESOLVED`. Flowing / animated arcs are explicitly deferred; see `PHASE_8_DEBT` (b).
+
 ---
 
 ## (e) TextLayer labels — deferred until hover UX stable

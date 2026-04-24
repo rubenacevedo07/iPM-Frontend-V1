@@ -319,23 +319,27 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 
 ## PROGRESS TRACKER (LIVE STATE)
 
-**Last updated:** 2026-04-17
-**Current phase:** Phase 2b
-**Phases complete:** 3 / 11
-**Hours consumed:** ~6h / 40h 30min
-**Gates passed:** A [ ] B [ ] C [ ]
+**Last updated:** 2026-04-25
+**Current phase:** Phase 9 planning (next: polish + memory sweep) — deferred: Phase 7.1 (persons on globe, backend), 7.2 (country risk fills), 7b (MapView)
+**Phases complete:** 9+ / 11 (through Phase 8 + prior phase tags on `master` / `phase8-arclayer`; numeric “complete” is approximate)
+**Hours consumed:** _tracked per session in notes below_
+**Gates passed:** A [x] B [x] C [ ]
+
+| Tag / milestone | Note |
+|-----------------|------|
+| `v1-phase-8` | ArcLayer (static) + `NETWORK_RESOLVED` + `CMD.SET_ARCS` — supplier/client network on globe when company overlay open. See `PHASE_8_DEBT.md` for follow-ups. |
 
 ### Phase log
 - [x] Phase 0 — Pre-flight + env + operational docs — ~1h / 2h 30min
 - [x] Phase 1 — Capability matrix + foundation copy — ~2h / 5h
 - [x] Phase 2a — AppShell + app.machine — ~3h / 4h
-- [ ] Phase 2b — EngineManager contracts — __h / 4h
-- [ ] Phase 3 — GlobeEngine + Video intro — __h / 4h → **GATE A**
-- [ ] Phase 4 — AppHeader + SearchOverlay — __h / 3h
-- [ ] Phase 5 — Company overlay — __h / 4h
-- [ ] Phase 6 — Person overlay — __h / 4h → **GATE B**
-- [ ] Phase 7 — Globe layers — __h / 4h
-- [ ] Phase 8 — ArcLayer — __h / 3h
+- [x] Phase 2b — EngineManager contracts — (done; see repo history)
+- [x] Phase 3 — GlobeEngine + Video intro — **GATE A** passed
+- [x] Phase 4 — AppHeader + SearchOverlay
+- [x] Phase 5 — Company overlay
+- [x] Phase 6 — Person overlay — **GATE B** passed
+- [x] Phase 7 — Globe layers (30 company dots + rotation) — `v1-phase-7.3g`
+- [x] Phase 8 — ArcLayer (static network edges) — `v1-phase-8`
 - [ ] Phase 9 — Polish + leak audit — __h / 3h → **GATE C**
 - [ ] Phase 10 — Integration + buffer — __h / 4h
 
@@ -365,6 +369,11 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - Broke: nada crítico. index.ts de services necesitó fix de barrel export (authService), v3 había perdido el re-export.
 - Next: Phase 2b (EngineManager + contracts + GlobeBridge + EngineSlot) — 4h estimadas
 - Hours: ~9h acumuladas de ~40h totales (22%)
+
+### Session 2026-04-25 — Phase 8 (ArcLayer)
+- Done: Engine contracts `EngineArc` / `CMD.SET_ARCS`; `companyNetworkMapper`; `GlobeBridge` `ArcLayer` + `_arcsRevision`; `app.machine` `NETWORK_RESOLVED` + `companyArcs` + URL/enqueue clear; `engineManager` forward; `CompanyOverlayHost` dispatch; `_useService` clears data on dep change. Docs: `PHASE_8_DEBT.md`, `deck-gl-9-reference` §7 ArcLayer, closed items in `PHASE_5_DEBT` (f) + `PHASE_7_DEBT` (d). Tag `v1-phase-8`.
+- Broke: (fill on manual Stage 6 matrix if any)
+- Next: Phase 9 (memory/GC) or deferred Phase 7.1/7.2 per product priority.
 
 ---
 

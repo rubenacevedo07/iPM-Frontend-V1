@@ -98,6 +98,8 @@ Total **~140 KB of unscoped global CSS** carrying hundreds of classes (`.co-*`, 
 
 **Intentionally deferred.** Closing Phase 5 with overlay HTML parity only.
 
+**Status: CLOSED by Phase 8 (tag v1-phase-8).** ArcLayer supplier/client network is rendered on the globe when the company overlay is open. Coverage caveats are tracked in `PHASE_8_DEBT` (a), (c), (d). Entity “highlight” on the globe beyond arcs was not in Phase 8 scope; dots remain the Phase 7 scatter set.
+
 ---
 
 ## (g) Sass @import deprecation warning — inherited from canonical
