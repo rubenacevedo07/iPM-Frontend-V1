@@ -53,3 +53,28 @@ export interface EngineEntityData {
     isChokepoint?: boolean;
   }>;
 }
+
+/**
+ * Phase 8: network edge (arc) for the globe.
+ *
+ * Pure engine input — no DTO fields, no API shape. `source` and `target` are
+ * [longitude, latitude] pairs consumed directly by deck.gl's ArcLayer.
+ * `intensity` is a pre-clamped scalar (0.3..1.0 at the mapper) that the bridge
+ * maps to stroke width and alpha in the layer accessors.
+ *
+ * `arcId` format convention: `${sourceNodeId}->${targetNodeId}` for stability
+ * across re-fetches of the same focal company's network.
+ */
+export interface EngineArc {
+  arcId:        string;
+  sourceNodeId: string;
+  targetNodeId: string;
+  source:       [number, number];
+  target:       [number, number];
+  kind:         'supplier' | 'client';
+  intensity:    number;
+}
+
+export interface EngineArcData {
+  arcs: EngineArc[];
+}
