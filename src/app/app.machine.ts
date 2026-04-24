@@ -102,6 +102,15 @@ const appMachine = setup({
                 sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
               ],
             },
+            // Phase 6: v3 canonical PersonOverlay dispatches ENTITY.CLOSE on close.
+            // Handled as alias for CLOSE_OVERLAY so canonical stays untouched (Rule 6).
+            'ENTITY.CLOSE': {
+              target: 'closed',
+              actions: [
+                assign({ overlayId: null, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
+              ],
+            },
             OPEN_COMPANY: {
               target: 'company',
               actions: [
@@ -132,6 +141,15 @@ const appMachine = setup({
                 sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
               ],
             },
+            // Phase 6: v3 canonical PersonOverlay dispatches ENTITY.CLOSE on close.
+            // Handled as alias for CLOSE_OVERLAY so canonical stays untouched (Rule 6).
+            'ENTITY.CLOSE': {
+              target: 'closed',
+              actions: [
+                assign({ overlayId: null, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
+              ],
+            },
             OPEN_PERSON: {
               target: 'person',
               actions: [
@@ -156,6 +174,15 @@ const appMachine = setup({
         vs: {
           on: {
             CLOSE_OVERLAY: {
+              target: 'closed',
+              actions: [
+                assign({ overlayId: null, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, { type: 'NAVIGATE', search: {} }),
+              ],
+            },
+            // Phase 6: v3 canonical PersonOverlay dispatches ENTITY.CLOSE on close.
+            // Handled as alias for CLOSE_OVERLAY so canonical stays untouched (Rule 6).
+            'ENTITY.CLOSE': {
               target: 'closed',
               actions: [
                 assign({ overlayId: null, overlayIdB: null }),

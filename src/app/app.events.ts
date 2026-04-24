@@ -16,6 +16,9 @@ export type AppEvent =
   | { type: 'OPEN_COMPANY'; id: number }
   | { type: 'OPEN_VS';      a: number; b: number }
   | { type: 'CLOSE_OVERLAY' }
+  // Phase 6: v3 canonical PersonOverlay dispatches ENTITY.CLOSE to appRef.
+  // Kept as alias for CLOSE_OVERLAY so canonical remains untouched (Rule 6).
+  | { type: 'ENTITY.CLOSE' }
   | { type: 'SEARCH_OPEN' }
   | { type: 'SEARCH_CLOSE' }
   | { type: 'SEARCH_QUERY'; q: string }

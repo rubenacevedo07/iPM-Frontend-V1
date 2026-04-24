@@ -4,6 +4,7 @@ import { AppActor }   from './app.machine'
 import { EngineSlot } from '@/components/EngineSlot/EngineSlot'
 import type { EngineSlotRefs } from '@/components/EngineSlot/EngineSlot'
 import { CompanyOverlayHost } from './CompanyOverlayHost'
+import { PersonOverlayHost } from './PersonOverlayHost'
 import { useCompanies } from '@/hooks/useCompanies'
 
 function RouterSync() {
@@ -71,6 +72,7 @@ export function AppShell() {
       <RouterSync />
       <EngineSlot actorRef={engineRef} onRefsReady={handleRefsReady} />
       <CompanyOverlayHost />
+      <PersonOverlayHost />
     </div>
   )
 }
