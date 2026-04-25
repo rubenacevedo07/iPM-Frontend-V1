@@ -2,7 +2,7 @@ import { setup, type ActorRefFrom } from 'xstate'
 import { entityInspectorMachine } from '@/machines/entity-inspector.machine'
 import { graphInteractionMachine } from '@/machines/graph-interaction.machine'
 import { tabsMachine } from '@/machines/tabs.machine'
-import type { EntityRef, GraphNode, TransitionScene } from '@/domain/types'
+import type { EntityRef } from '@/domain/types'
 
 type PersonOverlayContext = {
   entity: EntityRef
@@ -17,7 +17,7 @@ export const personOverlayMachine = setup({
     input: {} as { entity: EntityRef },
     events: {} as
       | { type: 'CLOSE' }
-      | { type: 'RELATION.OPEN'; target: GraphNode; scene?: TransitionScene }
+      | { type: 'RELATION.OPEN'; target: EntityRef }
       | { type: 'RELATION.CLOSE' },
   },
   actors: {
@@ -55,7 +55,6 @@ export const personOverlayMachine = setup({
             context.inspectorRef?.send({
               type: 'RELATION.OPEN',
               target: event.target,
-              scene: event.scene,
             })
           },
         },

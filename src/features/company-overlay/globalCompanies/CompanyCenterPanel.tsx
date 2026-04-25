@@ -134,7 +134,7 @@ function GlobeNav() {
   );
 }
 
-function SupplyChainView({ company, providers, products }: { company: Company; providers: any[]; products: any[] }) {
+function SupplyChainView({ company: _company, providers, products }: { company: Company; providers: any[]; products: any[] }) {
   const tiers = [
     { label: 'OWNS / CONTROLS', nodes: products.slice(0, 4).map(p => ({ name: p.productName ?? p.name, detail: p.sku ?? '', color: '#a855f7' })) },
     { label: 'SUPPLIED BY', nodes: providers.slice(0, 4).map(p => ({ name: p.provider?.name ?? 'Provider', detail: `EdgeStrength ${p.edgeStrength ?? '—'}`, color: '#378ADD' })) },

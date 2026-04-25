@@ -8,7 +8,7 @@ import { PersonSoloView } from './PersonSoloView'
 import { StudioRelationView } from './StudioRelationView'
 import { getScene } from './sceneMap'
 import { elonMuskFallback, fallbackNeighbors } from './personFallbackData'
-import type { EntityRef, EntityType, GraphNode } from '@/domain/types'
+import type { EntityRef, EntityType } from '@/domain/types'
 
 interface PersonOverlayProps {
   entity: EntityRef
@@ -35,11 +35,6 @@ function nodeIdToEntityRef(nodeId: string, name: string): EntityRef {
   }
 }
 
-// Convert GraphNode (stored in inspector context) to EntityRef
-function graphNodeToEntityRef(node: GraphNode): EntityRef {
-  return nodeIdToEntityRef(node.id, node.name)
-}
-
 export function PersonOverlay({ entity }: PersonOverlayProps) {
   const appRef = AppActor.useActorRef()
   const [state, send] = useMachine(personOverlayMachine, {
@@ -54,6 +49,7 @@ export function PersonOverlay({ entity }: PersonOverlayProps) {
 
   // Inspector context for relation target
   const relationTarget = useSelector(inspectorRef!, s => s?.context.relationTarget ?? null)
+  const inspCtx          = useSelector(inspectorRef!, s => s?.context)
 
   // ── Data: primary entity ──────────────────────────
   const { data: person, isLoading: personLoading } = useQuery({
@@ -78,15 +74,7 @@ export function PersonOverlay({ entity }: PersonOverlayProps) {
 
   // Called from PersonSoloView when user clicks "Open Studio Relation" on a node
   const handleOpenRelation = (targetNodeId: string, targetName: string) => {
-    const targetNode: GraphNode = {
-      id: targetNodeId,
-      label: targetName,
-      name: targetName,
-      type: 'person',   // best-effort; corrected from nodeId prefix if needed
-      r: 16,
-      priority: 1,
-    }
-    send({ type: 'RELATION.OPEN', target: targetNode })
+    send({ type: 'RELATION.OPEN', target: nodeIdToEntityRef(targetNodeId, targetName) })
   }
 
   // Use fallback data for known demo entities
@@ -99,27 +87,17 @@ export function PersonOverlay({ entity }: PersonOverlayProps) {
 
   const scene = getScene(entity.id, entity.type, entity.name)
 
-  // ── Opening cinematic ──────────────────────────────
+  // ── Cinematic (initial open or relation handoff — both use entity-inspector `cinematic` state) ──
   if (inspectorState === 'cinematic') {
+    const rel = inspCtx?.transitionTarget === 'relation' ? inspCtx.relationTarget : null
+    const cineScene = rel
+      ? getScene(rel.id, rel.type, rel.name)
+      : scene
+    const label = rel?.name ?? entity.name
     return (
       <CinematicTransition
-        scene={scene}
-        label={entity.name}
-        onComplete={() => inspectorRef?.send({ type: 'CINEMATIC.COMPLETE' })}
-      />
-    )
-  }
-
-  // ── Relation cinematic ─────────────────────────────
-  if (inspectorState === 'relationCinematic') {
-    const targetEntity = relationTarget ? graphNodeToEntityRef(relationTarget) : null
-    const relScene = targetEntity
-      ? getScene(targetEntity.id, targetEntity.type, targetEntity.name)
-      : null
-    return (
-      <CinematicTransition
-        scene={relScene}
-        label={targetEntity?.name ?? entity.name}
+        scene={cineScene}
+        label={label}
         onComplete={() => inspectorRef?.send({ type: 'CINEMATIC.COMPLETE' })}
       />
     )
@@ -128,8 +106,6 @@ export function PersonOverlay({ entity }: PersonOverlayProps) {
   // ── Relation view ──────────────────────────────────
   if (inspectorState === 'relation') {
     const entityB = relationTarget
-      ? graphNodeToEntityRef(relationTarget)
-      : null
 
     if (entityB && inspectorRef) {
       return (

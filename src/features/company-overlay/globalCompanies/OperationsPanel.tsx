@@ -1,4 +1,4 @@
-import type { CompanyMarket } from '@/services/companyMarketsService';
+import type { CompanyMarket } from '@/types/companyMarket';
 import { getRegionRgba } from '@/constants/regionColors';
 import { FONT_SANS, FONT_MONO, glass, labelCss, countryToFlag } from './shared';
 

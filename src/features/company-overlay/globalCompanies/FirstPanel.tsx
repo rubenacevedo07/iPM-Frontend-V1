@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import type { CompanyMarket } from '@/services/companyMarketsService';
+import type { CompanyMarket } from '@/types/companyMarket';
 import { glass, PANEL_TOP, CHART_STRIP_H } from './shared';
 import type { NavTab } from './shared';
 import OperationsPanel from './OperationsPanel';

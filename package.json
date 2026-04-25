@@ -16,9 +16,11 @@
     "@tanstack/react-query": "^5.99.0",
     "@tanstack/react-router": "^1.168.22",
     "@xstate/react": "^6.1.0",
+    "chart.js": "^4.5.1",
     "flag-icons": "^7.5.0",
     "framer-motion": "^12.38.0",
     "react": "^19.2.4",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.4",
     "xstate": "^5.30.0",
     "zod": "^4.3.6"

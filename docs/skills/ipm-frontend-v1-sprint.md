@@ -386,6 +386,11 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - Broke: —
 - Next: **Phase 10** — open with DevTools session from `phase-10-kickoff`, then buffer / bugfix / demo polish per sprint table.
 
+### Session 2026-04-25 — Phase 10 (integration: production build)
+- Done: `npm run build` green (`tsc -b` + Vite). Person overlay: `RELATION.OPEN` carries `EntityRef`; cinematic unifies open + relation on real `cinematic` state. Company: `CompanyLogo` accepts `Company` + `CompanyIntelligence`; `FirstPanel` / `OperationsPanel` use `types/companyMarket` + optional `revenueContribution`; left-panel commodity guard; small lint fixes. `chart.js` + `react-chartjs-2` added; `src/features/company-overlay/charts/*` stub modules for TraderViewPanel until real charts land.
+- Broke: —
+- Next: Manual GATE C (heap/FPS) when you schedule it; then bug buffer / chunking (optional) per sprint.
+
 ---
 
 ## SESSION END UPDATE TEMPLATE

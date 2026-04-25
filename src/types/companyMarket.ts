@@ -16,4 +16,7 @@ export interface CompanyMarket {
 
   /** Nullable — API returns null for nested company in this endpoint */
   company:          null;
+
+  /** Share of revenue from this market — optional; UI treats null as “omit pill” */
+  revenueContribution?: number | null;
 }

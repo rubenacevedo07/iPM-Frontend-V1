@@ -118,7 +118,7 @@ function RiskTab({ company }: { company: Company }) {
           ))}
         </div>
       </Section>
-      {profile.commodityBreakdown?.length > 0 && (
+      {profile.commodityBreakdown && profile.commodityBreakdown.length > 0 && (
         <Section title="Commodity Exposure">
           {profile.commodityBreakdown.slice(0, 5).map((c: any, i: number) => {
             const dep = dependencyColor(c.dependencyLevel);

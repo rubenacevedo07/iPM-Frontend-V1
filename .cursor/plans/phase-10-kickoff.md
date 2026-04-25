@@ -17,5 +17,5 @@ Sprint ref: `docs/skills/ipm-frontend-v1-sprint.md` (Phase 10 row). Phase 9 *cod
 
 ## Pre-flight
 
-- `npx tsc --noEmit`  
+- `npx tsc --noEmit` **and** `npm run build` (`tsc -b` + Vite) — must pass for CI / demo (fixed on `master` in the Phase 10 integration pass: PersonOverlay/inspector `EntityRef` alignment, `CompanyMarket` type union, chart stubs, `chart.js` deps).
 - `npm run dev` on expected port; backend proxy as in Phase 0

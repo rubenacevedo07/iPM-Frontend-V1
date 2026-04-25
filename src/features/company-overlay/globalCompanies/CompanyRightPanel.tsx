@@ -87,7 +87,7 @@ function PersonsSection({ company }: { company: Company }) {
     <RSection title="Key Persons">
       {loading && <LoadText />}
       {!loading && !items.length && <EmptyText label="No person data" />}
-      {items.slice(0, 6).map((p, i) => {
+      {items.slice(0, 6).map((p) => {
         const inits = p.fullName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
         return (
           <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer' }}>
