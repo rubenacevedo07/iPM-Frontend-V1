@@ -1,6 +1,6 @@
 # Phase 10 — kickoff (integration + buffer)
 
-Sprint ref: `docs/skills/ipm-frontend-v1-sprint.md` (Phase 10 row). Phase 9 *code* is on `master`; **GATE C** manual was deferred (see `docs/PHASE_9.md` “Checkpoint deferral”).
+Sprint ref: `docs/skills/ipm-frontend-v1-sprint.md` (Phase 10 row). **Tag `v1-phase-10`:** production build + core integration (see that commit on `master`). **GATE C** manual (heap/FPS) still per `PHASE_9.md` when you run it. Phase 9 *code* is on `master`; deferral for manual checkpoint is documented in `PHASE_9.md` (“Checkpoint deferral”).
 
 ## Order of work
 

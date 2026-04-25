@@ -320,15 +320,15 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 ## PROGRESS TRACKER (LIVE STATE)
 
 **Last updated:** 2026-04-25
-**Current phase:** **Phase 10 (next):** open with manual **GATE C** (DevTools) then integration / buffer (see `.cursor/plans/phase-10-kickoff.md`). Phase 9 *code* (unload, audit) is done; `GATE C` in the table stays open until that manual run. **Deferred** product: Phase 7.1, 7.2, 7b.
-**Phases complete:** 9+ / 11 (through Phase 8 + prior phase tags on `master` / `phase8-arclayer`; numeric “complete” is approximate)
+**Current phase:** **Sprint 1 (Phases 0–10) — code / integration line complete** (`v1-phase-10`). **GATE C** (DevTools 20× heap + FPS) remains **manual** when you run it — see `PHASE_9.md` / `PHASE_7_DEBT` (f). **Product backlog (not a new “phase” number):** 7.1, 7.2, 7b, `PHASE_8_DEBT` follow-ups, Sprint 2 GraphEngine, etc.
+**Phases complete:** 11 / 11 (0–10 in the phase log; **GATE C** checkmark still independent until you measure)
 **Hours consumed:** _tracked per session in notes below_
 **Gates passed:** A [x] B [x] C [ ]
 
 | Tag / milestone | Note |
 |-----------------|------|
 | `v1-phase-8` | ArcLayer (static) + `NETWORK_RESOLVED` + `CMD.SET_ARCS` — supplier/client network on globe when company overlay open. See `PHASE_8_DEBT.md` for follow-ups. |
-| (no tag) | Phase 9 code: page-unload `ENGINE.DISPOSE` on `master` + `PHASE_9.md` + static audit. Manual heap/FPS (GATE C) → Phase 10 kickoff. |
+| `v1-phase-10` | `npm run build` + Vite; PersonOverlay `EntityRef` + cinematic unify; company/types + chart stubs. Unload/audit (Phase 9) lives on the same `master` line. Sprint 1 integration checkpoint. |
 
 ### Phase log
 - [x] Phase 0 — Pre-flight + env + operational docs — ~1h / 2h 30min
@@ -342,7 +342,7 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - [x] Phase 7 — Globe layers (30 company dots + rotation) — `v1-phase-7.3g`
 - [x] Phase 8 — ArcLayer (static network edges) — `v1-phase-8`
 - [x] Phase 9 — Polish + leak audit (code) — __h / 3h → **GATE C** manual deferred to Phase 10 kickoff (`PHASE_9.md`)
-- [ ] Phase 10 — Integration + buffer — __h / 4h *(starts with `phase-10-kickoff` checklist)*
+- [x] Phase 10 — Integration + buffer — __h / 4h — **done** (prod build, type/integration fixes; *buffer* = ongoing triage / demo polish / manual GATE C as needed)
 
 ### Session notes
 
@@ -390,6 +390,11 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - Done: `npm run build` green (`tsc -b` + Vite). Person overlay: `RELATION.OPEN` carries `EntityRef`; cinematic unifies open + relation on real `cinematic` state. Company: `CompanyLogo` accepts `Company` + `CompanyIntelligence`; `FirstPanel` / `OperationsPanel` use `types/companyMarket` + optional `revenueContribution`; left-panel commodity guard; small lint fixes. `chart.js` + `react-chartjs-2` added; `src/features/company-overlay/charts/*` stub modules for TraderViewPanel until real charts land.
 - Broke: —
 - Next: Manual GATE C (heap/FPS) when you schedule it; then bug buffer / chunking (optional) per sprint.
+
+### Session 2026-04-25 — Phase 10 close (Sprint 1 line 0–10)
+- Done: Progress tracker: Phase 10 log `[x]`, `v1-phase-10` tag, milestone table. Current phase = post–Sprint-1; GATE C still manual.
+- Broke: —
+- Next: Run DevTools when ready; then pick 7.1 / 7.2 / 7b / Sprint 2 by priority.
 
 ---
 
