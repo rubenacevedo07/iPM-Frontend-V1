@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc --build --noEmit",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "workspace:sync-doc": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/sync-workspace-repos.ps1"
   },
   "dependencies": {
     "@deck.gl/core": "^9.3.0",
@@ -22,6 +23,7 @@
     "react": "^19.2.4",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.4",
+    "three": "^0.180.0",
     "xstate": "^5.30.0",
     "zod": "^4.3.6"
   },
@@ -30,6 +32,7 @@
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.184.0",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",

@@ -1,3 +1,6 @@
+## Multi-repo layout (MUST READ first)
+**Which folder is production vs design sandbox vs advanced features** — so agents and humans do not edit the wrong `main` or mix purposes: **`docs/WORKSPACE-REPOS.md`**.
+
 ## Skill hierarchy (load by reading docs/skills/*)
 When working on architecture → read docs/skills/ipm-v4-core-architect.md
 When working on engines/runtime → read docs/skills/ipm-engine-runtime.md
