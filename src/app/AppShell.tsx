@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
+import { AnimatePresence, motion, useMotionValue, animate } from 'framer-motion'
 import { useSearch }  from '@tanstack/react-router'
 import { AppActor }   from './app.machine'
 import { EngineSlot } from '@/components/EngineSlot/EngineSlot'
@@ -6,6 +7,8 @@ import type { EngineSlotRefs } from '@/components/EngineSlot/EngineSlot'
 import { CompanyOverlayHost } from './CompanyOverlayHost'
 import { PersonOverlayHost } from './PersonOverlayHost'
 import { useCompanies } from '@/hooks/useCompanies'
+import { GraphViewPanel } from '@/features/graph-view/GraphViewPanel'
+import { AtlasViewToggle } from '@/components/AtlasViewToggle/AtlasViewToggle'
 
 function RouterSync() {
   const search = useSearch({ from: '/workstation' })
@@ -34,6 +37,19 @@ export function AppShell() {
   }, [engineRef, atlasView])
 
   const { companies, loading: companiesLoading } = useCompanies()
+
+  const globeOpacity = useMotionValue(1)
+  const globeScale   = useMotionValue(1)
+
+  useEffect(() => {
+    if (atlasView === 'network') {
+      animate(globeOpacity, 0,    { duration: 0.35, ease: 'easeOut' })
+      animate(globeScale,   1.06, { duration: 0.35, ease: 'easeOut' })
+    } else {
+      animate(globeOpacity, 1,    { duration: 0.35, ease: 'easeOut' })
+      animate(globeScale,   1,    { duration: 0.35, ease: 'easeOut' })
+    }
+  }, [atlasView, globeOpacity, globeScale])
 
   // Phase 9 (GATE C): release deck.gl / WebGL when the user leaves the page (tab
   // close, external nav). Only window unload hooks — not React unmount (StrictMode
@@ -90,9 +106,26 @@ export function AppShell() {
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#090b10', position: 'relative' }}>
       <RouterSync />
-      <EngineSlot actorRef={engineRef} onRefsReady={handleRefsReady} />
+      <motion.div style={{ opacity: globeOpacity, scale: globeScale, position: 'absolute', inset: 0 }}>
+        <EngineSlot actorRef={engineRef} onRefsReady={handleRefsReady} />
+      </motion.div>
       <CompanyOverlayHost />
       <PersonOverlayHost />
+      <AnimatePresence>
+        {atlasView === 'network' && (
+          <motion.div
+            key="graph-panel"
+            style={{ position: 'absolute', inset: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+          >
+            <GraphViewPanel />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AtlasViewToggle />
     </div>
   )
 }

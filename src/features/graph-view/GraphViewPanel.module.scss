@@ -1,0 +1,79 @@
+// src/features/graph-view/GraphViewPanel.module.scss
+
+.graphViewPanel {
+  position: absolute;
+  inset: 0;
+  background: #04080f;
+
+  // ReactFlow third-party class overrides — must use :global to escape CSS Modules scope
+  :global(.react-flow) {
+    --xy-background-color:               #060910;
+    --xy-background-pattern-color:       rgba(0, 229, 255, 0.04);
+    --xy-node-background-color:          rgba(6, 9, 16, 0.92);
+    --xy-node-border:                    1px solid rgba(0, 229, 255, 0.18);
+    --xy-node-border-radius:             6px;
+    --xy-node-color:                     #cdd6e8;
+    --xy-node-font-size:                 12px;
+    --xy-node-selected-background-color: rgba(0, 229, 255, 0.06);
+    --xy-node-selected-border:           1px solid rgba(0, 229, 255, 0.45);
+    --xy-edge-stroke:                    rgba(0, 229, 255, 0.35);
+    --xy-edge-stroke-width:              1.5;
+    --xy-edge-stroke-selected:           #00e5ff;
+    --xy-controls-background-color:      rgba(6, 9, 16, 0.92);
+    --xy-controls-button-color:          #8899aa;
+    --xy-controls-button-color-hover:    #00e5ff;
+    --xy-controls-border-color:          rgba(0, 229, 255, 0.12);
+    --xy-minimap-background-color:       rgba(6, 9, 16, 0.9);
+    --xy-minimap-node-background-color:  rgba(0, 229, 255, 0.15);
+  }
+
+  :global(.react-flow__edge-text) {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    fill: #8899aa;
+  }
+
+  :global(.react-flow__node-default) {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 14px;
+    min-width: 90px;
+    text-align: center;
+  }
+
+  :global(.react-flow__attribution) {
+    display: none;
+  }
+}
+
+.header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 8px;
+  background: rgba(4, 8, 16, 0.92);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.08);
+  pointer-events: none;
+}
+
+.title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(0, 229, 255, 0.7);
+  text-transform: uppercase;
+}
+
+.count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: #5a6b80;
+}
