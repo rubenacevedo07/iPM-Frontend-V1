@@ -1,0 +1,139 @@
+.panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 340px;
+  background: rgba(10, 14, 20, 0.94);
+  backdrop-filter: blur(14px);
+  border-left: 1px solid rgba(0, 229, 255, 0.2);
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6);
+}
+
+.header {
+  padding: 20px 16px;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #00e5ff;
+  }
+}
+
+.accent {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+}
+
+.content {
+  padding: 20px 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.06);
+}
+
+.footer {
+  padding: 16px;
+  border-top: 1px solid rgba(0, 229, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.openFullBtn {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: #00e5ff;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.22s ease;
+
+  &:hover {
+    background: rgba(0, 229, 255, 0.22);
+    border-color: rgba(0, 229, 255, 0.5);
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.2);
+  }
+}
