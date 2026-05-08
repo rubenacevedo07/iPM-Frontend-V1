@@ -42,10 +42,14 @@ export function CenterNode({ id, data, selected }: NodeProps<Node<GraphViewNodeD
       </div>
 
       {/* Handles */}
-      <Handle type="source" id="src-top" position={Position.Top} className={styles.handle} />
-      <Handle type="source" id="src-right" position={Position.Right} className={styles.handle} />
+      <Handle type="source" id="src-top"    position={Position.Top}    className={styles.handle} />
+      <Handle type="source" id="src-right"  position={Position.Right}  className={styles.handle} />
       <Handle type="source" id="src-bottom" position={Position.Bottom} className={styles.handle} />
-      <Handle type="source" id="src-left" position={Position.Left} className={styles.handle} />
+      <Handle type="source" id="src-left"   position={Position.Left}   className={styles.handle} />
+      <Handle type="target" id="tgt-top"    position={Position.Top}    className={styles.handle} />
+      <Handle type="target" id="tgt-right"  position={Position.Right}  className={styles.handle} />
+      <Handle type="target" id="tgt-bottom" position={Position.Bottom} className={styles.handle} />
+      <Handle type="target" id="tgt-left"   position={Position.Left}   className={styles.handle} />
 
       {/* Badge */}
       {data.score && <div className={styles.badge}>{String(data.score)}</div>}

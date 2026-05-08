@@ -95,6 +95,12 @@
 }
 
 /* ── Ring with gradient ── */
+.ring,
+.inner,
+.badge {
+  pointer-events: none;
+}
+
 .ring {
   width: 96px;
   height: 96px;

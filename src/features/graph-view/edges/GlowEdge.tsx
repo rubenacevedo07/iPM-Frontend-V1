@@ -1,8 +1,9 @@
-import { getStraightPath, type EdgeProps } from '@xyflow/react'
+import { getBezierPath, BaseEdge, type EdgeProps } from '@xyflow/react'
 import type { Edge } from '@xyflow/react'
 import { useGraphHover } from '../contexts/GraphHoverContext'
 import { useGraphEdge } from '../contexts/GraphEdgeContext'
-import type { GraphViewEdgeData } from '@/types/graphView'
+import type { GraphViewEdgeData, EdgeVariant } from '@/types/graphView'
+import { resolveEdgeStyle } from '../config/edgeVariants'
 
 export function GlowEdge({
   id,
@@ -10,30 +11,22 @@ export function GlowEdge({
   target,
   sourceX,
   sourceY,
+  sourcePosition,
   targetX,
   targetY,
+  targetPosition,
   style = {},
+  markerEnd,
   data,
 }: EdgeProps<Edge<GraphViewEdgeData>>) {
-  // Offset source position if it's the center node (circular collision detection)
-  const CIRCLE_RADIUS = 46
-  let sx = sourceX
-  let sy = sourceY
-  if (source === 'you') {
-    const dx = targetX - sourceX
-    const dy = targetY - sourceY
-    const dist = Math.sqrt(dx * dx + dy * dy)
-    if (dist > 0) {
-      sx = sourceX + (dx / dist) * CIRCLE_RADIUS
-      sy = sourceY + (dy / dist) * CIRCLE_RADIUS
-    }
-  }
-
-  const [edgePath] = getStraightPath({ sourceX: sx, sourceY: sy, targetX, targetY })
+  const [edgePath] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition })
   const { hoveredNodeId } = useGraphHover()
   const { selectedEdgeId } = useGraphEdge()
 
-  const color = (data?.color as string) ?? '#FFFFFF'
+  const { stroke, glow } = resolveEdgeStyle(
+    data?.variant as EdgeVariant | undefined,
+    data?.color as string | undefined,
+  )
   const isDashed = (data?.dashed as boolean) ?? false
   const isAnimated = (data?.animated as boolean) ?? false
   const isRing2 = (data?.ring2Edge as boolean) ?? false
@@ -52,6 +45,9 @@ export function GlowEdge({
   const glowStdDev = isSelected ? 4 : isActive ? 3 : 2
   const effectiveDashed = isDashed
 
+  const mx = (sourceX + targetX) / 2
+  const my = (sourceY + targetY) / 2
+
   return (
     <g style={{ transition: 'opacity 0.22s ease', cursor: 'pointer' }}>
       <defs>
@@ -64,11 +60,12 @@ export function GlowEdge({
         </filter>
       </defs>
 
-      {/* Halo */}
+      {/* Halo — decorative only, never intercepts pointer events */}
       <path
         d={edgePath}
         style={{
-          stroke: color,
+          pointerEvents: 'none',
+          stroke: glow,
           strokeWidth: haloWidth,
           opacity: haloOpacity,
           fill: 'none',
@@ -77,32 +74,32 @@ export function GlowEdge({
         }}
       />
 
-      {/* Main line */}
-      <path
+      {/* Actual edge — React Flow native lifecycle */}
+      <BaseEdge
         id={id}
-        className="react-flow__edge-path"
-        d={edgePath}
+        path={edgePath}
+        markerEnd={markerEnd}
         style={{
           ...style,
+          stroke,
           strokeWidth,
-          stroke: color,
           opacity: baseOpacity,
-          fill: 'none',
           ...(effectiveDashed ? { strokeDasharray: isRing2 ? '4 8' : '6 6' } : {}),
           transition: 'opacity 0.22s ease, stroke-width 0.22s ease',
         }}
       />
 
-      {/* Click target invisible (ancho para facilitar click) */}
+      {/* Click target — wide invisible path for easy interaction */}
       <path d={edgePath} style={{ stroke: 'transparent', strokeWidth: 16, fill: 'none', cursor: 'pointer' }} />
 
-      {/* Partículas (solo ring-1 animated) */}
+      {/* Particles (ring-1 animated edges only) */}
       {isAnimated && !isDimmedEdge && !isDimmedBySelection && !isRing2 && (
         <path
           d={edgePath}
           pathLength={1}
           style={{
-            stroke: color,
+            pointerEvents: 'none',
+            stroke,
             strokeWidth: isActive ? 4 : 3,
             opacity: isActive ? 1 : 0.9,
             fill: 'none',
@@ -112,12 +109,13 @@ export function GlowEdge({
         />
       )}
 
-      {/* Pulso en arista activa (hover) */}
+      {/* Pulse on hover */}
       {isActive && (
         <path
           d={edgePath}
           style={{
-            stroke: color,
+            pointerEvents: 'none',
+            stroke,
             strokeWidth: 4,
             opacity: 0,
             fill: 'none',
@@ -126,12 +124,13 @@ export function GlowEdge({
         />
       )}
 
-      {/* Pulso en arista seleccionada */}
+      {/* Pulse on selection */}
       {isSelected && (
         <path
           d={edgePath}
           style={{
-            stroke: color,
+            pointerEvents: 'none',
+            stroke,
             strokeWidth: 5,
             opacity: 0,
             fill: 'none',
@@ -140,22 +139,18 @@ export function GlowEdge({
         />
       )}
 
-      {/* Midpoint dot cuando seleccionada */}
-      {isSelected && (() => {
-        const mx = (sx + targetX) / 2
-        const my = (sy + targetY) / 2
-        return (
-          <circle
-            cx={mx}
-            cy={my}
-            r={4}
-            fill={color}
-            opacity={0.9}
-            filter={`url(#${filterId})`}
-            style={{ animation: 'edgeSelectPulse 2s ease-in-out infinite' }}
-          />
-        )
-      })()}
+      {/* Midpoint dot when selected */}
+      {isSelected && (
+        <circle
+          cx={mx}
+          cy={my}
+          r={4}
+          fill={stroke}
+          opacity={0.9}
+          filter={`url(#${filterId})`}
+          style={{ pointerEvents: 'none', animation: 'edgeSelectPulse 2s ease-in-out infinite' }}
+        />
+      )}
     </g>
   )
 }
