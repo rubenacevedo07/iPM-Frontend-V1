@@ -1,4 +1,7 @@
 .node {
+  position: relative;
+  z-index: 10;
+  isolation: isolate;
   background: rgba(10, 14, 20, 0.94);
   border-radius: 8px;
   padding: 10px 14px;

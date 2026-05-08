@@ -7,6 +7,7 @@ import {
   BackgroundVariant,
   Controls,
   MiniMap,
+  MarkerType,
   useNodesState,
   useEdgesState,
   type Node,
@@ -81,8 +82,8 @@ export function GraphViewPanel() {
       const tgtNode = nodes.find(n => n.id === edge.target)
       if (!srcNode || !tgtNode) return
 
-      const srcW = edge.source === 'you' ? CENTER_W : ENTITY_W
-      const srcH = edge.source === 'you' ? CENTER_H : ENTITY_H
+      const srcW = srcNode?.type === 'center' ? CENTER_W : ENTITY_W
+      const srcH = srcNode?.type === 'center' ? CENTER_H : ENTITY_H
       const tgtW = ENTITY_W
       const tgtH = ENTITY_H
 
@@ -150,7 +151,10 @@ export function GraphViewPanel() {
             colorMode="dark"
             fitView
             fitViewOptions={{ padding: 0.18 }}
-            defaultEdgeOptions={{ animated: false }}
+            defaultEdgeOptions={{
+              animated: false,
+              markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: '#4DA3FF' },
+            }}
           >
             <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(0, 229, 255, 0.04)" />
             <Controls showInteractive={false} />

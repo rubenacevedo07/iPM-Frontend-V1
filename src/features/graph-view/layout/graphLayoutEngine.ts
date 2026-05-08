@@ -75,8 +75,11 @@ interface EngineNode {
 // ── Handle routing (pure geometry) ───────────────────────────────────────────
 // Determines which cardinal handles to use based on the vector between node
 // centers. No orbital-angle dependency — works for any layout mode.
-//
-// Phase 2 activates the output: edge.sourceHandle / edge.targetHandle.
+
+const VALID_HANDLES = new Set([
+  'src-top', 'src-right', 'src-bottom', 'src-left',
+  'tgt-top', 'tgt-right', 'tgt-bottom', 'tgt-left',
+])
 
 function resolveHandles(
   src: EngineNode,
@@ -192,28 +195,31 @@ function calculateOrbital(rawData: unknown): LayoutEngineOutput {
   const edges: Edge<GraphViewEdgeData>[] = data.edges.map(e => {
     const srcNode = nodeMap.get(e.Source)
     const tgtNode = nodeMap.get(e.Target)
+    const variant = strengthToVariant(e.Strength)
 
-    // Handle routing is fully implemented and ready for Phase 2.
-    // Deferred to avoid double-offset with GlowEdge's legacy CIRCLE_RADIUS logic.
-    if (srcNode && tgtNode) {
-      void resolveHandles(srcNode, tgtNode)
-      // Phase 2: const handles = resolveHandles(srcNode, tgtNode)
-      // Phase 2: assign handles.sourceHandle / handles.targetHandle to edge
+    const handles = srcNode && tgtNode
+      ? resolveHandles(srcNode, tgtNode)
+      : { sourceHandle: 'src-right', targetHandle: 'tgt-left' }
+
+    if (process.env.NODE_ENV === 'development') {
+      if (!VALID_HANDLES.has(handles.sourceHandle) || !VALID_HANDLES.has(handles.targetHandle)) {
+        console.warn(`[graphLayoutEngine] invalid handles for edge ${e.EdgeId}`, handles)
+      }
     }
 
     return {
-      id:     e.EdgeId,
-      source: e.Source,
-      target: e.Target,
-      // sourceHandle: handles.sourceHandle,  — Phase 2
-      // targetHandle: handles.targetHandle,  — Phase 2
+      id:           e.EdgeId,
+      source:       e.Source,
+      target:       e.Target,
+      sourceHandle: handles.sourceHandle,
+      targetHandle: handles.targetHandle,
       type: 'glow',
       data: {
         edgeType:   e.EdgeType,
         strength:   e.Strength,
-        variant:    strengthToVariant(e.Strength),
+        variant,
         color:      e.Color ?? (e.Strength === 'Critical' ? '#F5A623' : '#00E5FF'),
-        animated:   e.Animated  ?? (e.Strength === 'Critical'),
+        animated:   e.Animated ?? (variant != null && variant !== 'inferred'),
         dashed:     e.Dashed,
         relType:    e.Label,
         direction:  e.Direction,
@@ -247,6 +253,5 @@ export const layoutEngine = {
     return layoutStrategies[input.mode](input.data)
   },
 
-  // Exposed for Phase 2 activation and unit testing
   resolveHandles,
 }

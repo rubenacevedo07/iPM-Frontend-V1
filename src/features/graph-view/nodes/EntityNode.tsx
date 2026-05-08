@@ -23,10 +23,14 @@ export function EntityNode({ id, data, selected }: NodeProps<Node<GraphViewNodeD
       onMouseEnter={() => setHoveredNodeId(id)}
       onMouseLeave={() => setHoveredNodeId(null)}
     >
-      <Handle type="target" position={Position.Top} id="tgt-top" className={styles.handle} />
-      <Handle type="target" position={Position.Left} id="tgt-left" className={styles.handle} />
+      <Handle type="target" position={Position.Top}    id="tgt-top"    className={styles.handle} />
+      <Handle type="target" position={Position.Right}  id="tgt-right"  className={styles.handle} />
+      <Handle type="target" position={Position.Bottom} id="tgt-bottom" className={styles.handle} />
+      <Handle type="target" position={Position.Left}   id="tgt-left"   className={styles.handle} />
+      <Handle type="source" position={Position.Top}    id="src-top"    className={styles.handle} />
+      <Handle type="source" position={Position.Right}  id="src-right"  className={styles.handle} />
       <Handle type="source" position={Position.Bottom} id="src-bottom" className={styles.handle} />
-      <Handle type="source" position={Position.Right} id="src-right" className={styles.handle} />
+      <Handle type="source" position={Position.Left}   id="src-left"   className={styles.handle} />
 
       <div className={styles.row}>
         {/* Avatar or icon */}
