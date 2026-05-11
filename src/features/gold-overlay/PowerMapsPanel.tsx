@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { AppActor } from '@/app/app.machine'
 import { SEARCH_THEMES } from '@/components/TopBar/searchThemes'
+import { POWER_MAP_OVERLAY_CONTENT } from '@/features/powermap-overlay/powerMapContent'
 import './gold-overlay.scss'
 
 export function PowerMapsPanel() {
@@ -8,8 +9,14 @@ export function PowerMapsPanel() {
   const query = AppActor.useSelector((s) => s.context.query)
 
   const handleSelect = (theme: typeof SEARCH_THEMES[0]) => {
-    actor.send({ type: 'SEARCH_QUERY', q: theme.label })
     actor.send({ type: 'ATLAS_VIEW.SET', view: theme.id === 'wall-street' ? 'network' : 'globe' })
+    if (POWER_MAP_OVERLAY_CONTENT[theme.id]) {
+      // Theme has an overlay → open as first-class overlay (URL-driven).
+      actor.send({ type: 'OPEN_POWERMAP', id: theme.id })
+    } else {
+      // No overlay content yet → keep current fly-to-only behavior via query.
+      actor.send({ type: 'SEARCH_QUERY', q: theme.label })
+    }
   }
 
   return (
