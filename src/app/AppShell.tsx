@@ -21,12 +21,14 @@ import {
 // Lazy: heavy feature panels — only mount when the matching atlasView/overlay is active.
 // Pulls @xyflow/react, d3-force, framer-motion (overlay subtrees), flag-icons CSS, and the
 // 12-service useCompanyData chain off the startup path (~2s of dev-mode parse).
-const GraphViewPanel    = lazy(() => import('@/features/graph-view/GraphViewPanel').then(m => ({ default: m.GraphViewPanel })))
-const WallStreetPage    = lazy(() => import('@/features/wall-street/WallStreetPage').then(m => ({ default: m.WallStreetPage })))
+const GraphViewPanel     = lazy(() => import('@/features/graph-view/GraphViewPanel').then(m => ({ default: m.GraphViewPanel })))
+const WallStreetPage     = lazy(() => import('@/features/wall-street/WallStreetPage').then(m => ({ default: m.WallStreetPage })))
 const CompanyOverlayHost = lazy(() => import('./CompanyOverlayHost').then(m => ({ default: m.CompanyOverlayHost })))
 const PersonOverlayHost  = lazy(() => import('./PersonOverlayHost').then(m => ({ default: m.PersonOverlayHost })))
 const GoldOverlayHost    = lazy(() => import('./GoldOverlayHost').then(m => ({ default: m.GoldOverlayHost })))
 const PowerMapsPanel     = lazy(() => import('@/features/gold-overlay/PowerMapsPanel').then(m => ({ default: m.PowerMapsPanel })))
+const PersonViewPanel    = lazy(() => import('@/features/person-view/PersonViewPanel').then(m => ({ default: m.PersonViewPanel })))
+const RelationViewPanel  = lazy(() => import('@/features/relation-view/RelationViewPanel').then(m => ({ default: m.RelationViewPanel })))
 
 function RouterSync() {
   const search = useSearch({ from: '/workstation' })
@@ -213,7 +215,9 @@ export function AppShell() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
           >
-            <PersonViewPanel />
+            <Suspense fallback={<PersonOverlaySkeleton />}>
+              <PersonViewPanel />
+            </Suspense>
           </motion.div>
         )}
         {atlasView === 'relation' && (
@@ -225,7 +229,9 @@ export function AppShell() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
           >
-            <RelationViewPanel />
+            <Suspense fallback={<PersonOverlaySkeleton />}>
+              <RelationViewPanel />
+            </Suspense>
           </motion.div>
         )}
       </AnimatePresence>
