@@ -406,7 +406,7 @@ export interface ActiveTimelineDto {
 }
 
 // ── View enums ──
-export type D1View = 'globe' | 'network' | 'force'
+export type D1View = 'globe' | 'network' | 'force' | 'graph'
 export type PersonTab = 'overview' | 'trader' | 'analyst' | 'predictions'
 export type CompanyTab = 'overview' | 'products' | 'supplychain' | 'risk'
 export type RelationTab = 'overview' | 'timelines' | 'network' | 'analysis'

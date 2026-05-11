@@ -20,6 +20,7 @@ import {
 } from '@/hooks/useCompanyData'
 import { useCompanies } from '@/hooks/useCompanies'
 import { mapCompanyNetworkToArcs } from '@/services/companyNetworkMapper'
+import { CompanyGlobe } from '@/components/CompanyGlobe'
 import type { Company } from '@/types/company'
 
 export function CompanyOverlayHost() {
@@ -124,6 +125,15 @@ export function CompanyOverlayHost() {
       >
         ×
       </div>
+
+      {/* Globe data-feeder: syncs market continents + fabric positions to the bridge */}
+      <CompanyGlobe
+        companyId={company.id}
+        latitude={company.latitude}
+        longitude={company.longitude}
+        markets={marketsData ?? []}
+        fabrics={fabricsData ?? []}
+      />
 
       <AnimatePresence>
         {/* HeaderRow needs clicks (nav tabs) — V1-host wrapper restores pointerEvents */}

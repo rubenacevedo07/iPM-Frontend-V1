@@ -4,6 +4,7 @@
 import type { EngineId, EngineInitInput } from './contracts/inputs';
 import type { IEngineBridge, BridgeEvent, BridgeCommand, Unsubscribe } from './contracts/bridge';
 import { GlobeBridge } from './GlobeBridge';
+import { GraphBridge } from './GraphBridge';
 
 // ---------------------------------------------------------------------------
 // Base bridge implementation — shared by stub engines
@@ -97,6 +98,7 @@ class ForceBridge extends BaseBridge {
 
 const engines: Record<EngineId, (input: EngineInitInput) => IEngineBridge> = {
   globe:   (input) => new GlobeBridge(input),   // real DeckGL bridge
+  graph:   (input) => new GraphBridge(input),  // Three.js, Sprint 2
   network: (input) => new NetworkBridge(input), // stub Phase 4+
   force:   (input) => new ForceBridge(input),   // stub Phase 4+
 };
