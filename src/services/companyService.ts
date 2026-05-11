@@ -3,11 +3,14 @@ import type { Company } from '@/types/company'
 
 export const companyService = {
   getAll: async (): Promise<Company[]> => {
-    const response = await fetch(`${API_COMPANIES}/Companies`)
-    if (!response.ok) {
-      throw new Error(`Error fetching companies: ${response.statusText}`)
+    try {
+      const response = await fetch(`${API_COMPANIES}/Companies`)
+      if (!response.ok) throw new Error(`${response.status}`)
+      return response.json()
+    } catch {
+      const res = await fetch('/top30.json')
+      return res.json()
     }
-    return response.json()
   },
 
   getByName: async (name: string): Promise<Company> => {
@@ -16,8 +19,13 @@ export const companyService = {
   },
 
   getById: async (id: number): Promise<Company> => {
-    const response = await fetch(`${API_COMPANIES}/Companies/${id}`)
-    if (!response.ok) throw new Error(`Error fetching company ${id}: ${response.statusText}`)
-    return response.json()
+    try {
+      const response = await fetch(`${API_COMPANIES}/Companies/${id}`)
+      if (!response.ok) throw new Error(`${response.status}`)
+      return response.json()
+    } catch {
+      const res = await fetch('/company.json')
+      return res.json()
+    }
   },
 }

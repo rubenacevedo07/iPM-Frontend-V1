@@ -8,7 +8,6 @@ import {
   BackgroundVariant,
   Controls,
   MiniMap,
-  MarkerType,
   useNodesState,
   useEdgesState,
   type Node,
@@ -188,10 +187,7 @@ export function GraphViewPanel() {
             colorMode="dark"
             fitView
             fitViewOptions={{ padding: 0.18 }}
-            defaultEdgeOptions={{
-              animated: false,
-              markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: '#4DA3FF' },
-            }}
+            defaultEdgeOptions={{ animated: false }}
           >
             <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(0, 229, 255, 0.04)" />
             <Controls showInteractive={false} />

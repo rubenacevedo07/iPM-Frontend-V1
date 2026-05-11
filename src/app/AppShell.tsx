@@ -1,20 +1,32 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react'
 import { AnimatePresence, motion, useMotionValue, animate } from 'framer-motion'
 import { useSearch }  from '@tanstack/react-router'
 import { AppActor }   from './app.machine'
 import { EngineSlot } from '@/components/EngineSlot/EngineSlot'
 import type { EngineSlotRefs } from '@/components/EngineSlot/EngineSlot'
-import { CompanyOverlayHost } from './CompanyOverlayHost'
-import { PersonOverlayHost } from './PersonOverlayHost'
 import { useCompanies } from '@/hooks/useCompanies'
-import { GraphViewPanel } from '@/features/graph-view/GraphViewPanel'
-import { PersonViewPanel } from '@/features/person-view/PersonViewPanel'
-import { RelationViewPanel } from '@/features/relation-view/RelationViewPanel'
-import { AtlasViewToggle } from '@/components/AtlasViewToggle/AtlasViewToggle'
+import { TopBar } from '@/components/TopBar/TopBar'
+import { AtlasTabs } from '@/components/AtlasTabs/AtlasTabs'
 import type { AtlasView } from '@/types/atlas'
-import styles from './AppShell.module.scss'
+import { SEARCH_THEMES } from '@/components/TopBar/searchThemes'
+import { POWER_MAP_CONFIGS } from '@/engine/powermapData'
+import {
+  PersonOverlaySkeleton,
+  CompanyOverlaySkeleton,
+  GoldOverlaySkeleton,
+  GraphSkeleton,
+  PowerMapsSkeleton,
+} from '@/components/SkeletonPanels/SkeletonPanels'
 
-const CINEMATIC_MS = 360
+// Lazy: heavy feature panels — only mount when the matching atlasView/overlay is active.
+// Pulls @xyflow/react, d3-force, framer-motion (overlay subtrees), flag-icons CSS, and the
+// 12-service useCompanyData chain off the startup path (~2s of dev-mode parse).
+const GraphViewPanel    = lazy(() => import('@/features/graph-view/GraphViewPanel').then(m => ({ default: m.GraphViewPanel })))
+const WallStreetPage    = lazy(() => import('@/features/wall-street/WallStreetPage').then(m => ({ default: m.WallStreetPage })))
+const CompanyOverlayHost = lazy(() => import('./CompanyOverlayHost').then(m => ({ default: m.CompanyOverlayHost })))
+const PersonOverlayHost  = lazy(() => import('./PersonOverlayHost').then(m => ({ default: m.PersonOverlayHost })))
+const GoldOverlayHost    = lazy(() => import('./GoldOverlayHost').then(m => ({ default: m.GoldOverlayHost })))
+const PowerMapsPanel     = lazy(() => import('@/features/gold-overlay/PowerMapsPanel').then(m => ({ default: m.PowerMapsPanel })))
 
 function RouterSync() {
   const search = useSearch({ from: '/workstation' })
@@ -26,13 +38,28 @@ function RouterSync() {
 }
 
 export function AppShell() {
-  const appRef           = AppActor.useActorRef()
-  const engineRef        = AppActor.useSelector(s => s.context.engineManagerRef)
-  const atlasView        = AppActor.useSelector(s => s.context.atlasView)
-  const requestSentRef   = useRef(false)
-  const engineSlotsRef   = useRef<EngineSlotRefs | null>(null)
-  const cinematicShroudRef = useRef<HTMLDivElement | null>(null)
-  const cinematicBusyRef   = useRef(false)
+  const actor          = AppActor.useActorRef()
+  const engineRef      = AppActor.useSelector(s => s.context.engineManagerRef)
+  const atlasView      = AppActor.useSelector(s => s.context.atlasView)
+  const query          = AppActor.useSelector(s => s.context.query)
+  const requestSentRef = useRef(false)
+
+  const isWallStreet = query.trim().toLowerCase() === 'wall street'
+
+  // Cinematic transition: globe zooms-in and fades out when switching to graph.
+  // useMotionValue stays stable across renders — no re-render on value change.
+  const globeOpacity = useMotionValue(1)
+  const globeScale   = useMotionValue(1)
+
+  useEffect(() => {
+    if (atlasView === 'network') {
+      void animate(globeOpacity, 0,    { duration: 0.5, ease: 'easeIn' })
+      void animate(globeScale,   1.06, { duration: 0.5, ease: 'easeIn' })
+    } else {
+      void animate(globeOpacity, 1,    { duration: 0.4, ease: 'easeOut', delay: 0.1 })
+      void animate(globeScale,   1,    { duration: 0.4, ease: 'easeOut', delay: 0.1 })
+    }
+  }, [atlasView, globeOpacity, globeScale])
 
   const handleRefsReady = useCallback((refs: EngineSlotRefs) => {
     engineSlotsRef.current = refs
@@ -49,18 +76,15 @@ export function AppShell() {
 
   const { companies, loading: companiesLoading } = useCompanies()
 
-  const globeOpacity = useMotionValue(1)
-  const globeScale   = useMotionValue(1)
+  const search      = useSearch({ from: '/workstation' })
+  const isGoldOpen  = search.overlay === 'gold'
+  const isPersonOpen = search.overlay === 'person'
 
-  useEffect(() => {
-    if (atlasView === 'network' || atlasView === 'persons' || atlasView === 'relation') {
-      animate(globeOpacity, 0,    { duration: 0.35, ease: 'easeOut' })
-      animate(globeScale,   1.06, { duration: 0.35, ease: 'easeOut' })
-    } else {
-      animate(globeOpacity, 1,    { duration: 0.35, ease: 'easeOut' })
-      animate(globeScale,   1,    { duration: 0.35, ease: 'easeOut' })
-    }
-  }, [atlasView, globeOpacity, globeScale])
+  // Gold overlay: shrink canvas to the free area not covered by its floating panels.
+  // Person overlay: side panels (left 280px + right 300px) float over the globe — canvas stays full-size.
+  const graphInset = isGoldOpen
+    ? { left: 280, top: 0, right: 268, bottom: 210 }
+    : { left: 0,   top: 0, right: 0,   bottom: 0   }
 
   // Phase 9 (GATE C): release deck.gl / WebGL when the user leaves the page (tab
   // close, external nav). Only window unload hooks — not React unmount (StrictMode
@@ -81,9 +105,6 @@ export function AppShell() {
   }, [engineRef])
 
   // Phase 4.1: push top-50 companies by marketCap to the globe once loaded.
-  // Rows are shaped as EntityRef + coords so that GlobeBridge.onClick produces
-  // an ENGINE.ENTITY_CLICK whose entity satisfies app.machine's
-  // `entity.type === 'COMPANY'` guard (see ADR / Blocker 2 fix).
   useEffect(() => {
     if (companiesLoading || companies.length === 0) return
 
@@ -97,9 +118,8 @@ export function AppShell() {
       return bCap - aCap
     })
 
-    // Phase 7: 30 company dots — scope discipline (P.C decision:
-    // persons skipped until backend /api/persons/with-location exists).
-    const top30 = sorted.slice(0, 30).map(c => ({
+    // Phase 7: 30 company dots
+    const top30 = sorted.slice(0, 30).map((c, i) => ({
       id:           c.id,
       nodeId:       `company:${c.id}`,
       type:         'COMPANY' as const,
@@ -109,94 +129,88 @@ export function AppShell() {
       longitude:    c.longitude,
       marketCapUsd: c.marketCapUsd,
       isChokepoint: c.isChokepoint ?? false,
+      isGold:       i < 15,
     }))
 
     engineRef.send({ type: 'CMD.SET_ENTITIES', data: { entities: top30 } })
   }, [companies, companiesLoading, engineRef])
 
-  /**
-   * Cinematic interlude: full-screen shroud (opacity) then DISPOSE+REQUEST.
-   * True dual-engine DOM crossfade (EngineSlot A/B + ENGINE.SWAP) can follow when
-   * re-parenting / slot order is fully wired — see `EngineSlot` comments.
-   */
-  const runCinematicEngineToggle = useCallback(() => {
-    if (cinematicBusyRef.current) return
-    const slots = engineSlotsRef.current
-    if (!slots) return
-    const shroud = cinematicShroudRef.current
+  const activePowermapId = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return SEARCH_THEMES.find(t => t.label.toLowerCase() === q)?.id ?? null
+  }, [query])
 
-    const doSwap = () => {
-      const id = engineRef.getSnapshot().context.engineId
-      const next: 'globe' | 'graph' = id === 'graph' ? 'globe' : 'graph'
-      const view = next as AtlasView
-      appRef.send({ type: 'ATLAS_VIEW.SET', view })
-      engineRef.send({ type: 'ENGINE.DISPOSE' })
-      engineRef.send({
-        type:     'ENGINE.REQUEST',
-        engineId: next,
-        input:    { container: slots.slotB, view },
-      })
-    }
-
-    const reduced =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    if (!shroud || reduced) {
-      doSwap()
-      return
-    }
-
-    void (async () => {
-      cinematicBusyRef.current = true
-      try {
-        shroud.style.pointerEvents = 'auto'
-        shroud.style.opacity = '0'
-        void shroud.offsetHeight
-        shroud.style.opacity = '0.92'
-        await new Promise((r) => { window.setTimeout(r, CINEMATIC_MS) })
-        doSwap()
-        shroud.style.opacity = '0'
-        await new Promise((r) => { window.setTimeout(r, CINEMATIC_MS) })
-      } finally {
-        shroud.style.pointerEvents = 'none'
-        cinematicBusyRef.current = false
-      }
-    })()
-  }, [appRef, engineRef])
-
-  // Dev only: Alt+G — globe ↔ graph with cinematic shroud
   useEffect(() => {
-    if (!import.meta.env.DEV) return
-    const onKey = (e: KeyboardEvent) => {
-      if (!e.altKey || e.key.toLowerCase() !== 'g') return
-      e.preventDefault()
-      runCinematicEngineToggle()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [runCinematicEngineToggle])
+    engineRef.send({ type: 'CMD.SET_POWERMAP', powermapId: activePowermapId })
+  }, [activePowermapId, engineRef])
+
+  useEffect(() => {
+    if (!activePowermapId) return
+    const cfg = POWER_MAP_CONFIGS[activePowermapId]
+    if (!cfg?.flyTo) return
+    engineRef.send({
+      type:      'CMD.FLY_TO',
+      longitude: cfg.flyTo.longitude,
+      latitude:  cfg.flyTo.latitude,
+      zoom:      cfg.flyTo.zoom,
+      duration:  2000,
+    })
+  }, [activePowermapId, engineRef])
+
+  // INVARIANT — Rule 7 (user-requested, permanent): rotation MUST be disabled whenever
+  // a target is selected. Do NOT add conditions that re-enable rotation while a powermap
+  // or overlay is active. After cinematic fly-to the globe must stay on the selected entity.
+  const shouldRotate = !activePowermapId && !isGoldOpen && !isPersonOpen && search.overlay !== 'company'
+  useEffect(() => {
+    engineRef.send({ type: 'CMD.SET_ROTATION', enabled: shouldRotate })
+  }, [shouldRotate, engineRef])
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#090b10', position: 'relative' }}>
+    <div style={{ width: '100vw', height: '100vh', background: '#000000', display: 'flex', flexDirection: 'column' }}>
+      <TopBar />
+      <main style={{ flex: 1, position: 'relative', minHeight: 0 }}>
       <RouterSync />
-      <motion.div style={{ opacity: globeOpacity, scale: globeScale, position: 'absolute', inset: 0 }}>
+
+      {/* Globe — always mounted; cinematic zoom+fade driven by useMotionValue.
+          Container shrinks to the free area when an overlay is open so the
+          sphere re-centers in the visible space (same insets as the graph). */}
+      <motion.div
+        style={{
+          opacity: globeOpacity,
+          scale:   globeScale,
+          position: 'absolute',
+          top:    graphInset.top,
+          left:   graphInset.left,
+          right:  graphInset.right,
+          bottom: graphInset.bottom,
+          transition: 'top 0.35s ease, left 0.35s ease, right 0.35s ease, bottom 0.35s ease',
+        }}
+      >
         <EngineSlot actorRef={engineRef} onRefsReady={handleRefsReady} />
       </motion.div>
-      <div ref={cinematicShroudRef} className={styles.engineCinematicShroud} aria-hidden />
-      <CompanyOverlayHost />
-      <PersonOverlayHost />
+
+      {/* ReactFlow graph — fades in with 300ms delay so globe dissolves first */}
       <AnimatePresence>
         {atlasView === 'network' && (
           <motion.div
             key="graph-panel"
-            style={{ position: 'absolute', inset: 0 }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.5, delay: 0.3, ease: 'easeOut' }}
+            style={{
+              position: 'absolute',
+              top:    graphInset.top,
+              left:   graphInset.left,
+              right:  graphInset.right,
+              bottom: graphInset.bottom,
+              zIndex: 10,
+              transition: 'top 0.35s ease, left 0.35s ease, right 0.35s ease, bottom 0.35s ease',
+            }}
           >
-            <GraphViewPanel />
+            <Suspense fallback={<GraphSkeleton />}>
+              {isWallStreet ? <WallStreetPage /> : <GraphViewPanel />}
+            </Suspense>
           </motion.div>
         )}
         {atlasView === 'persons' && (
@@ -224,7 +238,141 @@ export function AppShell() {
           </motion.div>
         )}
       </AnimatePresence>
-      <AtlasViewToggle />
+
+      {/* Floating view tabs — centered at the top of the canvas.
+          Placed after globe + graph in DOM so the framer-motion stacking
+          context never blocks pointer events. */}
+      <div style={{
+        position: 'absolute',
+        top: 4,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 35,
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderRadius: 8,
+      }}>
+        <AtlasTabs
+          activeView={atlasView}
+          onTabClick={t => {
+            if (t.action === 'studio-relation') {
+              actor.send({ type: 'OPEN_PERSON', id: 7 })
+            } else {
+              actor.send({ type: 'ATLAS_VIEW.SET', view: t.view as AtlasView })
+            }
+          }}
+        />
+      </div>
+
+      {/* Power Maps panel — visible over both globe and network views.
+          Hidden when an entity overlay (person/gold/company) is open. */}
+      {!isGoldOpen && !isPersonOpen && search.overlay !== 'company' && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 56,
+            left: 20,
+            width: 240,
+            zIndex: 25,
+            pointerEvents: 'auto',
+          }}
+        >
+          <Suspense fallback={<PowerMapsSkeleton />}>
+            <PowerMapsPanel />
+          </Suspense>
+        </div>
+      )}
+
+      {/* Overlay hosts — all three share a single AnimatePresence (mode="sync",
+          the default) so outgoing and incoming overlays cross-fade simultaneously.
+          This prevents the black flash that occurred when switching company→gold:
+          with mode="wait" the outgoing overlay faded out 0.22s before gold could
+          mount, exposing the black page background. mode="sync" keeps both alive
+          during the transition so combined opacity never drops to 0. */}
+      <AnimatePresence>
+        {search.overlay === 'company' && (
+          <motion.div
+            key="overlay-company"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: 'easeIn' }}
+            style={{ position: 'absolute', inset: 0, zIndex: 50, pointerEvents: 'none' }}
+          >
+            <Suspense fallback={<CompanyOverlaySkeleton />}><CompanyOverlayHost /></Suspense>
+          </motion.div>
+        )}
+        {isPersonOpen && (
+          <motion.div
+            key="overlay-person"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: 'easeIn' }}
+            style={{ position: 'absolute', inset: 0, zIndex: 50, pointerEvents: 'none' }}
+          >
+            <Suspense key="person-host" fallback={<PersonOverlaySkeleton />}><PersonOverlayHost /></Suspense>
+          </motion.div>
+        )}
+        {isGoldOpen && (
+          <motion.div
+            key="overlay-gold"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            style={{ position: 'absolute', inset: 0, zIndex: 50, pointerEvents: 'none' }}
+          >
+            <Suspense fallback={<GoldOverlaySkeleton />}><GoldOverlayHost /></Suspense>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      </main>
     </div>
   )
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * NOTA HISTÓRICA — Video transición globo→network (eliminado)
+ *
+ * Hubo una capa de video cinematográfico que se reproducía al cambiar
+ * atlasView de cualquier valor a 'network'. Eliminada porque interrumpía el
+ * flujo de UX. Implementación previa, por si se desea restaurar:
+ *
+ * 1) State + refs:
+ *    const [showVideo, setShowVideo] = useState(false)
+ *    const prevAtlasView = useRef(atlasView)
+ *    const videoRef      = useRef<HTMLVideoElement>(null)
+ *
+ * 2) Trigger en transición (cualquier vista) → 'network':
+ *    useEffect(() => {
+ *      if (prevAtlasView.current !== 'network' && atlasView === 'network') {
+ *        setShowVideo(true)
+ *        if (videoRef.current) {
+ *          videoRef.current.currentTime = 0
+ *          videoRef.current.play().catch(() => {})
+ *        }
+ *      }
+ *      prevAtlasView.current = atlasView
+ *    }, [atlasView])
+ *
+ * 3) Overlay siempre montado (preload), toggle por visibility para no
+ *    re-fetchear el asset. z-index 20: encima del grafo (10) y globo,
+ *    debajo de los overlays de entidad (50). Auto-cierre al terminar:
+ *    <div style={{
+ *      position: 'absolute', inset: 0, zIndex: 20, background: '#000',
+ *      visibility: showVideo ? 'visible' : 'hidden',
+ *      pointerEvents: showVideo ? 'auto' : 'none',
+ *    }}>
+ *      <video
+ *        ref={videoRef}
+ *        src="/MainVideo.mp4"
+ *        preload="auto"
+ *        playsInline
+ *        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+ *        onEnded={() => setShowVideo(false)}
+ *      />
+ *    </div>
+ *
+ * Asset esperado en /public/MainVideo.mp4 (presente en el repo, no se borró).
+ * ──────────────────────────────────────────────────────────────────────────── */

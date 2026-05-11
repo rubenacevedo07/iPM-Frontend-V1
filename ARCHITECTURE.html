@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iPM V1 — Frontend Architecture</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-deep: #040810;
+  --bg-base: #060910;
+  --bg-panel: rgba(8, 11, 17, 0.96);
+  --bg-card: rgba(255, 255, 255, 0.02);
+  --bg-glass: rgba(8, 14, 22, 0.82);
+
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-medium: rgba(255, 255, 255, 0.08);
+  --border-cyan: rgba(0, 229, 255, 0.08);
+  --border-cyan-hi: rgba(0, 229, 255, 0.2);
+
+  --text-primary: #e8edf5;
+  --text-secondary: #d0d8e4;
+  --text-muted: #8a9bb5;
+  --text-dim: #6b7a90;
+  --text-label: #5a6b80;
+
+  --cyan: #00e5ff;
+  --green: #00d4aa;
+  --amber: #ffb547;
+  --red: #ff4d6d;
+  --magenta: #ff2d92;
+  --purple: #a855f7;
+
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  --font-sans: 'Space Grotesk', -apple-system, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  line-height: 1.6;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.015) 1px, transparent 1px);
+  background-size: 80px 80px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar {
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border-medium);
+  padding: 32px 24px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  backdrop-filter: blur(12px);
+}
+
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 2px; }
+
+.brand {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.brand-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.brand-subtitle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 32px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(0, 212, 170, 0.08);
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  margin-bottom: 32px;
+}
+
+.nav-section { margin-bottom: 28px; }
+
+.nav-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.nav-list { list-style: none; }
+.nav-list li { margin-bottom: 2px; }
+
+.nav-list a {
+  display: block;
+  padding: 7px 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  border-radius: 2px;
+  border-left: 2px solid transparent;
+  transition: all 120ms ease;
+}
+
+.nav-list a:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border-left-color: var(--border-cyan-hi);
+}
+
+.nav-list a.active {
+  color: var(--cyan);
+  background: rgba(0, 229, 255, 0.04);
+  border-left-color: var(--cyan);
+}
+
+.main {
+  padding: 48px 64px;
+  max-width: 1100px;
+}
+
+.hero {
+  margin-bottom: 64px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--border-medium);
+}
+
+.hero-meta {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 24px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  flex-wrap: wrap;
+}
+
+.hero-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dim);
+}
+
+.hero-meta-item .dot {
+  width: 4px;
+  height: 4px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0, 212, 170, 0.4); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 6px rgba(0, 212, 170, 0); }
+}
+
+.hero h1 {
+  font-size: 48px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.hero h1 .accent { color: var(--cyan); }
+
+.hero p {
+  font-size: 17px;
+  color: var(--text-muted);
+  max-width: 720px;
+  line-height: 1.65;
+}
+
+.section { margin-bottom: 80px; scroll-margin-top: 80px; }
+
+.section-header {
+  margin-bottom: 32px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.section-number {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 0.2em;
+}
+
+.section h2 {
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+}
+
+/* Stack table */
+.stack-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.stack-table th {
+  text-align: left;
+  padding: 14px 18px;
+  background: rgba(0, 229, 255, 0.03);
+  border-bottom: 1px solid var(--border-cyan-hi);
+  color: var(--cyan);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.stack-table td {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.stack-table tr:last-child td { border-bottom: none; }
+.stack-table tr:hover { background: rgba(255, 255, 255, 0.015); }
+
+.stack-table .layer-name { color: var(--cyan); font-weight: 600; }
+.stack-table .lib-name { color: var(--text-primary); font-weight: 500; }
+.stack-table .version { color: var(--text-dim); }
+
+/* Region cards */
+.regions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.region-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  padding: 20px 24px;
+  border-radius: 2px;
+  position: relative;
+  transition: all 200ms ease;
+}
+
+.region-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 2px;
+  background: var(--accent-color, var(--cyan));
+}
+
+.region-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border-cyan-hi);
+}
+
+.region-card.overlay { --accent-color: var(--cyan); }
+.region-card.search { --accent-color: var(--green); }
+.region-card.auth { --accent-color: var(--amber); }
+.region-card.focus { --accent-color: var(--magenta); }
+.region-card.atlasView { --accent-color: var(--purple); }
+
+.region-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-color, var(--cyan));
+  margin-bottom: 6px;
+}
+
+.region-states {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  letter-spacing: 0;
+}
+
+.region-purpose {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Code block */
+.code-block {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-medium);
+  border-left: 3px solid var(--cyan);
+  border-radius: 2px;
+  padding: 20px 24px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  overflow-x: auto;
+  margin-bottom: 24px;
+  white-space: pre;
+}
+
+.code-block .keyword { color: var(--magenta); }
+.code-block .type { color: var(--cyan); }
+.code-block .string { color: var(--green); }
+.code-block .comment { color: var(--text-dim); font-style: italic; }
+.code-block .field { color: var(--text-primary); }
+
+/* Component tree */
+.tree {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 2px;
+  padding: 24px 28px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--text-secondary);
+  overflow-x: auto;
+}
+
+.tree .root { color: var(--cyan); font-weight: 700; }
+.tree .branch { color: var(--text-dim); }
+.tree .node { color: var(--text-primary); font-weight: 500; }
+.tree .leaf { color: var(--text-secondary); }
+.tree .annotation { color: var(--text-muted); font-style: italic; font-size: 11px; }
+
+/* Service cards */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.service-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  padding: 16px 20px;
+  border-radius: 2px;
+  transition: border-color 150ms ease;
+}
+
+.service-card:hover { border-color: var(--border-cyan-hi); }
+
+.service-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--cyan);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.service-purpose {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Status grid */
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.status-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 2px;
+  padding: 24px 28px;
+}
+
+.status-block.working { border-left: 3px solid var(--green); }
+.status-block.deferred { border-left: 3px solid var(--amber); }
+
+.status-block h3 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.status-block.working h3 { color: var(--green); }
+.status-block.deferred h3 { color: var(--amber); }
+
+.status-block ul {
+  list-style: none;
+}
+
+.status-block li {
+  padding: 8px 0;
+  padding-left: 20px;
+  position: relative;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.status-block li:last-child { border-bottom: none; }
+
+.status-block.working li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.status-block.deferred li::before {
+  content: '○';
+  position: absolute;
+  left: 0;
+  color: var(--amber);
+  font-family: var(--font-mono);
+}
+
+/* ADR list */
+.adr-list {
+  display: grid;
+  gap: 16px;
+}
+
+.adr-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  padding: 20px 24px;
+  border-radius: 2px;
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 20px;
+  align-items: start;
+  transition: border-color 150ms ease;
+}
+
+.adr-item:hover { border-color: var(--border-cyan-hi); }
+
+.adr-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  padding-top: 4px;
+}
+
+.adr-content {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.adr-content strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Roadmap tiers */
+.tiers-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.tier-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  padding: 24px;
+  border-radius: 2px;
+  position: relative;
+}
+
+.tier-card.tier-1 { border-top: 3px solid var(--red); }
+.tier-card.tier-2 { border-top: 3px solid var(--amber); }
+.tier-card.tier-3 { border-top: 3px solid var(--text-dim); }
+
+.tier-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.tier-card.tier-1 .tier-label { color: var(--red); }
+.tier-card.tier-2 .tier-label { color: var(--amber); }
+.tier-card.tier-3 .tier-label { color: var(--text-dim); }
+
+.tier-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+}
+
+.tier-card ul { list-style: none; }
+
+.tier-card li {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 6px 0;
+  padding-left: 14px;
+  position: relative;
+  font-family: var(--font-mono);
+}
+
+.tier-card li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--cyan);
+}
+
+/* File tree */
+.file-tree {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 2px;
+  padding: 24px 28px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.file-tree .dir { color: var(--cyan); font-weight: 600; }
+.file-tree .file { color: var(--text-secondary); }
+.file-tree .branch { color: var(--text-dim); }
+.file-tree .comment { color: var(--text-muted); font-style: italic; }
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.metric {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  padding: 20px;
+  border-radius: 2px;
+}
+
+.metric-value {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.metric-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+p {
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  max-width: 760px;
+}
+
+p strong { color: var(--text-primary); }
+
+ul {
+  margin-bottom: 16px;
+  padding-left: 24px;
+}
+
+ul li {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+code {
+  font-family: var(--font-mono);
+  background: rgba(0, 229, 255, 0.06);
+  color: var(--cyan);
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-size: 12px;
+}
+
+.footer {
+  margin-top: 96px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border-medium);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+}
+
+@media (max-width: 1024px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--border-medium); }
+  .main { padding: 32px 24px; }
+  .hero h1 { font-size: 32px; }
+  .regions-grid, .status-grid, .tiers-grid { grid-template-columns: 1fr; }
+  .metric-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <div class="brand">iPM V1 · FRONTEND</div>
+  <div class="brand-title">Architecture</div>
+  <div class="brand-subtitle">2026—05—09</div>
+  <div class="status-pill">● Sprint 1 Complete</div>
+
+  <div class="nav-section">
+    <span class="nav-label">Foundation</span>
+    <ul class="nav-list">
+      <li><a href="#stack" class="active">Stack</a></li>
+      <li><a href="#machine">App Machine</a></li>
+      <li><a href="#routing">Routing</a></li>
+    </ul>
+  </div>
+
+  <div class="nav-section">
+    <span class="nav-label">Composition</span>
+    <ul class="nav-list">
+      <li><a href="#components">Components</a></li>
+      <li><a href="#services">Services</a></li>
+      <li><a href="#types">Types</a></li>
+    </ul>
+  </div>
+
+  <div class="nav-section">
+    <span class="nav-label">Status</span>
+    <ul class="nav-list">
+      <li><a href="#status">Sprint 1</a></li>
+      <li><a href="#decisions">ADR-0001</a></li>
+      <li><a href="#roadmap">Sprint 2</a></li>
+    </ul>
+  </div>
+
+  <div class="nav-section">
+    <span class="nav-label">Reference</span>
+    <ul class="nav-list">
+      <li><a href="#files">File Layout</a></li>
+      <li><a href="#verify">Verification</a></li>
+    </ul>
+  </div>
+</aside>
+
+<main class="main">
+
+  <section class="hero">
+    <div class="hero-meta">
+      <div class="hero-meta-item"><span class="dot"></span> SPRINT 1 COMPLETE</div>
+      <div class="hero-meta-item">PROD BUILD GREEN</div>
+      <div class="hero-meta-item">TSC 0 ERRORS</div>
+      <div class="hero-meta-item">5 PARALLEL REGIONS</div>
+    </div>
+    <h1>Cinematic intelligence <span class="accent">console.</span><br>Built for clarity at scale.</h1>
+    <p>React 19 + XState v5 + TanStack Router + deck.gl. URL-driven state machine. Single egress through apiClient. Production-grade overlay system. ReactFlow graph canvas. 60fps globe. Ready for Sprint 2.</p>
+  </section>
+
+  <section class="section" id="stack">
+    <div class="section-header">
+      <span class="section-number">01</span>
+      <h2>Stack</h2>
+    </div>
+    <table class="stack-table">
+      <thead><tr><th>Layer</th><th>Library</th><th>Version</th></tr></thead>
+      <tbody>
+        <tr><td class="layer-name">UI</td><td class="lib-name">React</td><td class="version">19.2.4</td></tr>
+        <tr><td class="layer-name">Build</td><td class="lib-name">Vite + TypeScript</td><td class="version">8.0.4 / 6.0.2</td></tr>
+        <tr><td class="layer-name">State</td><td class="lib-name">XState</td><td class="version">5.30.0</td></tr>
+        <tr><td class="layer-name">Routing</td><td class="lib-name">TanStack Router</td><td class="version">1.168.22</td></tr>
+        <tr><td class="layer-name">Data</td><td class="lib-name">TanStack Query</td><td class="version">5.99.0</td></tr>
+        <tr><td class="layer-name">Schema</td><td class="lib-name">Zod</td><td class="version">4.3.6</td></tr>
+        <tr><td class="layer-name">Globe</td><td class="lib-name">deck.gl</td><td class="version">9.3.0</td></tr>
+        <tr><td class="layer-name">Graph</td><td class="lib-name">@xyflow/react</td><td class="version">12.10.2</td></tr>
+        <tr><td class="layer-name">Animation</td><td class="lib-name">framer-motion</td><td class="version">12.38.0</td></tr>
+        <tr><td class="layer-name">Styling</td><td class="lib-name">SCSS Modules</td><td class="version">Sass 1.99.0</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section" id="machine">
+    <div class="section-header">
+      <span class="section-number">02</span>
+      <h2>App Machine — 5 Parallel Regions</h2>
+    </div>
+    <p>The <code>app.machine</code> runs as a single XState v5 actor with five orthogonal parallel regions. Each region tracks an independent concern.</p>
+
+    <div class="regions-grid">
+      <div class="region-card overlay">
+        <div class="region-name">overlay</div>
+        <div class="region-states">closed → person | company | vs | gold</div>
+        <div class="region-purpose">Active entity overlay panel</div>
+      </div>
+      <div class="region-card search">
+        <div class="region-name">search</div>
+        <div class="region-states">idle ↔ active</div>
+        <div class="region-purpose">Workstation search palette state</div>
+      </div>
+      <div class="region-card auth">
+        <div class="region-name">auth</div>
+        <div class="region-states">checking → authenticated | unauthenticated</div>
+        <div class="region-purpose">Currently stub. Real OAuth in Sprint 2.</div>
+      </div>
+      <div class="region-card focus">
+        <div class="region-name">focus</div>
+        <div class="region-states">idle ↔ focused</div>
+        <div class="region-purpose">Cinematic focus mode for entity zoom</div>
+      </div>
+      <div class="region-card atlasView">
+        <div class="region-name">atlasView</div>
+        <div class="region-states">globe | graph (network)</div>
+        <div class="region-purpose">Active visualization layer</div>
+      </div>
+    </div>
+
+    <h3 style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--cyan); margin: 32px 0 12px;">AppContext shape</h3>
+    <div class="code-block"><span class="keyword">interface</span> <span class="type">AppContext</span> {
+  <span class="field">selectedEntityRef</span>: <span class="type">EntityRef</span> | <span class="keyword">null</span>;
+  <span class="field">searchQuery</span>: <span class="type">string</span>;
+  <span class="field">user</span>: <span class="type">AuthUser</span> | <span class="keyword">null</span>;
+  <span class="field">comparisonRefs</span>: { <span class="field">a</span>?: <span class="type">EntityRef</span>; <span class="field">b</span>?: <span class="type">EntityRef</span> };
+  <span class="field">pendingURLState</span>: <span class="type">AppURLState</span> | <span class="keyword">null</span>;
+  <span class="comment">// ... region-specific fields</span>
+}</div>
+
+    <h3 style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--cyan); margin: 32px 0 12px;">Key guards</h3>
+    <ul>
+      <li><code>urlActuallyChanged</code> — uses fast-deep-equal to prevent URL-sync loops between TanStack Router and machine state</li>
+      <li><code>isGoldCompanyClick</code> — discriminates Gold overlay click from regular company entity click on globe</li>
+      <li><code>hasPendingURLState</code> — gates URL-driven transitions during boot</li>
+    </ul>
+
+    <h3 style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--cyan); margin: 32px 0 12px;">Named actions</h3>
+    <ul>
+      <li><code>clearOverlay</code> — closes any overlay, clears selectedEntityRef, dispatches CLEAR_ARCS</li>
+      <li><code>navigateHome</code> — resets to / index route, clears all parallel region state</li>
+      <li><code>dispatchClearArcs</code> — fire-and-forget event to deck.gl globe to remove ArcLayer instances</li>
+      <li><code>syncURLToMachine</code> — receives URL_CHANGED events from router, hydrates context</li>
+    </ul>
+
+    <p style="margin-top: 24px; padding: 16px 20px; background: rgba(255, 181, 71, 0.05); border-left: 2px solid var(--amber); border-radius: 0 2px 2px 0; font-size: 12px;"><strong style="color: var(--amber);">Sprint 2 review:</strong> Currently 5 parallel regions. ADR-0001 sets soft cap at 4. If a 6th region is proposed in Sprint 2, refactor <code>focus</code> into <code>overlay</code> substate first.</p>
+  </section>
+
+  <section class="section" id="routing">
+    <div class="section-header">
+      <span class="section-number">03</span>
+      <h2>Routing</h2>
+    </div>
+    <p>Code-based TanStack Router (no file-based plugin). Two routes total. Search params Zod-validated. URL is derived state — components never call <code>router.navigate()</code> directly.</p>
+
+    <table class="stack-table" style="margin-bottom: 24px;">
+      <thead><tr><th>Path</th><th>Component</th><th>Search params</th></tr></thead>
+      <tbody>
+        <tr><td class="layer-name">/</td><td class="lib-name">IndexRoute</td><td class="version">none</td></tr>
+        <tr><td class="layer-name">/workstation</td><td class="lib-name">AppShell</td><td class="version">overlay, id, a, b, q</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-block"><span class="keyword">const</span> workstationSearchSchema = <span class="type">z</span>.object({
+  <span class="field">overlay</span>: <span class="type">z</span>.enum([<span class="string">'person'</span>, <span class="string">'company'</span>, <span class="string">'vs'</span>, <span class="string">'gold'</span>]).optional(),
+  <span class="field">id</span>: <span class="type">z</span>.string().optional(),
+  <span class="field">a</span>: <span class="type">z</span>.string().optional(),  <span class="comment">// comparison left</span>
+  <span class="field">b</span>: <span class="type">z</span>.string().optional(),  <span class="comment">// comparison right</span>
+  <span class="field">q</span>: <span class="type">z</span>.string().optional(),  <span class="comment">// search query</span>
+});</div>
+
+    <p>The router is the source of truth for URL state. The machine receives <code>URL_CHANGED</code> events from a router subscription and reconciles its parallel region state via <code>syncURLToMachine</code>. The <code>urlActuallyChanged</code> guard breaks the cycle: <code>URL_CHANGED → syncURLToMachine → action calls navigate → router emits → guard rejects identical state.</code></p>
+  </section>
+
+  <section class="section" id="components">
+    <div class="section-header">
+      <span class="section-number">04</span>
+      <h2>Component Map</h2>
+    </div>
+
+    <div class="tree"><span class="root">AppShell</span>
+<span class="branch">├──</span> <span class="node">TopBar</span>
+<span class="branch">│   ├──</span> <span class="leaf">Breadcrumb</span> <span class="annotation">(dynamic from selectedEntityRef)</span>
+<span class="branch">│   ├──</span> <span class="leaf">ViewTabs</span> <span class="annotation">(atlasView region selector)</span>
+<span class="branch">│   └──</span> <span class="leaf">UserChip</span> <span class="annotation">(auth state)</span>
+<span class="branch">├──</span> <span class="node">EngineSlot</span>
+<span class="branch">│   └──</span> <span class="leaf">GlobeEngine</span> <span class="annotation">(deck.gl _GlobeView, auto-rotate, ArcLayer)</span>
+<span class="branch">├──</span> <span class="node">GraphViewPanel</span>
+<span class="branch">│   └──</span> <span class="leaf">ReactFlow</span> <span class="annotation">(mock data — Sprint 2 wires real graphService)</span>
+<span class="branch">├──</span> <span class="node">AtlasViewToggle</span> <span class="annotation">(globe ↔ graph)</span>
+<span class="branch">├──</span> <span class="node">CompanyOverlayHost</span>
+<span class="branch">│   └──</span> <span class="leaf">CompanyOverlay</span> <span class="annotation">(NVIDIA live data)</span>
+<span class="branch">├──</span> <span class="node">PersonOverlayHost</span>
+<span class="branch">│   ├──</span> <span class="leaf">PersonOverlay</span> <span class="annotation">(Elon Musk live data)</span>
+<span class="branch">│   └──</span> <span class="leaf">EgoGraphPanel</span> <span class="annotation">(k=2 ego subgraph)</span>
+<span class="branch">└──</span> <span class="node">GoldOverlayHost</span>
+    <span class="branch">└──</span> <span class="leaf">GoldOverlay</span>
+        <span class="branch">├──</span> <span class="leaf">PersonLeftPanel</span>
+        <span class="branch">├──</span> <span class="leaf">KeyConnectionsPanel</span> <span class="annotation">(floating)</span>
+        <span class="branch">├──</span> <span class="leaf">KeyClientsPanel</span> <span class="annotation">(floating)</span>
+        <span class="branch">└──</span> <span class="leaf">KeyDataPanel</span> <span class="annotation">(floating)</span></div>
+
+    <p style="margin-top: 24px;"><code>EngineSlot</code> and <code>GraphViewPanel</code> mount conditionally based on <code>atlasView</code> region. Cinematic transition globe → graph uses framer-motion + deck.gl camera flyTo. Overlay hosts each subscribe to <code>app.machine</code> overlay region with selectors.</p>
+  </section>
+
+  <section class="section" id="services">
+    <div class="section-header">
+      <span class="section-number">05</span>
+      <h2>Services Layer</h2>
+    </div>
+    <p><strong>36 files</strong> in <code>src/services/</code>. Single network egress through <code>apiClient.ts</code>. Mappers convert backend DTOs to frontend domain types <strong>at the service boundary</strong>, never in components.</p>
+
+    <div class="metric-grid">
+      <div class="metric"><div class="metric-value">36</div><div class="metric-label">Service files</div></div>
+      <div class="metric"><div class="metric-value">1</div><div class="metric-label">Network egress</div></div>
+      <div class="metric"><div class="metric-value">8</div><div class="metric-label">Real services</div></div>
+      <div class="metric"><div class="metric-value">2</div><div class="metric-label">Mappers</div></div>
+    </div>
+
+    <h3 style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--cyan); margin: 32px 0 12px;">Real implementations</h3>
+    <div class="services-grid">
+      <div class="service-card"><div class="service-name">entityService</div><div class="service-purpose">Entity lookup by NodeId, search, batch fetch</div></div>
+      <div class="service-card"><div class="service-name">intelligenceService</div><div class="service-purpose">Person intelligence, ego subgraph, biographical</div></div>
+      <div class="service-card"><div class="service-name">networkService</div><div class="service-purpose">Company supplier/client/partner networks</div></div>
+      <div class="service-card"><div class="service-name">riskService</div><div class="service-purpose">Country and entity risk scores</div></div>
+      <div class="service-card"><div class="service-name">commodityService</div><div class="service-purpose">Gold and commodity flows</div></div>
+      <div class="service-card"><div class="service-name">newsService</div><div class="service-purpose">Recent news per entity</div></div>
+      <div class="service-card"><div class="service-name">marketService</div><div class="service-purpose">Market data (stocks, FX, indices)</div></div>
+      <div class="service-card"><div class="service-name">geopoliticalService</div><div class="service-purpose">Geopolitical context, country relations</div></div>
+    </div>
+
+    <p style="margin-top: 24px;"><strong>Auth:</strong> Currently stub. <code>useAuth()</code> hook returns hardcoded user. Sprint 2 replaces with real OAuth flow against backend <code>/auth/*</code> endpoints.</p>
+  </section>
+
+  <section class="section" id="types">
+    <div class="section-header">
+      <span class="section-number">06</span>
+      <h2>Types — Rule 6 Locked</h2>
+    </div>
+    <p><strong>39 files</strong> in <code>src/types/</code>. Verbatim from v3. <strong>No refactoring of types until post-Sprint-1.</strong> No <code>_ext/</code> override directory exists.</p>
+    <p>This is intentional. Type churn during Sprint 1 caused 3 build breaks before Rule 6 was added. <strong>Stability over elegance until Sprint 2.</strong></p>
+  </section>
+
+  <section class="section" id="status">
+    <div class="section-header">
+      <span class="section-number">07</span>
+      <h2>Sprint 1 Status</h2>
+    </div>
+    <div class="status-grid">
+      <div class="status-block working">
+        <h3>✓ Working</h3>
+        <ul>
+          <li>Globe full-bleed + auto-rotation (60fps sustained)</li>
+          <li>Company overlay (NVIDIA live data)</li>
+          <li>Person overlay (Elon Musk live data)</li>
+          <li>Gold overlay (3 floating panels)</li>
+          <li>ArcLayer for supplier/client/partner networks</li>
+          <li>ReactFlow graph panel</li>
+          <li>Cinematic globe → graph transition</li>
+          <li>TopBar with dynamic breadcrumb</li>
+          <li>Production build green</li>
+          <li>TypeScript 0 errors</li>
+        </ul>
+      </div>
+      <div class="status-block deferred">
+        <h3>○ Deferred</h3>
+        <ul>
+          <li>GATE C heap profiling (manual)</li>
+          <li>PHASE_8_DEBT.md (animation tweaks)</li>
+          <li>Real OAuth (Sprint 2)</li>
+          <li>VsOverlay deep impl (Sprint 2)</li>
+          <li>GraphEngine Three.js + Worker (Sprint 2)</li>
+          <li>Risk fill layers (Phase 7.1/7.2 backlog)</li>
+          <li>Graph wired to graphService.getSubgraph()</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="decisions">
+    <div class="section-header">
+      <span class="section-number">08</span>
+      <h2>Architectural Decisions — ADR-0001</h2>
+    </div>
+    <div class="adr-list">
+      <div class="adr-item">
+        <div class="adr-num">DEC-01</div>
+        <div class="adr-content"><strong>Zod for searchParams, not openapi-typescript.</strong> Search params are UI state, not backend contract. Zod gives runtime validation + type inference without coupling routes to API schema.</div>
+      </div>
+      <div class="adr-item">
+        <div class="adr-num">DEC-02</div>
+        <div class="adr-content"><strong>URL is derived state.</strong> Components never call <code>router.navigate()</code> directly. All navigation flows through app.machine events. The router is read-only from the component perspective.</div>
+      </div>
+      <div class="adr-item">
+        <div class="adr-num">DEC-03</div>
+        <div class="adr-content"><strong>fast-deep-equal guard prevents URL-sync loops.</strong> Without <code>urlActuallyChanged</code>: <code>URL_CHANGED → syncURLToMachine → navigate → emit → infinite loop</code>. The deep equality check breaks the cycle.</div>
+      </div>
+      <div class="adr-item">
+        <div class="adr-num">DEC-04</div>
+        <div class="adr-content"><strong>4 flat parallel regions max in app.machine.</strong> Currently at 5 (added <code>atlasView</code>). Sprint 2 should review whether <code>focus</code> can collapse into an <code>overlay</code> substate to return to 4.</div>
+      </div>
+      <div class="adr-item">
+        <div class="adr-num">DEC-05</div>
+        <div class="adr-content"><strong>Code-based routing only.</strong> No file-based plugin. Code-based gives full type inference at the route definition site and avoids magic file-system coupling. Cost is verbosity; benefit is debuggability.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="roadmap">
+    <div class="section-header">
+      <span class="section-number">09</span>
+      <h2>Sprint 2 Roadmap</h2>
+    </div>
+    <div class="tiers-grid">
+      <div class="tier-card tier-1">
+        <div class="tier-label">Tier 1 — Must</div>
+        <div class="tier-name">Critical path</div>
+        <ul>
+          <li>Wire GraphViewPanel to graphService.getSubgraph()</li>
+          <li>Replace useAuth() stub with OAuth</li>
+          <li>VsOverlay deep implementation</li>
+        </ul>
+      </div>
+      <div class="tier-card tier-2">
+        <div class="tier-label">Tier 2 — Should</div>
+        <div class="tier-name">High value</div>
+        <ul>
+          <li>Three.js GraphEngine in Worker</li>
+          <li>Globe risk fill layers (RiskScore > 60)</li>
+          <li>GATE C manual heap verification</li>
+        </ul>
+      </div>
+      <div class="tier-card tier-3">
+        <div class="tier-label">Tier 3 — Could</div>
+        <div class="tier-name">Polish</div>
+        <ul>
+          <li>Reduce parallel regions back to 4</li>
+          <li>Animation polish from PHASE_8_DEBT</li>
+          <li>Label caching optimization</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="files">
+    <div class="section-header">
+      <span class="section-number">10</span>
+      <h2>File Layout</h2>
+    </div>
+    <div class="file-tree"><span class="dir">src/</span>
+<span class="branch">├──</span> <span class="file">App.tsx</span>
+<span class="branch">├──</span> <span class="file">main.tsx</span>
+<span class="branch">├──</span> <span class="dir">machine/</span>
+<span class="branch">│   ├──</span> <span class="file">app.machine.ts</span>
+<span class="branch">│   ├──</span> <span class="file">app.events.ts</span>
+<span class="branch">│   └──</span> <span class="file">app.guards.ts</span>
+<span class="branch">├──</span> <span class="dir">routes/</span>
+<span class="branch">│   ├──</span> <span class="file">__root.tsx</span>
+<span class="branch">│   ├──</span> <span class="file">index.tsx</span>
+<span class="branch">│   └──</span> <span class="file">workstation.tsx</span>
+<span class="branch">├──</span> <span class="dir">components/</span>
+<span class="branch">│   ├──</span> <span class="dir">shell/</span><span class="file"> AppShell.tsx, TopBar.tsx</span>
+<span class="branch">│   ├──</span> <span class="dir">overlays/</span><span class="file"> CompanyOverlay, PersonOverlay, GoldOverlay, VsOverlay</span>
+<span class="branch">│   ├──</span> <span class="dir">globe/</span><span class="file"> GlobeEngine.tsx</span>
+<span class="branch">│   └──</span> <span class="dir">graph/</span><span class="file"> GraphViewPanel.tsx</span>
+<span class="branch">├──</span> <span class="dir">services/</span>
+<span class="branch">│   ├──</span> <span class="dir">api/</span><span class="file"> apiClient.ts</span>
+<span class="branch">│   └──</span> <span class="comment">(36 files total)</span>
+<span class="branch">├──</span> <span class="dir">types/</span><span class="comment"> (39 files, Rule 6 locked)</span>
+<span class="branch">├──</span> <span class="dir">hooks/</span><span class="file"> useCompanyById, usePersonIntelligence, useAuth</span>
+<span class="branch">└──</span> <span class="dir">styles/</span><span class="comment"> (SCSS modules)</span>
+
+<span class="dir">docs/</span>
+<span class="branch">└──</span> <span class="file">ARCHITECTURE.md</span> <span class="comment">(this file)</span></div>
+  </section>
+
+  <section class="section" id="verify">
+    <div class="section-header">
+      <span class="section-number">11</span>
+      <h2>Verification</h2>
+    </div>
+    <div class="code-block"><span class="comment"># TypeScript clean</span>
+npx tsc --noEmit
+
+<span class="comment"># Production build</span>
+npm run build
+
+<span class="comment"># Dev server</span>
+npm run dev</div>
+    <p>All three should complete without errors at the time of this document.</p>
+  </section>
+
+  <footer class="footer">
+    <span>iPM V1 · FRONTEND ARCHITECTURE</span>
+    <span>2026—05—09 · SPRINT 1 COMPLETE</span>
+  </footer>
+
+</main>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('.section, .hero');
+const navLinks = document.querySelectorAll('.nav-list a');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      navLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

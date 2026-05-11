@@ -3,7 +3,7 @@
 
 import type { EntityRef } from '@/app/app.events';
 import type { AtlasView } from '@/types/atlas';
-import type { EngineId, EngineEntityData, EngineArcData, GraphEngineData, EngineCompanySelectionData } from './inputs';
+import type { EngineId, EngineEntityData, EngineArcData } from './inputs';
 
 /** Canonical unsubscribe handle — matches XState/nanostores/zustand convention */
 export type Unsubscribe = () => void;
@@ -30,15 +30,16 @@ export type BridgeEvent =
  * One-directional: machine → engine only.
  */
 export type BridgeCommand =
-  | { type: 'CMD.SET_VIEW';               view: AtlasView }
-  | { type: 'CMD.SET_FOCUS';              target: EntityRef | null }
-  | { type: 'CMD.SET_ENTITIES';           data: EngineEntityData }
-  | { type: 'CMD.SET_ARCS';              data: EngineArcData }
-  | { type: 'CMD.SET_GRAPH';             data: GraphEngineData }
-  | { type: 'CMD.SET_COMPANY_SELECTION'; data: EngineCompanySelectionData }
+  | { type: 'CMD.SET_VIEW';     view: AtlasView }
+  | { type: 'CMD.SET_FOCUS';    target: EntityRef | null }
+  | { type: 'CMD.SET_ENTITIES'; data: EngineEntityData }
+  | { type: 'CMD.SET_ARCS';     data: EngineArcData }
   | { type: 'CMD.SUSPEND' }
   | { type: 'CMD.RESUME' }
-  | { type: 'CMD.DISPOSE' };
+  | { type: 'CMD.DISPOSE' }
+  | { type: 'CMD.SET_POWERMAP'; powermapId: string | null }
+  | { type: 'CMD.FLY_TO'; longitude: number; latitude: number; zoom?: number; duration?: number }
+  | { type: 'CMD.SET_ROTATION'; enabled: boolean };
 
 /**
  * Bridge instance attached to a single engine slot.

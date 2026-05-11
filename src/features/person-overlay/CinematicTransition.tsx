@@ -10,7 +10,7 @@ interface CinematicTransitionProps {
 
 export function CinematicTransition({ scene, label, onComplete }: CinematicTransitionProps) {
   useEffect(() => {
-    const t = setTimeout(onComplete, 800)
+    const t = setTimeout(onComplete, 1800)
     return () => clearTimeout(t)
   }, [onComplete])
 

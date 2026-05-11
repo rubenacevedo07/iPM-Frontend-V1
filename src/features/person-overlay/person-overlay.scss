@@ -29,15 +29,121 @@
 .badge--purple { color: #a855f7; background: rgba(168,85,247,0.06); border: 1px solid rgba(168,85,247,0.2); }
 .badge--green  { color: #00d4aa; background: rgba(0,212,170,0.06);  border: 1px solid rgba(0,212,170,0.2);  }
 
-// ── Overlay root — SOLO VIEW 280px + 1fr / 1fr + 32px ────────────────────────
-.ov__root {
-  position: absolute;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  grid-template-rows: 1fr 32px;
+// ── Overlay host — transparent container, globe shows through center ──────────
+.pe__host {
   font-family: 'DM Sans', sans-serif;
+}
+
+// ── Header bar — 56px full-width strip at top ─────────────────────────────────
+.pe__header-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  z-index: 55;
+  background: rgba(6, 9, 15, 0.96);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  padding: 0 12px 0 14px;
+  gap: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.pe__hdr-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pe__hdr-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  background: rgba(0,229,255,0.08);
+  border: 1px solid rgba(0,229,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #00e5ff;
+}
+
+.pe__hdr-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #e8edf5;
+  line-height: 1.1;
+}
+
+.pe__hdr-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: #5a6b80;
+  margin-top: 1px;
+}
+
+.pe__hdr-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pe__hdr-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pe__hdr-pill-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #00d4aa;
+  animation: blink 2s infinite;
+}
+
+.pe__hdr-pill--live  { color: #00d4aa; background: rgba(0,212,170,0.06); border: 1px solid rgba(0,212,170,0.2); }
+.pe__hdr-pill--score { color: #00e5ff; background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.15); }
+.pe__hdr-pill--rank  { color: #f5a623; background: rgba(245,166,35,0.06); border: 1px solid rgba(245,166,35,0.15); }
+
+// ── Left panel wrapper — absolute left column ─────────────────────────────────
+.pe__left-wrap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 32px;
+  width: 280px;
+  overflow: hidden;
+  background: rgba(6, 9, 15, 0.99);
+  border-right: 1px solid rgba(0, 229, 255, 0.08);
+}
+
+// ── Right panel wrapper — absolute right column, below header ─────────────────
+.pe__right-wrap {
+  position: absolute;
+  right: 0;
+  top: 56px;
+  bottom: 32px;
+  width: 300px;
+  background: rgba(6, 9, 15, 0.97);
+  border-left: 1px solid rgba(0, 229, 255, 0.08);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -463,17 +569,10 @@
   &::-webkit-scrollbar { display: none; }
 }
 
-// 3-column row
-.pe__grid-row-3 {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-// 2-column row
+// Data rows now stack vertically in the 300px right panel
+.pe__grid-row-3,
 .pe__grid-row-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: block;
 }
 
 // Grid cell
@@ -560,6 +659,10 @@
 
 // ── Bottom bar — PersonSoloView ───────────────────────────────────────────────
 .pe__bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: 32px;
   background: rgba(3,5,10,0.99);
   border-top: 1px solid rgba(0,229,255,0.06);
@@ -569,7 +672,6 @@
   gap: 10px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  grid-column: 1 / -1;
 }
 
 .pe__bar-sep {
@@ -1539,8 +1641,11 @@
 // ── CinematicTransition ───────────────────────────────────────────────────────
 .cin__root {
   position: fixed;
-  inset: 0;
-  z-index: 200;
+  top: 44px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 35;
   overflow: hidden;
   background: #030710;
 }
@@ -1552,7 +1657,7 @@
   background-position: center;
   filter: brightness(0.35) contrast(1.2) saturate(1.1);
   will-change: transform;
-  animation: cin-ken-burns 0.8s ease forwards;
+  animation: cin-ken-burns 1.8s ease forwards;
 }
 
 @keyframes cin-ken-burns {

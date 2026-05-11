@@ -77,3 +77,12 @@
   font-size: 9px;
   color: #5a6b80;
 }
+
+.themeNav {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  z-index: 20;
+  pointer-events: auto;
+}
+

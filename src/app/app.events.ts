@@ -8,6 +8,7 @@ export type EntityRef = {
   type:   'PERSON' | 'COMPANY' | 'COUNTRY'
   slug:   string
   name:   string
+  isGold?: boolean
 }
 
 export type AppEvent =
@@ -31,4 +32,5 @@ export type AppEvent =
   // Phase 8: CompanyOverlayHost emits NETWORK_RESOLVED when provider/client
   // hooks settle. app.machine validates the companyId against the open overlay
   // (stale-id guard) and forwards CMD.SET_ARCS to the active bridge.
-  | { type: 'NETWORK_RESOLVED';    companyId: number; arcs: EngineArc[] }
+  | { type: 'NETWORK_RESOLVED';        companyId: number; arcs: EngineArc[] }
+  | { type: 'PERSON_NETWORK_RESOLVED'; personId:  number; arcs: EngineArc[] }

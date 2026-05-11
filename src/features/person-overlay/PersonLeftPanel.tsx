@@ -22,7 +22,7 @@ export function PersonLeftPanel({
   const displayName = person?.fullName ?? entityName
   const initials    = displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
-  const rawPhotoUrl = person?.photoUrl ?? null
+  const rawPhotoUrl = person?.photoUrl ?? '/persons/Musk.jpeg'
   // Resolve URL: absolute URLs pass through; bare filenames get /persons/ prefix
   const photoUrl = rawPhotoUrl
     ? (rawPhotoUrl.startsWith('/') || rawPhotoUrl.startsWith('http')

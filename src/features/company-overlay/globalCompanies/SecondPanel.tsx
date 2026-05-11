@@ -15,7 +15,7 @@ interface Props {
 export default function SecondPanel({ activeTab, providers, clients, companyById }: Props) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: 30 }}
+      initial={{ opacity: 1, x: 0 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.4 }}

@@ -1,32 +1,37 @@
-import { Globe2, Network, Users, Waypoints } from 'lucide-react'
-import { AppActor } from '@/app/AppProviders'
+// src/components/AtlasViewToggle/AtlasViewToggle.tsx
+import { AppActor } from '@/app/app.machine'
 import type { AtlasView } from '@/types/atlas'
 import styles from './AtlasViewToggle.module.scss'
 
-const VIEWS: { view: AtlasView; icon: React.ReactNode; label: string }[] = [
-  { view: 'globe',   icon: <Globe2  size={16} />, label: 'Globe'   },
-  { view: 'network', icon: <Network size={16} />, label: 'Graph'   },
-  { view: 'persons',  icon: <Users     size={16} />, label: 'Persons'  },
-  { view: 'relation', icon: <Waypoints size={16} />, label: 'Relation' },
+const VIEWS: { view: AtlasView; label: string }[] = [
+  { view: 'globe',   label: 'Globe'   },
+  { view: 'network', label: 'Network' },
 ]
 
 export function AtlasViewToggle() {
-  const appRef    = AppActor.useActorRef()
+  const actor     = AppActor.useActorRef()
   const atlasView = AppActor.useSelector(s => s.context.atlasView)
 
   return (
-    <div className={styles.hud} role="toolbar" aria-label="Atlas view switcher">
-      {VIEWS.map(({ view, icon, label }) => (
+    <div className={styles.wrap} role="group" aria-label="Atlas view mode">
+      {VIEWS.map(({ view, label }) => (
         <button
           key={view}
+          type="button"
           className={`${styles.btn}${atlasView === view ? ` ${styles.btnActive}` : ''}`}
-          onClick={() => appRef.send({ type: 'ATLAS_VIEW.SET', view })}
           aria-pressed={atlasView === view}
+          onClick={() => actor.send({ type: 'ATLAS_VIEW.SET', view })}
         >
-          {icon}
-          <span className={styles.label}>{label}</span>
+          {label}
         </button>
       ))}
+      <button
+        type="button"
+        className={styles.btn}
+        onClick={() => actor.send({ type: 'OPEN_PERSON', id: 7 })}
+      >
+        Demo Person
+      </button>
     </div>
   )
 }

@@ -20,14 +20,13 @@ export const companyClientSimpleService = {
    * @param companyId  Numeric company id, e.g. 1 for NVIDIA.
    */
   getByCompanyId: async (companyId: number): Promise<CompanyClientSimple[]> => {
-    const response = await fetch(`${API_CLIENTS}/CompanyClients/company/${companyId}`);
-
-    if (!response.ok) {
-      throw new Error(
-        `Error fetching clients for company ${companyId}: ${response.statusText}`
-      );
+    try {
+      const response = await fetch(`${API_CLIENTS}/CompanyClients/company/${companyId}`);
+      if (!response.ok) throw new Error(`${response.status}`);
+      return response.json();
+    } catch {
+      const res = await fetch('/companyclients.json');
+      return res.json();
     }
-
-    return response.json();
   },
 };
