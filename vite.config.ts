@@ -9,11 +9,24 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  // Heavy deps live inside lazy chunks (GraphViewPanel, WallStreetPage,
+  // GraphBridge). Without pre-declaration Vite discovers them only on the
+  // first lazy import, triggering a 3–5 s esbuild re-bundle that pauses the
+  // page. Listing them here forces pre-bundling at server startup so the
+  // first click on Network / Wall Street / graph engine resolves from cache.
+  optimizeDeps: {
+    include: [
+      '@xyflow/react',
+      'd3-force',
+      'd3-quadtree',
+      'three',
+    ],
+  },
   server: {
     port: 5178,
     proxy: {
       '/api': {
-        target: 'http://localhost:32769',
+        target: 'http://localhost:32773',
         changeOrigin: true,
         secure: false,
       },
@@ -23,7 +36,7 @@ export default defineConfig({
     port: 5178,
     proxy: {
       '/api': {
-        target: 'http://localhost:32769',
+        target: 'http://localhost:32773',
         changeOrigin: true,
         secure: false,
       },
