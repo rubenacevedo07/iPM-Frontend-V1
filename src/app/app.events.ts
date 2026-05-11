@@ -25,6 +25,9 @@ export type AppEvent =
   | { type: 'SEARCH_QUERY'; q: string }
   | { type: 'FOCUS_ENTITY'; entity: EntityRef }
   | { type: 'BLUR_ENTITY' }
+  // Wall Street navigation: dispatched by AtlasTabs Wall Street button.
+  // Forwards to navigationActor which router.navigates to /wall-street.
+  | { type: 'WALL_STREET.OPEN';    view?: 'power' | 'command' | 'passive' | 'advanced' }
   // AtlasView engine events
   | { type: 'ATLAS_VIEW.SET';      view: AtlasView }
   | { type: 'ATLAS.ENTITY_CLICK';  entity: EntityRef }

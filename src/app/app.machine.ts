@@ -365,6 +365,19 @@ const appMachine = setup({
   },
 
   on: {
+    // Wall Street is a separate route (`/wall-street`) — single-writer rule
+    // (Rule 3) requires URL mutations to go through navigationActor.
+    'WALL_STREET.OPEN': {
+      actions: sendTo(
+        ({ context }) => context.navRef,
+        ({ event }) => ({
+          type: 'NAVIGATE_WALL_STREET' as const,
+          search: event.type === 'WALL_STREET.OPEN' && event.view
+            ? { view: event.view }
+            : undefined,
+        }),
+      ),
+    },
     URL_CHANGED: {
       guard: 'urlActuallyChanged',
       // Phase 8: keep context.companyArcs and the active bridge in sync.

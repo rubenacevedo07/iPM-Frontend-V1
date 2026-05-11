@@ -257,6 +257,8 @@ export function AppShell() {
           onTabClick={t => {
             if (t.action === 'studio-relation') {
               actor.send({ type: 'OPEN_PERSON', id: 7 })
+            } else if (t.action === 'wall-street') {
+              actor.send({ type: 'WALL_STREET.OPEN' })
             } else {
               actor.send({ type: 'ATLAS_VIEW.SET', view: t.view as AtlasView })
             }
