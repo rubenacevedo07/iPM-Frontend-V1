@@ -56,14 +56,27 @@ export function PowerView() {
     if (!subset) return []
     return subset.edges.map(e => {
       const sl = (e.data.strengthLabel ?? '').toLowerCase()
-      const et = (e.data.edgeType ?? '').toLowerCase()
+      const et = e.data.edgeType ?? ''
+
+      // Strength → stroke-width
       const strokeWidth =
         sl === 'critical' ? 2.5 : sl === 'high' ? 1.5 : 0.8
-      const strokeDasharray =
-        et === 'regulates' || et === 'monitors' ? '5 4' :
-        et === 'influences' || et === 'competes' || et === 'owns' ? '2 3' :
+
+      // Edge type → dasharray (Governs=solid, Partners=none, Monitors="5 4", Risk="2 3")
+      // Map actual edge types from the data to the spec categories:
+      //   Governs/Regulates/Sets → solid
+      //   Monitors/Influences    → "5 4"
+      //   Competes/Owns/Risk     → "2 3"
+      //   others (Partners etc)  → none
+      const strokeDasharray: string | undefined =
+        (et === 'Governs' || et === 'Regulates' || et === 'Sets')   ? undefined :
+        (et === 'Monitors' || et === 'Influences')                   ? '5 4'    :
+        (et === 'Competes' || et === 'Owns' || et === 'Risk')        ? '2 3'    :
         undefined
+
+      // Edge color: keep source-node color (teal/gold/purple/red per tier)
       const stroke = POWER_VIEW_COLOR_OVERRIDES[e.source] ?? e.data.primaryColor
+
       return {
         id:           e.id,
         source:       e.source,

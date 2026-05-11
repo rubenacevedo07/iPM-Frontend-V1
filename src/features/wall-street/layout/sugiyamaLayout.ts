@@ -19,19 +19,38 @@ const BORDER_COLOR: Record<string, string> = {
   person:        '#ffb547',
 }
 
-// Fixed x positions for each node in the power view subset.
-// L1 y=0, L2 y=180, L3 y=360.
+// Sugiyama layer positions:
+//   L1 y=0:   central institutions
+//   L2 y=180: banks sublane x=80..480 | asset managers sublane x=520..780
+//   L3 y=360: persons x-aligned below their primary institution
+//
+// Banks (5): step = (480-80)/4 = 100 → 80, 180, 280, 380, 480
+// Asset mgrs (3): step = (780-520)/2 = 130 → 520, 650, 780
+// Fed Reserve centered above banks midpoint: (80+480)/2 - nodeWidth/2 ≈ 280 - 60 = 222
+// Persons aligned under: Powell→Fed(280), Dimon→JPM(80), Solomon→GS(180), Pick→MS(280→360 offset), Fink→BR(520)
+
 const FIXED_X: Record<string, number> = {
-  'institution:federal-reserve-system': 354,
-  'bank:jpmorgan-chase':                 75,
-  'bank:goldman-sachs':                 212,
-  'bank:morgan-stanley':                341,
-  'asset_manager:blackrock':            525,
-  'asset_manager:vanguard':             655,
-  'person:jerome-powell':               362,
-  'person:jamie-dimon':                  87,
-  'person:david-solomon':               212,
-  'person:larry-fink':                  525,
+  // L1 — institution centered at x=222 (Fed width≈152, center=298 ≈ midpoint of 80..480 minus half)
+  'institution:federal-reserve-system': 222,
+
+  // L2 banks sublane x=80..480
+  'bank:jpmorgan-chase':                 80,
+  'bank:goldman-sachs':                 180,
+  'bank:morgan-stanley':                280,
+  'bank:bank-of-america':               380,
+  'bank:citigroup':                     480,
+
+  // L2 asset managers sublane x=520..780
+  'asset_manager:blackrock':            520,
+  'asset_manager:vanguard':            650,
+  'asset_manager:state-street':         760,
+
+  // L3 persons aligned under primary institution
+  'person:jerome-powell':               222,
+  'person:jamie-dimon':                  80,
+  'person:david-solomon':               180,
+  'person:ted-pick':                    280,
+  'person:larry-fink':                  520,
 }
 
 const FIXED_Y: Record<string, number> = {
@@ -39,11 +58,15 @@ const FIXED_Y: Record<string, number> = {
   'bank:jpmorgan-chase':               180,
   'bank:goldman-sachs':                180,
   'bank:morgan-stanley':               180,
+  'bank:bank-of-america':              180,
+  'bank:citigroup':                    180,
   'asset_manager:blackrock':           180,
   'asset_manager:vanguard':            180,
+  'asset_manager:state-street':        180,
   'person:jerome-powell':              360,
   'person:jamie-dimon':                360,
   'person:david-solomon':              360,
+  'person:ted-pick':                   360,
   'person:larry-fink':                 360,
 }
 
