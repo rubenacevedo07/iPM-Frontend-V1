@@ -26,7 +26,7 @@ export default defineConfig({
     port: 5178,
     proxy: {
       '/api': {
-        target: 'http://localhost:32773',
+        target: 'https://localhost:32775',
         changeOrigin: true,
         secure: false,
       },
@@ -36,7 +36,7 @@ export default defineConfig({
     port: 5178,
     proxy: {
       '/api': {
-        target: 'http://localhost:32773',
+        target: 'https://localhost:32775',
         changeOrigin: true,
         secure: false,
       },

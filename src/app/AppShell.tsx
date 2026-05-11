@@ -25,7 +25,6 @@ import {
 const GraphViewPanel     = lazy(() => import('@/features/graph-view/GraphViewPanel').then(m => ({ default: m.GraphViewPanel })))
 const WallStreetPage     = lazy(() => import('@/features/wall-street/WallStreetPage').then(m => ({ default: m.WallStreetPage })))
 const CompanyOverlayHost = lazy(() => import('./CompanyOverlayHost').then(m => ({ default: m.CompanyOverlayHost })))
-const PersonOverlayHost  = lazy(() => import('./PersonOverlayHost').then(m => ({ default: m.PersonOverlayHost })))
 const GoldOverlayHost     = lazy(() => import('./GoldOverlayHost').then(m => ({ default: m.GoldOverlayHost })))
 const PowerMapOverlayHost = lazy(() => import('./PowerMapOverlayHost').then(m => ({ default: m.PowerMapOverlayHost })))
 const PowerMapsPanel      = lazy(() => import('@/features/gold-overlay/PowerMapsPanel').then(m => ({ default: m.PowerMapsPanel })))
@@ -108,8 +107,9 @@ export function AppShell() {
   const { persons } = usePersonsMap()
 
   const search      = useSearch({ from: '/workstation' })
-  const isGoldOpen  = search.overlay === 'gold'
-  const isPersonOpen = search.overlay === 'person'
+  const isGoldOpen            = search.overlay === 'gold'
+  const isPersonOpen          = search.overlay === 'person'
+  const isCompanyOpen         = search.overlay === 'company'
   const isPowerMapOverlayOpen = search.overlay === 'powermap'
 
   // Globe stays full-viewport regardless of overlay state. Overlays float on top
@@ -203,7 +203,15 @@ export function AppShell() {
   //   1. SET_POWERMAP   (layers)
   //   2. SET_ROTATION   (stop rotation, mark cancel)
   //   3. FLY_TO         (reset cancel, start cinematic)
-  const shouldRotate = !activePowermapId && !isGoldOpen && !isPersonOpen && !isPowerMapOverlayOpen && search.overlay !== 'company'
+  // Rule 7 (user-requested, permanent): rotation MUST be disabled whenever ANY
+  // target is selected — powermap, gold, person, company, or powermap-overlay.
+  // The flat list of negations here is intentional; a derived `hasOverlay`
+  // would hide what's actually being gated.
+  const shouldRotate = !activePowermapId
+                    && !isGoldOpen
+                    && !isPersonOpen
+                    && !isCompanyOpen
+                    && !isPowerMapOverlayOpen
   useEffect(() => {
     engineRef.send({ type: 'CMD.SET_ROTATION', enabled: shouldRotate })
   }, [shouldRotate, engineRef])
@@ -357,7 +365,7 @@ export function AppShell() {
 
       {/* Power Maps panel — visible over both globe and network views.
           Hidden when any entity overlay (person/gold/company/powermap) is open. */}
-      {!isGoldOpen && !isPersonOpen && !isPowerMapOverlayOpen && search.overlay !== 'company' && (
+      {!isGoldOpen && !isPersonOpen && !isCompanyOpen && !isPowerMapOverlayOpen && (
         <div
           style={{
             position: 'absolute',
@@ -389,18 +397,6 @@ export function AppShell() {
             style={{ position: 'absolute', inset: 0, zIndex: 50, pointerEvents: 'none' }}
           >
             <Suspense fallback={<CompanyOverlaySkeleton />}><CompanyOverlayHost /></Suspense>
-          </motion.div>
-        )}
-        {isPersonOpen && (
-          <motion.div
-            key="overlay-person"
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'linear' }}
-            style={{ position: 'absolute', inset: 0, zIndex: 50, pointerEvents: 'none' }}
-          >
-            <Suspense key="person-host" fallback={<PersonOverlaySkeleton />}><PersonOverlayHost /></Suspense>
           </motion.div>
         )}
         {isGoldOpen && (
