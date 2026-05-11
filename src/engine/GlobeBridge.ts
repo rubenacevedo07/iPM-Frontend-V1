@@ -32,10 +32,9 @@ import type {
 
 const INITIAL_VIEW = { longitude: 20, latitude: 25, zoom: 2, minZoom: 0, maxZoom: 5 };
 
-// Local slim GeoJSON (only iso_a3, name, continent, region_un props).
-// Served from /public — no network round-trip on startup. Was the single
-// biggest startup blocker (~1800ms CDN download in dev trace).
-const COUNTRIES_URL = '/ne_110m_countries_slim.geojson';
+// Local GeoJSON in /public/data — no network round-trip on startup.
+// Layer renders empty if the file is missing (non-fatal: globe still works).
+const COUNTRIES_URL = '/data/countries-110m.geojson';
 
 const GLOBE_BASE_GEOJSON = {
   type: 'FeatureCollection' as const,
