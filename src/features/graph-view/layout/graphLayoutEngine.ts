@@ -2,6 +2,15 @@
 // Central graph layout abstraction. All node positioning, edge generation, and
 // handle routing lives here. React Flow components remain layout-agnostic.
 import type { Node, Edge } from '@xyflow/react'
+import {
+  forceCenter,
+  forceCollide,
+  forceLink,
+  forceManyBody,
+  forceSimulation,
+  type SimulationLinkDatum,
+  type SimulationNodeDatum,
+} from 'd3-force'
 import type {
   GraphViewNodeData,
   GraphViewEdgeData,
@@ -26,11 +35,12 @@ interface LayoutEngineOutput {
   edges: Edge<GraphViewEdgeData>[]
 }
 
-// ── Internal orbital input types ─────────────────────────────────────────────
-// Structurally compatible with GraphSubgraph (graphMapper.ts) — no import
-// needed; TypeScript structural typing handles the cast at call sites.
+// ── Public layout-engine input types ─────────────────────────────────────────
+// Exported so adapters (`features/graph-view/adapters.ts`) can produce
+// LayoutInput values from domain `NeighborsResponse`. Structurally compatible
+// with GraphSubgraph (graphMapper.ts).
 
-interface OrbitalNode {
+export interface LayoutInputNode {
   NodeId:    string
   Label:     string
   Type:      'person' | 'company' | 'country'
@@ -41,7 +51,7 @@ interface OrbitalNode {
   Score?:    string
 }
 
-interface OrbitalEdge {
+export interface LayoutInputEdge {
   EdgeId:      string
   Source:      string
   Target:      string
@@ -59,10 +69,10 @@ interface OrbitalEdge {
   Dashed?:     boolean
 }
 
-interface OrbitalInput {
-  center: OrbitalNode
-  nodes:  OrbitalNode[]
-  edges:  OrbitalEdge[]
+export interface LayoutInput {
+  center: LayoutInputNode
+  nodes:  LayoutInputNode[]
+  edges:  LayoutInputEdge[]
 }
 
 // Minimal engine-internal node shape used only for geometry calculations
@@ -136,29 +146,32 @@ function strengthToVariant(strength?: string): EdgeVariant | undefined {
   return undefined
 }
 
-// ── Orbital strategy implementation ──────────────────────────────────────────
+// ── Shared output builder ─────────────────────────────────────────────────────
+// Both orbital and force strategies produce the same shape. Strategies only
+// differ in *how* they compute (centerPos, ringPositions); everything else
+// (node data, edge data, handle resolution) is identical.
 
-function calculateOrbital(rawData: unknown): LayoutEngineOutput {
-  const data = rawData as OrbitalInput
-
-  // Build engine nodes (geometry only) for handle resolution
+function buildOutput(
+  data: LayoutInput,
+  centerPos: { x: number; y: number },
+  ringPositions: Array<{ x: number; y: number }>,
+): LayoutEngineOutput {
   const centerEngineNode: EngineNode = {
     id:       data.center.NodeId,
     rfType:   'center',
-    position: { x: 382, y: 222 },
+    position: centerPos,
   }
 
   const ring1EngineNodes: EngineNode[] = data.nodes.map((n, i) => ({
     id:       n.NodeId,
     rfType:   'entity' as GraphNodeType,
-    position: orbitPos(orbitAngle(i, data.nodes.length), ORBITAL_R1),
+    position: ringPositions[i] ?? { x: 0, y: 0 },
   }))
 
   const nodeMap = new Map<string, EngineNode>(
     [centerEngineNode, ...ring1EngineNodes].map(n => [n.id, n]),
   )
 
-  // Build React Flow nodes
   const nodes: Node<GraphViewNodeData>[] = [
     {
       id:       data.center.NodeId,
@@ -191,7 +204,6 @@ function calculateOrbital(rawData: unknown): LayoutEngineOutput {
     } satisfies Node<GraphViewNodeData>)),
   ]
 
-  // Build React Flow edges
   const edges: Edge<GraphViewEdgeData>[] = data.edges.map(e => {
     const srcNode = nodeMap.get(e.Source)
     const tgtNode = nodeMap.get(e.Target)
@@ -235,6 +247,76 @@ function calculateOrbital(rawData: unknown): LayoutEngineOutput {
   return { nodes, edges }
 }
 
+// ── Orbital strategy implementation ──────────────────────────────────────────
+
+function calculateOrbital(rawData: unknown): LayoutEngineOutput {
+  const data = rawData as LayoutInput
+  const centerPos = { x: 382, y: 222 }
+  const ringPositions = data.nodes.map((_, i) =>
+    orbitPos(orbitAngle(i, data.nodes.length), ORBITAL_R1),
+  )
+  return buildOutput(data, centerPos, ringPositions)
+}
+
+// ── Force-directed strategy implementation ───────────────────────────────────
+// Synchronous d3-force simulation: configure forces → run a fixed tick budget
+// → read final (x, y) for each node. d3-force gives node-CENTER coordinates;
+// React Flow expects top-left, so we offset by half-width/half-height per
+// node type when emitting positions. The center node is pinned at the origin
+// to keep the ego-graph visually anchored.
+
+interface SimNode extends SimulationNodeDatum {
+  id: string
+  rfType: GraphNodeType
+}
+
+const FORCE_TICKS         = 300
+const FORCE_LINK_DISTANCE = 220
+const FORCE_CHARGE        = -900
+const FORCE_COLLIDE_R     = 110
+const FORCE_CENTER_X      = ORBITAL_CX
+const FORCE_CENTER_Y      = ORBITAL_CY
+
+function calculateForce(rawData: unknown): LayoutEngineOutput {
+  const data = rawData as LayoutInput
+
+  const simNodes: SimNode[] = [
+    { id: data.center.NodeId, rfType: 'center', fx: FORCE_CENTER_X, fy: FORCE_CENTER_Y },
+    ...data.nodes.map<SimNode>(n => ({ id: n.NodeId, rfType: 'entity' })),
+  ]
+  const simLinks: SimulationLinkDatum<SimNode>[] = data.edges.map(e => ({
+    source: e.Source,
+    target: e.Target,
+  }))
+
+  const sim = forceSimulation(simNodes)
+    .force('charge',  forceManyBody<SimNode>().strength(FORCE_CHARGE))
+    .force('link',    forceLink<SimNode, SimulationLinkDatum<SimNode>>(simLinks)
+                        .id(d => d.id)
+                        .distance(FORCE_LINK_DISTANCE))
+    .force('center',  forceCenter(FORCE_CENTER_X, FORCE_CENTER_Y))
+    .force('collide', forceCollide<SimNode>().radius(FORCE_COLLIDE_R))
+    .stop()
+
+  for (let i = 0; i < FORCE_TICKS; i++) sim.tick()
+
+  function centerToTopLeft(n: SimNode): { x: number; y: number } {
+    const dims = NODE_DIMS[n.rfType]
+    return {
+      x: Math.round((n.x ?? FORCE_CENTER_X) - dims.w / 2),
+      y: Math.round((n.y ?? FORCE_CENTER_Y) - dims.h / 2),
+    }
+  }
+
+  const centerSim = simNodes[0]
+  const ringSim   = simNodes.slice(1)
+  return buildOutput(
+    data,
+    centerToTopLeft(centerSim),
+    ringSim.map(centerToTopLeft),
+  )
+}
+
 // ── Strategy registry ─────────────────────────────────────────────────────────
 // Object-based dispatch; add future engines here without touching any renderer.
 
@@ -242,7 +324,7 @@ const layoutStrategies: Record<LayoutMode, (data: unknown) => LayoutEngineOutput
   'orbital':  calculateOrbital,
   'dagre-lr': calculateOrbital, // placeholder — replace when dagre is added
   'dagre-tb': calculateOrbital, // placeholder
-  'force':    calculateOrbital, // placeholder
+  'force':    calculateForce,
   'cluster':  calculateOrbital, // placeholder
 }
 

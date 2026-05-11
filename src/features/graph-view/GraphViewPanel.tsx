@@ -1,6 +1,7 @@
 // src/features/graph-view/GraphViewPanel.tsx
-import { useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { AnimatePresence } from 'framer-motion'
+import { useQuery } from '@tanstack/react-query'
 import {
   ReactFlow,
   Background,
@@ -17,7 +18,10 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import type { GraphViewNodeData, GraphViewEdgeData } from '@/types/graphView'
+import { qk, fetchers } from '@/domain/queries'
 import { MOCK_NODES, MOCK_EDGES } from './mockGraphData'
+import { toLayoutInput } from './adapters'
+import { layoutEngine } from './layout/graphLayoutEngine'
 import { EntityNode } from './nodes/EntityNode'
 import { CenterNode } from './nodes/CenterNode'
 import { GlowEdge } from './edges/GlowEdge'
@@ -27,6 +31,13 @@ import { GraphHoverContext } from './contexts/GraphHoverContext'
 import { GraphEdgeContext } from './contexts/GraphEdgeContext'
 import { GlobalGraphStyles } from './GlobalGraphStyles'
 import styles from './GraphViewPanel.module.scss'
+
+// Featured center entity for the network panel. Hard-coded for the demo
+// (matches the Persons/Relation panels' Musk fixture). Wire to URL/state when
+// a persons-browser navigates here. The `qk.personNeighbors` fetcher hits
+// `/graph/node/{nodeId}/neighbors` (1-hop today) — see backend-graph-brief.md.
+const CENTRAL_NODE_ID = 'person:7'
+const CENTRAL_NAME    = 'Elon Musk'
 
 const PANEL_ID = 'panel-rel'
 const PANEL_W = 252
@@ -38,8 +49,34 @@ const ENTITY_W = 190
 const ENTITY_H = 54
 
 export function GraphViewPanel() {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<GraphViewNodeData>>(MOCK_NODES)
-  const [edges, , onEdgesChange] = useEdgesState<Edge<GraphViewEdgeData>>(MOCK_EDGES)
+  const { data, isError } = useQuery({
+    queryKey: qk.personNeighbors(CENTRAL_NODE_ID),
+    queryFn:  () => fetchers.personNeighbors(CENTRAL_NODE_ID),
+    retry:    false,
+  })
+
+  const computed = useMemo(() => {
+    if (data) {
+      return layoutEngine.calculate({
+        mode: 'orbital',
+        data: toLayoutInput(data, { name: CENTRAL_NAME, type: 'PERSON' }),
+      })
+    }
+    if (isError) {
+      // Backend not reachable — fall back to mock fixtures so the panel still
+      // renders the visual structure during dev / offline.
+      return { nodes: MOCK_NODES, edges: MOCK_EDGES }
+    }
+    return { nodes: [] as Node<GraphViewNodeData>[], edges: [] as Edge<GraphViewEdgeData>[] }
+  }, [data, isError])
+
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<GraphViewNodeData>>(computed.nodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<GraphViewEdgeData>>(computed.edges)
+
+  useEffect(() => {
+    setNodes(computed.nodes)
+    setEdges(computed.edges)
+  }, [computed, setNodes, setEdges])
 
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
