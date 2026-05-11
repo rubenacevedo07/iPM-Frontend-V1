@@ -2,7 +2,7 @@
 // Single createBridgeAndSubscribe action (as designed in Phase 2b)
 
 import { setup, assign, sendParent }                        from 'xstate';
-import type { EngineId, EngineInitInput, EngineEntityData, EngineArcData } from './contracts/inputs';
+import type { EngineId, EngineInitInput, EngineEntityData, EngineArcData, GraphEngineData, EngineCompanySelectionData } from './contracts/inputs';
 import type { IEngineBridge, BridgeEvent, Unsubscribe }     from './contracts/bridge';
 import { createEngine }                                     from './engineFactory';
 
@@ -21,9 +21,11 @@ type EngineManagerEvent =
   | { type: 'ENGINE.SWAP';      engineId: EngineId; input: EngineInitInput }
   | { type: 'ENGINE.DISPOSE' }
   | { type: '_BRIDGE.EVENT';    event: BridgeEvent }
-  | { type: 'CMD.SET_ENTITIES';  data: EngineEntityData }
-  | { type: 'CMD.SET_ARCS';      data: EngineArcData }
-  | { type: 'CMD.SET_POWERMAP';  powermapId: string | null }
+  | { type: 'CMD.SET_ENTITIES';           data: EngineEntityData }
+  | { type: 'CMD.SET_ARCS';                data: EngineArcData }
+  | { type: 'CMD.SET_GRAPH';              data: GraphEngineData }
+  | { type: 'CMD.SET_COMPANY_SELECTION';  data: EngineCompanySelectionData }
+  | { type: 'CMD.SET_POWERMAP';            powermapId: string | null }
   | { type: 'CMD.FLY_TO'; longitude: number; latitude: number; zoom?: number; duration?: number }
   | { type: 'CMD.SET_ROTATION'; enabled: boolean };
 
@@ -153,6 +155,16 @@ export const engineManagerMachine = setup({
             'CMD.SET_ARCS': {
               actions: ({ context, event }) => {
                 context.bridge?.send({ type: 'CMD.SET_ARCS', data: event.data });
+              },
+            },
+            'CMD.SET_GRAPH': {
+              actions: ({ context, event }) => {
+                context.bridge?.send({ type: 'CMD.SET_GRAPH', data: event.data });
+              },
+            },
+            'CMD.SET_COMPANY_SELECTION': {
+              actions: ({ context, event }) => {
+                context.bridge?.send({ type: 'CMD.SET_COMPANY_SELECTION', data: event.data });
               },
             },
             'CMD.SET_POWERMAP': {

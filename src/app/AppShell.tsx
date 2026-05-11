@@ -43,6 +43,7 @@ export function AppShell() {
   const atlasView      = AppActor.useSelector(s => s.context.atlasView)
   const query          = AppActor.useSelector(s => s.context.query)
   const requestSentRef = useRef(false)
+  const engineSlotsRef = useRef<EngineSlotRefs | null>(null)
 
   const isWallStreet = query.trim().toLowerCase() === 'wall street'
 
