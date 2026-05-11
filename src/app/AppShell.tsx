@@ -5,6 +5,7 @@ import { AppActor }   from './app.machine'
 import { EngineSlot } from '@/components/EngineSlot/EngineSlot'
 import type { EngineSlotRefs } from '@/components/EngineSlot/EngineSlot'
 import { useCompanies } from '@/hooks/useCompanies'
+import { usePersonsMap } from '@/hooks/usePersonsMap'
 import { TopBar } from '@/components/TopBar/TopBar'
 import { AtlasTabs } from '@/components/AtlasTabs/AtlasTabs'
 import type { AtlasView } from '@/types/atlas'
@@ -51,18 +52,43 @@ export function AppShell() {
 
   // Cinematic transition: globe zooms-in and fades out when switching to graph.
   // useMotionValue stays stable across renders — no re-render on value change.
+  //
+  // Persistent-panel pattern: BOTH globe and graph stay mounted always (same
+  // strategy v3 uses for the globe). Switching atlasView animates opacity +
+  // scale on each panel instead of mounting/unmounting. Pros: graph state
+  // (xyflow zoom, hover, selection) survives view-switches; no Suspense
+  // skeleton flash on click. Cost: graph chunk + @xyflow/react are part of
+  // the initial mount (mitigated by vite optimizeDeps.include + idle preload).
   const globeOpacity = useMotionValue(1)
   const globeScale   = useMotionValue(1)
+  const graphOpacity = useMotionValue(0)
+  const graphScale   = useMotionValue(0.97)
 
   useEffect(() => {
     if (atlasView === 'network') {
+      // Globe → Graph: globe zooms IN (1→1.06) while fading out; graph emerges
+      // with a 300ms delay so the globe's dissolve is read first.
       void animate(globeOpacity, 0,    { duration: 0.5, ease: 'easeIn' })
       void animate(globeScale,   1.06, { duration: 0.5, ease: 'easeIn' })
+      void animate(graphOpacity, 1,    { duration: 0.5, delay: 0.3, ease: 'easeOut' })
+      void animate(graphScale,   1,    { duration: 0.5, delay: 0.3, ease: 'easeOut' })
     } else {
-      void animate(globeOpacity, 1,    { duration: 0.4, ease: 'easeOut', delay: 0.1 })
-      void animate(globeScale,   1,    { duration: 0.4, ease: 'easeOut', delay: 0.1 })
+      // Graph → Globe: MIRROR. Graph zooms IN (1→1.06) while fading out, the
+      // same gesture the globe does in the other direction. Globe emerges from
+      // a slight zoom-out (0.94→1) with a 200ms delay so the graph's dissolve
+      // is read first.
+      //
+      // Snap globeScale to 0.94 ONLY when it's currently > 1 (i.e. the ida
+      // already happened and left it at 1.06). On the very first render
+      // globeScale is still 1, so we don't snap — avoids a visible pop on app
+      // load when atlasView starts as 'globe'.
+      if (globeScale.get() > 1) globeScale.set(0.94)
+      void animate(graphOpacity, 0,    { duration: 0.5, ease: 'easeIn' })
+      void animate(graphScale,   1.06, { duration: 0.5, ease: 'easeIn' })
+      void animate(globeOpacity, 1,    { duration: 0.5, delay: 0.2, ease: 'easeOut' })
+      void animate(globeScale,   1,    { duration: 0.5, delay: 0.2, ease: 'easeOut' })
     }
-  }, [atlasView, globeOpacity, globeScale])
+  }, [atlasView, globeOpacity, globeScale, graphOpacity, graphScale])
 
   const handleRefsReady = useCallback((refs: EngineSlotRefs) => {
     engineSlotsRef.current = refs
@@ -78,6 +104,7 @@ export function AppShell() {
   }, [engineRef, atlasView])
 
   const { companies, loading: companiesLoading } = useCompanies()
+  const { persons } = usePersonsMap()
 
   const search      = useSearch({ from: '/workstation' })
   const isGoldOpen  = search.overlay === 'gold'
@@ -147,6 +174,24 @@ export function AppShell() {
     engineRef.send({ type: 'CMD.SET_POWERMAP', powermapId: activePowermapId })
   }, [activePowermapId, engineRef])
 
+  // INVARIANT — Rule 7 (user-requested, permanent): rotation MUST be disabled whenever
+  // a target is selected. Do NOT add conditions that re-enable rotation while a powermap
+  // or overlay is active. After cinematic fly-to the globe must stay on the selected entity.
+  //
+  // ORDERING: this effect MUST fire BEFORE the CMD.FLY_TO effect below. The
+  // GlobeBridge handler for CMD.SET_ROTATION { enabled: false } sets
+  // `_flyToCancelled = true` to freeze any in-flight cinematic (Rule 7).
+  // If SET_ROTATION ran AFTER FLY_TO on the same activePowermapId tick, it
+  // would cancel the freshly-started fly-to. The fly-to handler resets
+  // `_flyToCancelled = false` on entry, so the safe order is:
+  //   1. SET_POWERMAP   (layers)
+  //   2. SET_ROTATION   (stop rotation, mark cancel)
+  //   3. FLY_TO         (reset cancel, start cinematic)
+  const shouldRotate = !activePowermapId && !isGoldOpen && !isPersonOpen && search.overlay !== 'company'
+  useEffect(() => {
+    engineRef.send({ type: 'CMD.SET_ROTATION', enabled: shouldRotate })
+  }, [shouldRotate, engineRef])
+
   useEffect(() => {
     if (!activePowermapId) return
     const cfg = POWER_MAP_CONFIGS[activePowermapId]
@@ -160,13 +205,25 @@ export function AppShell() {
     })
   }, [activePowermapId, engineRef])
 
-  // INVARIANT — Rule 7 (user-requested, permanent): rotation MUST be disabled whenever
-  // a target is selected. Do NOT add conditions that re-enable rotation while a powermap
-  // or overlay is active. After cinematic fly-to the globe must stay on the selected entity.
-  const shouldRotate = !activePowermapId && !isGoldOpen && !isPersonOpen && search.overlay !== 'company'
+  // Warm cache for the heavy graph chunks (@xyflow/react ~150 KB + d3-force)
+  // when the browser is idle. The first click on Network / Wall Street then
+  // resolves the lazy import from the network/parser cache instead of a cold
+  // fetch + parse (~1–2 s in dev). requestIdleCallback falls back to a short
+  // setTimeout on browsers that don't support it (Safari < 17).
   useEffect(() => {
-    engineRef.send({ type: 'CMD.SET_ROTATION', enabled: shouldRotate })
-  }, [shouldRotate, engineRef])
+    const preload = () => {
+      void import('@/features/graph-view/GraphViewPanel')
+      void import('@/features/wall-street/WallStreetPage')
+    }
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
+    }
+    if (typeof w.requestIdleCallback === 'function') {
+      w.requestIdleCallback(preload, { timeout: 2000 })
+    } else {
+      window.setTimeout(preload, 1500)
+    }
+  }, [])
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000000', display: 'flex', flexDirection: 'column' }}>
@@ -186,26 +243,26 @@ export function AppShell() {
         <EngineSlot actorRef={engineRef} onRefsReady={handleRefsReady} />
       </motion.div>
 
-      {/* ReactFlow graph — fades in with 300ms delay so globe dissolves first */}
+      {/* ReactFlow graph — ALWAYS MOUNTED (same strategy as the globe). Opacity
+          + scale gates visibility; pointer-events:none when not active so the
+          invisible layer doesn't intercept clicks meant for the globe. State
+          (zoom, selection, hover) persists across view-switches. */}
+      <motion.div
+        style={{
+          position: 'absolute',
+          inset:    0,
+          zIndex:   10,
+          opacity:  graphOpacity,
+          scale:    graphScale,
+          pointerEvents: atlasView === 'network' ? 'auto' : 'none',
+        }}
+      >
+        <Suspense fallback={<GraphSkeleton />}>
+          {isWallStreet ? <WallStreetPage /> : <GraphViewPanel />}
+        </Suspense>
+      </motion.div>
+
       <AnimatePresence>
-        {atlasView === 'network' && (
-          <motion.div
-            key="graph-panel"
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.5, delay: 0.3, ease: 'easeOut' }}
-            style={{
-              position: 'absolute',
-              inset:    0,
-              zIndex:   10,
-            }}
-          >
-            <Suspense fallback={<GraphSkeleton />}>
-              {isWallStreet ? <WallStreetPage /> : <GraphViewPanel />}
-            </Suspense>
-          </motion.div>
-        )}
         {atlasView === 'persons' && (
           <motion.div
             key="persons-panel"
