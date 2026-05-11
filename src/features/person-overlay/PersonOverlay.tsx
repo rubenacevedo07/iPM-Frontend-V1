@@ -1,4 +1,5 @@
 import { useMachine, useSelector } from '@xstate/react'
+import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { personOverlayMachine } from './person-overlay.machine'
 import { AppActor } from '@/app/AppProviders'
@@ -86,6 +87,14 @@ export function PersonOverlay({ entity }: PersonOverlayProps) {
     : fallbackNeighbors
 
   const scene = getScene(entity.id, entity.type, entity.name)
+
+  // Skip cinematic so globe stays visible (same mechanic as company overlay).
+  // Effect fires after mount; machine advances to 'solo' before the user sees the transition.
+  useEffect(() => {
+    if (inspectorState === 'cinematic') {
+      inspectorRef?.send({ type: 'CINEMATIC.COMPLETE' })
+    }
+  }, [inspectorState, inspectorRef])
 
   // ── Cinematic (initial open or relation handoff — both use entity-inspector `cinematic` state) ──
   if (inspectorState === 'cinematic') {

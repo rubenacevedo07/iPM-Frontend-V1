@@ -4,7 +4,7 @@ import { rootRoute } from './__root'
 import { AppShell } from '@/app/AppShell'
 
 const workstationSearchSchema = z.object({
-  overlay: z.enum(['person', 'company', 'vs']).optional(),
+  overlay: z.enum(['person', 'company', 'vs', 'gold']).optional(),
   id: z.coerce.number().int().positive().optional(),
   a:  z.coerce.number().int().positive().optional(),
   b:  z.coerce.number().int().positive().optional(),

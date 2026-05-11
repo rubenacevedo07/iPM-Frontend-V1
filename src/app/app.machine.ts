@@ -62,12 +62,19 @@ const appMachine = setup({
     isPersonUrl:  ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'person',
     isCompanyUrl: ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'company',
     isVsUrl:      ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'vs',
+    isGoldUrl:    ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'gold',
     noOverlayUrl: ({ event }) => event.type === 'URL_CHANGED' && !event.search.overlay,
+    isGoldCompanyClick: ({ event }) =>
+      event.type === 'ATLAS.ENTITY_CLICK' &&
+      event.entity.type === 'COMPANY' &&
+      event.entity.isGold === true,
     // Phase 8: stale-id guard for NETWORK_RESOLVED. Drops events whose
     // companyId no longer matches the open overlay (user closed/switched
     // overlays while the fetch was in flight).
     networkMatchesOverlay: ({ context, event }) =>
       event.type === 'NETWORK_RESOLVED' && event.companyId === context.overlayId,
+    personNetworkMatchesOverlay: ({ context, event }) =>
+      event.type === 'PERSON_NETWORK_RESOLVED' && event.personId === context.overlayId,
   },
 }).createMachine({
   id: 'app',
@@ -113,6 +120,7 @@ const appMachine = setup({
               { guard: 'isPersonUrl',  target: 'person',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
               { guard: 'isCompanyUrl', target: 'company', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
               { guard: 'isVsUrl',      target: 'vs',      actions: assign({ overlayId: ({ event }) => getSearch(event)?.a   ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null }) },
+              { guard: 'isGoldUrl',    target: 'gold',    actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
             ],
           },
         },
@@ -146,7 +154,18 @@ const appMachine = setup({
               { guard: 'noOverlayUrl', target: 'closed',  actions: assign({ overlayId: null, overlayIdB: null }) },
               { guard: 'isCompanyUrl', target: 'company', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
               { guard: 'isVsUrl',      target: 'vs',      actions: assign({ overlayId: ({ event }) => getSearch(event)?.a   ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null }) },
+              { guard: 'isGoldUrl',    target: 'gold',    actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
             ],
+            PERSON_NETWORK_RESOLVED: {
+              guard: 'personNetworkMatchesOverlay',
+              actions: [
+                assign({ companyArcs: ({ event }) => event.type === 'PERSON_NETWORK_RESOLVED' ? event.arcs : [] }),
+                sendTo(({ context }) => context.engineManagerRef, ({ event }) => ({
+                  type: 'CMD.SET_ARCS' as const,
+                  data: { arcs: event.type === 'PERSON_NETWORK_RESOLVED' ? event.arcs : [] },
+                })),
+              ],
+            },
           },
         },
         company: {
@@ -179,6 +198,7 @@ const appMachine = setup({
               { guard: 'noOverlayUrl', target: 'closed', actions: assign({ overlayId: null, overlayIdB: null }) },
               { guard: 'isPersonUrl',  target: 'person', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
               { guard: 'isVsUrl',      target: 'vs',     actions: assign({ overlayId: ({ event }) => getSearch(event)?.a   ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null }) },
+              { guard: 'isGoldUrl',    target: 'gold',   actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
             ],
           },
         },
@@ -212,7 +232,57 @@ const appMachine = setup({
               { guard: 'noOverlayUrl',  target: 'closed',  actions: assign({ overlayId: null, overlayIdB: null }) },
               { guard: 'isPersonUrl',   target: 'person',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null }) },
               { guard: 'isCompanyUrl',  target: 'company', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null }) },
+              { guard: 'isGoldUrl',     target: 'gold',    actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null }) },
             ],
+          },
+        },
+        gold: {
+          on: {
+            CLOSE_OVERLAY: {
+              target: 'closed',
+              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
+            },
+            'ENTITY.CLOSE': {
+              target: 'closed',
+              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
+            },
+            OPEN_PERSON: {
+              target: 'person',
+              actions: [
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'person' as const, id: event.id } })),
+              ],
+            },
+            OPEN_COMPANY: {
+              target: 'company',
+              actions: [
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'company' as const, id: event.id } })),
+              ],
+            },
+            OPEN_VS: {
+              target: 'vs',
+              actions: [
+                assign({ overlayId: ({ event }) => event.a, overlayIdB: ({ event }) => event.b }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'vs' as const, a: event.a, b: event.b } })),
+              ],
+            },
+            URL_CHANGED: [
+              { guard: 'noOverlayUrl', target: 'closed',  actions: assign({ overlayId: null, overlayIdB: null }) },
+              { guard: 'isPersonUrl',  target: 'person',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null }) },
+              { guard: 'isCompanyUrl', target: 'company', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null }) },
+              { guard: 'isVsUrl',      target: 'vs',      actions: assign({ overlayId: ({ event }) => getSearch(event)?.a  ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null }) },
+            ],
+            PERSON_NETWORK_RESOLVED: {
+              guard: 'personNetworkMatchesOverlay',
+              actions: [
+                assign({ companyArcs: ({ event }) => event.type === 'PERSON_NETWORK_RESOLVED' ? event.arcs : [] }),
+                sendTo(({ context }) => context.engineManagerRef, ({ event }) => ({
+                  type: 'CMD.SET_ARCS' as const,
+                  data: { arcs: event.type === 'PERSON_NETWORK_RESOLVED' ? event.arcs : [] },
+                })),
+              ],
+            },
           },
         },
       },
@@ -221,7 +291,7 @@ const appMachine = setup({
     search: {
       initial: 'idle',
       states: {
-        idle:   { on: { SEARCH_OPEN: 'active' } },
+        idle:   { on: { SEARCH_OPEN: 'active', SEARCH_QUERY: { actions: assign({ query: ({ event }) => event.q }) } } },
         active: {
           on: {
             SEARCH_CLOSE: 'idle',
@@ -256,6 +326,16 @@ const appMachine = setup({
           actions: assign({ atlasView: ({ event }) => event.view }),
         },
         'ATLAS.ENTITY_CLICK': [
+          {
+            guard: 'isGoldCompanyClick',
+            actions: sendTo(
+              ({ context }) => context.navRef,
+              ({ event }) => ({
+                type: 'NAVIGATE',
+                search: { overlay: 'gold' as const, id: event.entity.id },
+              })
+            ),
+          },
           {
             guard: ({ event }) => event.entity.type === 'PERSON',
             actions: sendTo(

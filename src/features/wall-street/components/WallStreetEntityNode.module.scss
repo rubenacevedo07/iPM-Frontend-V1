@@ -1,0 +1,79 @@
+.node {
+  position: relative;
+  z-index: 10;
+  isolation: isolate;
+  background: rgba(10, 14, 20, 0.94);
+  border-radius: 8px;
+  backdrop-filter: blur(14px);
+  transition:
+    opacity 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.avatar {
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatarText {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.label {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.15;
+}
+
+.sublabel {
+  font-family: 'DM Mono', monospace;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+
+.handle {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: rgba(0, 229, 255, 0.35) !important;
+  border: 1px solid rgba(0, 229, 255, 0.6) !important;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.node:hover .handle {
+  opacity: 1;
+}

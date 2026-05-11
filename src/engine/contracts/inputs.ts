@@ -51,6 +51,7 @@ export interface EngineEntityData {
     longitude:     number;
     marketCapUsd?: number | null;
     isChokepoint?: boolean;
+    isGold?:       boolean;
   }>;
 }
 
@@ -71,7 +72,7 @@ export interface EngineArc {
   targetNodeId: string;
   source:       [number, number];
   target:       [number, number];
-  kind:         'supplier' | 'client';
+  kind:         'supplier' | 'client' | 'connection' | 'partner';
   intensity:    number;
 }
 

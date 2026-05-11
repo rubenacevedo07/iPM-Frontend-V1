@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('version','?'\\)\\)\")",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(node -e \"const p = require\\('./package.json'\\); const deps = {...p.dependencies,...p.devDependencies}; ['lucide-react','@xyflow/react','framer-motion'].forEach\\(d => console.log\\(d+':', deps[d] ?? 'NOT INSTALLED'\\)\\)\")",
+      "Read(//c/Users/Ruben/Desktop/GraphFlow/**)",
+      "Bash(node -e \"const p = require\\('./package.json'\\); const deps = {...p.dependencies,...p.devDependencies}; Object.entries\\(deps\\).sort\\(\\).forEach\\(\\([k,v]\\) => console.log\\(k+':', v\\)\\)\")",
+      "Read(//c/Users/Ruben/.claude/projects/c--Users-Ruben-Desktop-iPM-Frontend-V1/memory/**)",
+      "Bash(python -c \"import json; d=json.load\\(open\\(r'C:\\\\Users\\\\Ruben\\\\Desktop\\\\iPM-Frontend-V1\\\\public\\\\top30.json'\\)\\); print\\(f'items: {len\\(d\\)}'\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(curl -s http://localhost:5179)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5179)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Ruben\\.claude\\projects\\c--Users-Ruben-Desktop-iPM-Frontend-V1\\memory"
+    ]
+  }
+}

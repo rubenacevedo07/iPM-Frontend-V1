@@ -17,7 +17,7 @@ export default function FirstPanel({ activeTab, markets, fabrics, products }: Pr
     <motion.div
       id="company-first-panel"
       className="co-first"
-      initial={{ opacity: 0, x: -30 }}
+      initial={{ opacity: 1, x: 0 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.4 }}

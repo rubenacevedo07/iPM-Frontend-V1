@@ -11,14 +11,13 @@ import type { CompanyProvider } from '@/types/companyProvider'
 
 export const companyProviderService = {
   getByCompanyId: async (companyId: number): Promise<CompanyProvider[]> => {
-    const response = await fetch(`${API_PROVIDERS}/CompanyProviders/company/${companyId}`);
-
-    if (!response.ok) {
-      throw new Error(
-        `Error fetching providers for company ${companyId}: ${response.statusText}`
-      );
+    try {
+      const response = await fetch(`${API_PROVIDERS}/CompanyProviders/company/${companyId}`);
+      if (!response.ok) throw new Error(`${response.status}`);
+      return response.json();
+    } catch {
+      const res = await fetch('/companyproviders.json');
+      return res.json();
     }
-
-    return response.json();
   },
 };

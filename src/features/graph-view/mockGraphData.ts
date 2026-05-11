@@ -66,14 +66,14 @@ const MOCK_SUBGRAPH: GraphSubgraph = {
       Label: 'PEP Linkage', EdgeType: 'Knows', Strength: 'High',
       Direction: '↔', Since: '2017-03',
       Status: 'Inquiry', StatusType: 'amber', Flagged: true,
-      Color: '#F5A623',
+      Color: '#FF6B6B', Animated: true,
     },
     {
       EdgeId: 'e7', Source: 'you', Target: 'person:1',
       Label: 'Co-Founder', EdgeType: 'Knows', Strength: 'Critical',
       Direction: '→', Since: '1993-01',
       Status: 'Active Case', StatusType: 'cyan', Flagged: false,
-      Color: '#00E5FF', Animated: true,
+      Color: '#00E5FF',
     },
   ],
 }

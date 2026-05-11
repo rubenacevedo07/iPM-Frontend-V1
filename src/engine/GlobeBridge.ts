@@ -4,6 +4,13 @@
 
 import { Deck, _GlobeView as DeckGlobeView } from '@deck.gl/core';
 import { ArcLayer, GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
+import {
+  POWER_MAP_CONFIGS,
+  HORMUZ_COUNTRY_TIERS,
+  HORMUZ_TIER_TINTS,
+  POWERMAP_TYPE_COLOR,
+} from './powermapData';
+import type { PowerMapEntity, PowerMapEdge } from './powermapData';
 import type {
   EngineId,
   EngineInitInput,
@@ -23,13 +30,12 @@ import type {
 // Constants
 // ---------------------------------------------------------------------------
 
-const INITIAL_VIEW = { longitude: 20, latitude: 25, zoom: 0.7, minZoom: 0, maxZoom: 5 };
+const INITIAL_VIEW = { longitude: 20, latitude: 25, zoom: 2, minZoom: 0, maxZoom: 5 };
 
-// External CDN: naturalearth 110m countries GeoJSON. No auth required.
-// If CDN unavailable, globe-countries layer silently renders empty (non-fatal).
-// TODO Phase 5+: host locally or use a proxy before production launch.
-const COUNTRIES_URL =
-  'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_admin_0_countries.geojson';
+// Local slim GeoJSON (only iso_a3, name, continent, region_un props).
+// Served from /public — no network round-trip on startup. Was the single
+// biggest startup blocker (~1800ms CDN download in dev trace).
+const COUNTRIES_URL = '/ne_110m_countries_slim.geojson';
 
 const GLOBE_BASE_GEOJSON = {
   type: 'FeatureCollection' as const,
@@ -56,6 +62,7 @@ export class GlobeBridge implements IEngineBridge {
   private _handlers: Array<(event: BridgeEvent) => void> = [];
 
   private _deck: Deck<any> | null = null;
+  private _canvas: HTMLCanvasElement | null = null;
   private _ro: ResizeObserver | null = null;
 
   // Phase 7.3g: auto-rotation via requestAnimationFrame (NOT LinearInterpolator).
@@ -83,11 +90,12 @@ export class GlobeBridge implements IEngineBridge {
   private static readonly ROTATION_DEG_PER_SEC = 3;
   private static readonly IDLE_RESUME_MS = 800;
 
-  // Phase 8: ArcLayer styling. Colors match Phase 5/7 palette — amber for
-  // upstream/supplier risk, cyan for downstream/client edges. Width clamps
-  // are pixels at any zoom (widthUnits: 'pixels' on the layer).
-  private static readonly ARC_COLOR_SUPPLIER: [number, number, number] = [245, 166, 35];
-  private static readonly ARC_COLOR_CLIENT:   [number, number, number] = [0, 229, 255];
+  // Phase 8+: ArcLayer styling. Colors updated to PINK (suppliers) and PURPLE (clients).
+  // Width clamps are pixels at any zoom (widthUnits: 'pixels' on the layer).
+  private static readonly ARC_COLOR_SUPPLIER:   [number, number, number] = [232, 80,  122];
+  private static readonly ARC_COLOR_CLIENT:     [number, number, number] = [160, 100, 255];
+  private static readonly ARC_COLOR_CONNECTION: [number, number, number] = [0,   229, 255];
+  private static readonly ARC_COLOR_PARTNER:    [number, number, number] = [245, 166, 35];
   private static readonly ARC_WIDTH_MIN = 1;
   private static readonly ARC_WIDTH_MAX = 4;
 
@@ -95,6 +103,11 @@ export class GlobeBridge implements IEngineBridge {
   // Phase 7: hover state tracked by onHover, consumed by _buildLayers for visual feedback.
   // Also drives ENGINE.ENTITY_HOVER dispatch (null on hover-out).
   private _hoveredId: string | null = null;
+
+  // Click ripple animation — driven by a dedicated RAF loop separate from rotation.
+  private _clickEntity: any = null;
+  private _clickAnimStart = 0;
+  private _clickAnimRAF: number | null = null;
   // Event buffer — populated by _emitOrBuffer when no handlers are registered yet.
   // CONTRACT: drained ONLY by onEvent() when a handler registers. Never flushed
   // or cleared by init() or any other method. See Phase 3 post-mortem.
@@ -111,6 +124,22 @@ export class GlobeBridge implements IEngineBridge {
   // deck.gl re-evaluates accessors. Using .length alone misses that case.
   private _arcs: EngineArc[] = [];
   private _arcsRevision = 0;
+
+  private _activePowerMapId: string | null = null;
+  private _pmEntities: PowerMapEntity[] = [];
+  private _pmEdges:    PowerMapEdge[]    = [];
+  private _rotationEnabled = true;
+  private _flyToTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Arrival pulse — single expanding gold ring when fly-to completes.
+  private _arrivalCoords: [number, number] | null = null;
+  private _arrivalAnimStart = 0;
+  private _arrivalAnimRAF: number | null = null;
+
+  // Idle connection arcs — soft pulsing arcs between top-30 entities when globe is rotating.
+  private _idleArcs: Array<{ src: [number, number]; dst: [number, number]; phase: number }> = [];
+  private _idleAnimTime = 0;
+  private _idleInterval: ReturnType<typeof setInterval> | null = null;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -136,8 +165,21 @@ export class GlobeBridge implements IEngineBridge {
       // we pass here, and subsequent setProps({viewState: {...,
       // transitionDuration, interpolator}}) triggers the transition correctly.
       this._viewState = { ...INITIAL_VIEW };
+      const canvas = this._createCanvas(input.container);
+      this._canvas = canvas;
+      // Set backing-buffer dimensions BEFORE creating the GL context.
+      // With gl: externalCtx passed to Deck, deck.gl may skip its initial
+      // canvas resize — leaving the default 300×150 backing buffer and
+      // CSS-upscaling to fill the container (the "8-bit" look).
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width  = Math.round(resolvedW * dpr);
+      canvas.height = Math.round(resolvedH * dpr);
+      const gl = (
+        canvas.getContext('webgl2', { alpha: false, stencil: true, depth: true }) ||
+        canvas.getContext('webgl',  { alpha: false, stencil: true, depth: true })
+      ) as WebGLRenderingContext;
       this._deck = new Deck({
-        canvas: this._createCanvas(input.container),
+        gl: gl as any,
         width: resolvedW,
         height: resolvedH,
         views: new DeckGlobeView({ id: 'globe' }),
@@ -179,7 +221,9 @@ export class GlobeBridge implements IEngineBridge {
 
         onClick: (info: any) => {
           if (info.layer?.id === 'globe-rings' && info.object) {
+            this._flyTo(info.object);
             this._emitOrBuffer({ type: 'ENGINE.ENTITY_CLICK', entity: info.object });
+            this._startClickAnim(info.object);
           }
         },
 
@@ -187,9 +231,10 @@ export class GlobeBridge implements IEngineBridge {
           // Phase 7: hover emission wired. Only globe-rings is pickable.
           // Dispatch EntityRef on hover-in (info.object is the entity), null on hover-out.
           // Dedup: only emit when _hoveredId changes (avoids flood for same-object hovers).
-          const hoveredNodeId = info.layer?.id === 'globe-rings' && info.object
-            ? info.object.nodeId
-            : null;
+          const hoveredNodeId =
+            (info.layer?.id === 'globe-rings' || info.layer?.id === 'globe-pm-rings') && info.object
+              ? (info.object.nodeId ?? info.object.id ?? null)
+              : null;
           if (hoveredNodeId === this._hoveredId) return;
           this._hoveredId = hoveredNodeId;
           this._emitOrBuffer({
@@ -202,6 +247,11 @@ export class GlobeBridge implements IEngineBridge {
 
       this._ro = new ResizeObserver(([entry]) => {
         const { width: w, height: h } = entry.contentRect;
+        const r = window.devicePixelRatio || 1;
+        if (this._canvas) {
+          this._canvas.width  = Math.round(w * r);
+          this._canvas.height = Math.round(h * r);
+        }
         this._deck?.setProps({ width: w, height: h });
       });
       this._ro.observe(input.container);
@@ -211,6 +261,7 @@ export class GlobeBridge implements IEngineBridge {
       // Phase 7.3g: start rAF-driven rotation. Must run AFTER status='ready' —
       // _startRAFRotation's tick guard checks status.
       this._startRAFRotation();
+      this._startIdlePulse();
 
       // Defer ENGINE.READY to next microtask. Guarantees any synchronous
       // subscribe() call that happens immediately after the constructor returns
@@ -256,19 +307,28 @@ export class GlobeBridge implements IEngineBridge {
   resume(): void {
     if (this._status !== 'ready') return;
     this._userInteracting = false;
-    this._startRAFRotation();
+    if (this._rotationEnabled) this._startRAFRotation();
   }
 
   dispose(): void {
+    if (this._flyToTimer !== null) {
+      clearTimeout(this._flyToTimer);
+      this._flyToTimer = null;
+    }
     if (this._idleResumeTimer !== null) {
       clearTimeout(this._idleResumeTimer);
       this._idleResumeTimer = null;
     }
     this._userInteracting = true;
     this._stopRAFRotation();
+    this._stopClickAnim();
+    this._stopArrivalPulse();
+    this._stopIdlePulse();
     this._ro?.disconnect();
     this._deck?.finalize();
+    this._canvas?.remove();
     this._deck = null;
+    this._canvas = null;
     this._ro = null;
     this._status = 'disposed';
     this._handlers = [];
@@ -299,6 +359,7 @@ export class GlobeBridge implements IEngineBridge {
         break;
       case 'CMD.SET_ENTITIES':
         this._entities = command.data.entities;
+        this._idleArcs = this._buildIdleArcs();
         this._redraw();
         break;
       case 'CMD.SET_ARCS': {
@@ -312,6 +373,44 @@ export class GlobeBridge implements IEngineBridge {
         this._redraw();
         break;
       }
+      case 'CMD.SET_POWERMAP': {
+        this._activePowerMapId = command.powermapId;
+        const cfg = command.powermapId ? POWER_MAP_CONFIGS[command.powermapId] : undefined;
+        this._pmEntities = cfg?.entities ?? [];
+        this._pmEdges    = cfg?.edges    ?? [];
+        this._redraw();
+        break;
+      }
+      case 'CMD.SET_ROTATION': {
+        this._rotationEnabled = command.enabled;
+        if (command.enabled) {
+          // Clear any lingering user-interaction block so the loop actually advances.
+          this._userInteracting = false;
+          this._startRAFRotation(); // (re)start the loop — no-op if already running
+          this._startIdlePulse();
+        } else {
+          // Hard-stop the RAF loop entirely — do not rely solely on the tick guard.
+          // Any path that clears _userInteracting (fly-to end, idle-resume timer)
+          // would reopen the rotation window if the loop is still alive.
+          this._stopRAFRotation();
+          if (this._idleResumeTimer !== null) {
+            clearTimeout(this._idleResumeTimer);
+            this._idleResumeTimer = null;
+          }
+          this._userInteracting = true; // belt-and-braces
+          this._stopIdlePulse();
+        }
+        break;
+      }
+      case 'CMD.FLY_TO':
+        this._executeFlyTo(
+          command.longitude,
+          command.latitude,
+          command.zoom ?? 2.0,
+          command.duration ?? 2000,
+          () => { this._startArrivalPulse(command.longitude, command.latitude); },
+        );
+        break;
       case 'CMD.SUSPEND':
         this.suspend();
         break;
@@ -356,13 +455,39 @@ export class GlobeBridge implements IEngineBridge {
   }
 
   private _buildLayers() {
+    // Idle skin — dark navy continents with visible borders.
+    const IDLE_FILL:   [number,number,number,number] = [18, 54, 105, 255];
+    const IDLE_STROKE: [number,number,number,number] = [55, 120, 190, 140];
+    const pmCfg = this._activePowerMapId ? POWER_MAP_CONFIGS[this._activePowerMapId] : undefined;
+
+    const getCountryFill = (f: any): [number,number,number,number] => {
+      const name: string = f.properties?.name ?? f.properties?.NAME ?? '';
+      if (pmCfg?.countryTierMode === 'hormuz') {
+        const tier = HORMUZ_COUNTRY_TIERS[name];
+        if (tier) return HORMUZ_TIER_TINTS[tier].fill;
+      } else if (pmCfg?.highlightCountries?.includes(name) && pmCfg.countryFill) {
+        return pmCfg.countryFill;
+      }
+      return IDLE_FILL;
+    };
+    const getCountryStroke = (f: any): [number,number,number,number] => {
+      const name: string = f.properties?.name ?? f.properties?.NAME ?? '';
+      if (pmCfg?.countryTierMode === 'hormuz') {
+        const tier = HORMUZ_COUNTRY_TIERS[name];
+        if (tier) return HORMUZ_TIER_TINTS[tier].stroke;
+      } else if (pmCfg?.highlightCountries?.includes(name) && pmCfg.countryStroke) {
+        return pmCfg.countryStroke;
+      }
+      return IDLE_STROKE;
+    };
+
     // Phase 7: color table — informed by v3 useLayers3D.ts dotColor() (reference,
     // not verbatim port). V1-authored; EntityType here uses V1's UPPERCASE EntityRef
     // convention (app.events.ts EntityRef), not v3 @/types/overlays.EntityType lowercase.
-    const dotColor = (type: string): [number, number, number, number] => {
+    const dotColor = (type: string, isGold: boolean = false): [number, number, number, number] => {
       switch (type) {
         case 'PERSON':  return [0, 229, 255, 220]; // cyan — reserved for Phase 7.1
-        case 'COMPANY': return [0, 212, 170, 220]; // teal
+        case 'COMPANY': return isGold ? [212, 175, 55, 220] : [0, 212, 170, 220]; // gold : teal
         case 'COUNTRY': return [245, 166, 35, 220]; // amber — unused in Phase 7
         default:        return [138, 155, 181, 200];
       }
@@ -381,9 +506,13 @@ export class GlobeBridge implements IEngineBridge {
         data: COUNTRIES_URL,
         filled: true,
         stroked: true,
-        getFillColor: [8, 20, 48, 80],
-        getLineColor: [0, 229, 255, 25],
-        lineWidthMinPixels: 0.5,
+        getFillColor: getCountryFill,
+        getLineColor: getCountryStroke,
+        lineWidthMinPixels: 0.8,
+        updateTriggers: {
+          getFillColor: [this._activePowerMapId],
+          getLineColor: [this._activePowerMapId],
+        },
       }),
       // Phase 8: globe-arcs — supplier (amber) + client (cyan) network edges.
       // Inserted BELOW globe-rings so picking on entity dots stays unaffected
@@ -400,25 +529,45 @@ export class GlobeBridge implements IEngineBridge {
         getSourcePosition: (a) => a.source,
         getTargetPosition: (a) => a.target,
         getSourceColor: (a) => {
-          const c = a.kind === 'supplier'
-            ? GlobeBridge.ARC_COLOR_SUPPLIER
-            : GlobeBridge.ARC_COLOR_CLIENT;
+          const c = a.kind === 'supplier'   ? GlobeBridge.ARC_COLOR_SUPPLIER
+                  : a.kind === 'client'     ? GlobeBridge.ARC_COLOR_CLIENT
+                  : a.kind === 'connection' ? GlobeBridge.ARC_COLOR_CONNECTION
+                  :                          GlobeBridge.ARC_COLOR_PARTNER;
           return [c[0], c[1], c[2], Math.round(a.intensity * 255)];
         },
         getTargetColor: (a) => {
-          const c = a.kind === 'supplier'
-            ? GlobeBridge.ARC_COLOR_SUPPLIER
-            : GlobeBridge.ARC_COLOR_CLIENT;
+          const c = a.kind === 'supplier'   ? GlobeBridge.ARC_COLOR_SUPPLIER
+                  : a.kind === 'client'     ? GlobeBridge.ARC_COLOR_CLIENT
+                  : a.kind === 'connection' ? GlobeBridge.ARC_COLOR_CONNECTION
+                  :                          GlobeBridge.ARC_COLOR_PARTNER;
           return [c[0], c[1], c[2], Math.round(a.intensity * 255)];
         },
         getWidth: (a) => GlobeBridge.ARC_WIDTH_MIN +
           a.intensity * (GlobeBridge.ARC_WIDTH_MAX - GlobeBridge.ARC_WIDTH_MIN),
+        getHeight: 0.2,
         updateTriggers: {
           getSourcePosition: [this._arcsRevision],
           getTargetPosition: [this._arcsRevision],
           getSourceColor:    [this._arcsRevision],
           getTargetColor:    [this._arcsRevision],
           getWidth:          [this._arcsRevision],
+        },
+      }),
+      // Phase 8+: globe-selected-halo — cyan ring around focused entity at 300k radius
+      new ScatterplotLayer({
+        id: 'globe-selected-halo',
+        data: this._focusedId ? this._entities.filter(e => e.nodeId === this._focusedId) : [],
+        pickable: false,
+        radiusUnits: 'meters',
+        getPosition:  (d: any) => [d.longitude, d.latitude],
+        getRadius:    300_000,
+        getFillColor: [0, 0, 0, 0],
+        getLineColor: [0, 229, 255, 200],
+        getLineWidth: 2,
+        stroked: true,
+        lineWidthUnits: 'pixels',
+        updateTriggers: {
+          data: [this._focusedId],
         },
       }),
       // Phase 7: globe-rings — pickable entity dots, ring stroke, hover/focus-aware radius.
@@ -434,14 +583,14 @@ export class GlobeBridge implements IEngineBridge {
           return 80_000;
         },
         getFillColor: (d: any) => {
-          if (d.nodeId === this._focusedId) return [255, 255, 255, 240];
+          if (d.nodeId === this._focusedId) return [0, 229, 255, 80];
           if (d.nodeId === this._hoveredId) return [255, 255, 255, 180];
-          const c = dotColor(d.type);
+          const c = dotColor(d.type, d.isGold);
           // Slightly transparent fill so the decorative inner dot reads through
           return [c[0], c[1], c[2], 80];
         },
         getLineColor: (d: any) => {
-          const c = dotColor(d.type);
+          const c = dotColor(d.type, d.isGold);
           return [c[0], c[1], c[2], 255];
         },
         getLineWidth: (d: any) => (d.nodeId === this._focusedId ? 3 : 1.5),
@@ -465,7 +614,7 @@ export class GlobeBridge implements IEngineBridge {
         getPosition:  (d: any) => [d.longitude, d.latitude],
         getRadius:    30_000,
         getFillColor: (d: any) => {
-          const c = dotColor(d.type);
+          const c = dotColor(d.type, d.isGold);
           return [c[0], c[1], c[2], 200];
         },
         updateTriggers: {
@@ -473,11 +622,244 @@ export class GlobeBridge implements IEngineBridge {
           getPosition:  [this._entities.length],
         },
       }),
+      // PowerMap entity halo — soft glow behind ring, non-pickable
+      new ScatterplotLayer<PowerMapEntity>({
+        id: 'globe-pm-halo',
+        data: this._pmEntities,
+        pickable: false,
+        radiusUnits: 'pixels' as const,
+        getPosition: (d) => d.coords,
+        getRadius: 18,
+        getFillColor: (d) => {
+          const c = POWERMAP_TYPE_COLOR[d.type];
+          return [c[0], c[1], c[2], 22] as [number,number,number,number];
+        },
+        stroked: false,
+        parameters: { depthTest: false } as any,
+        updateTriggers: { data: [this._activePowerMapId] },
+      }),
+      // PowerMap entity rings — pickable, hover-aware
+      new ScatterplotLayer<PowerMapEntity>({
+        id: 'globe-pm-rings',
+        data: this._pmEntities,
+        pickable: true,
+        radiusUnits: 'pixels' as const,
+        getPosition: (d) => d.coords,
+        getRadius: (d) => d.id === this._hoveredId ? 9 : 7,
+        getFillColor: (d) => {
+          const c = POWERMAP_TYPE_COLOR[d.type];
+          return [c[0], c[1], c[2], 50] as [number,number,number,number];
+        },
+        getLineColor: (d) => {
+          const c = POWERMAP_TYPE_COLOR[d.type];
+          return [c[0], c[1], c[2], 240] as [number,number,number,number];
+        },
+        stroked: true,
+        lineWidthUnits: 'pixels' as const,
+        getLineWidth: 1.5,
+        parameters: { depthTest: false } as any,
+        updateTriggers: {
+          data: [this._activePowerMapId],
+          getRadius: [this._hoveredId],
+          getFillColor: [this._hoveredId],
+        },
+      }),
+      // PowerMap arcs — hostile edges in red, others use accent color
+      new ArcLayer<PowerMapEdge>({
+        id: 'globe-pm-arcs',
+        data: this._pmEdges,
+        pickable: false,
+        greatCircle: true,
+        widthUnits: 'pixels' as const,
+        getSourcePosition: (d) => d.from,
+        getTargetPosition: (d) => d.to,
+        getSourceColor: (d) => {
+          const a = this._activePowerMapId
+            ? (POWER_MAP_CONFIGS[this._activePowerMapId]?.accentRgb ?? [0, 229, 255])
+            : [0, 229, 255];
+          return d.hostile
+            ? [229, 57, 53, 200] as [number,number,number,number]
+            : [a[0], a[1], a[2], 180] as [number,number,number,number];
+        },
+        getTargetColor: (d) => {
+          const a = this._activePowerMapId
+            ? (POWER_MAP_CONFIGS[this._activePowerMapId]?.accentRgb ?? [0, 229, 255])
+            : [0, 229, 255];
+          return d.hostile
+            ? [229, 57, 53, 80] as [number,number,number,number]
+            : [a[0], a[1], a[2], 80] as [number,number,number,number];
+        },
+        getWidth: (d) => 0.8 + (d.strength ?? 0.5) * 1.4,
+        parameters: { depthTest: false } as any,
+        updateTriggers: { data: [this._activePowerMapId] },
+      }),
+
+      // Click ripple — 3 concentric rings expanding from the clicked entity position.
+      // Driven by _clickAnimRAF; each ring staggered 200ms. Radius 80k→450k meters,
+      // opacity fades to 0. Uses geo coordinates so rings follow globe rotation.
+      // Idle connection arcs — subtle pulsing lines between top-30 entities; only in idle (rotating, no overlay/powermap).
+      ...(this._rotationEnabled && !this._activePowerMapId && this._arcs.length === 0 && this._idleArcs.length > 0
+        ? [new ArcLayer({
+            id: 'globe-idle-arcs',
+            data: this._idleArcs,
+            pickable: false,
+            greatCircle: true,
+            widthUnits: 'pixels' as const,
+            getSourcePosition: (d: any) => d.src,
+            getTargetPosition: (d: any) => d.dst,
+            getSourceColor: (d: any) => {
+              const pulse = (Math.sin(this._idleAnimTime * 0.7 + d.phase) + 1) / 2;
+              return [0, 229, 255, Math.round(8 + pulse * 32)] as [number,number,number,number];
+            },
+            getTargetColor: (d: any) => {
+              const pulse = (Math.sin(this._idleAnimTime * 0.7 + d.phase) + 1) / 2;
+              return [0, 180, 220, Math.round(4 + pulse * 16)] as [number,number,number,number];
+            },
+            getWidth: 0.5,
+            parameters: { depthTest: false } as any,
+            updateTriggers: {
+              getSourceColor: [this._idleAnimTime],
+              getTargetColor: [this._idleAnimTime],
+            },
+          })]
+        : []),
+
+      // Arrival pulse — single gold ring expanding from fly-to destination.
+      ...(this._arrivalCoords
+        ? (() => {
+            const elapsed = Math.max(0, performance.now() - this._arrivalAnimStart);
+            const progress = Math.min(1, elapsed / 1000);
+            const radius = 50_000 + progress * 520_000;
+            const alpha  = Math.round((1 - progress) * (1 - progress) * 200);
+            return [new ScatterplotLayer({
+              id: 'globe-arrival-pulse',
+              data: [{ longitude: this._arrivalCoords[0], latitude: this._arrivalCoords[1] }],
+              pickable: false,
+              radiusUnits: 'meters',
+              getPosition:  (d: any) => [d.longitude, d.latitude],
+              getRadius:    radius,
+              getFillColor: [0, 0, 0, 0] as [number,number,number,number],
+              getLineColor: [245, 195, 60, alpha] as [number,number,number,number],
+              getLineWidth: 1.5,
+              stroked: true,
+              lineWidthUnits: 'pixels',
+              updateTriggers: { getRadius: [radius], getLineColor: [alpha] },
+            })];
+          })()
+        : []),
+
+      ...(this._clickEntity
+        ? ([0, 200, 400] as const).map((delay, i) => {
+            const elapsed = Math.max(0, performance.now() - this._clickAnimStart - delay);
+            if (elapsed <= 0) return null;
+            const progress = Math.min(1, elapsed / 700);
+            const radius   = 80_000 + progress * 370_000;
+            const alpha    = Math.round((1 - progress) * 180);
+            return new ScatterplotLayer({
+              id: `globe-click-ripple-${i}`,
+              data: [this._clickEntity],
+              pickable: false,
+              radiusUnits: 'meters',
+              getPosition:  (d: any) => [d.longitude, d.latitude],
+              getRadius:    radius,
+              getFillColor: [0, 0, 0, 0] as [number, number, number, number],
+              getLineColor: [0, 229, 255, alpha] as [number, number, number, number],
+              getLineWidth: 2,
+              stroked: true,
+              lineWidthUnits: 'pixels',
+              updateTriggers: { getRadius: [radius], getLineColor: [alpha] },
+            });
+          }).filter(Boolean) as ScatterplotLayer<any>[]
+        : []),
     ];
   }
 
   private _redraw(): void {
     this._deck?.setProps({ layers: this._buildLayers() });
+  }
+
+  private _startArrivalPulse(lng: number, lat: number): void {
+    this._arrivalCoords   = [lng, lat];
+    this._arrivalAnimStart = performance.now();
+    if (this._arrivalAnimRAF !== null) cancelAnimationFrame(this._arrivalAnimRAF);
+    const tick = () => {
+      const elapsed = performance.now() - this._arrivalAnimStart;
+      if (elapsed > 1200) {
+        this._arrivalCoords  = null;
+        this._arrivalAnimRAF = null;
+        this._redraw();
+        return;
+      }
+      this._arrivalAnimRAF = requestAnimationFrame(tick);
+      this._redraw();
+    };
+    this._arrivalAnimRAF = requestAnimationFrame(tick);
+  }
+
+  private _stopArrivalPulse(): void {
+    if (this._arrivalAnimRAF !== null) cancelAnimationFrame(this._arrivalAnimRAF);
+    this._arrivalAnimRAF = null;
+    this._arrivalCoords  = null;
+  }
+
+  private _buildIdleArcs(): Array<{ src: [number, number]; dst: [number, number]; phase: number }> {
+    const n = Math.min(this._entities.length, 30);
+    if (n < 2) return [];
+    const result = [];
+    const count = Math.min(18, Math.floor(n * 0.7));
+    for (let i = 0; i < count; i++) {
+      const a = this._entities[i % n];
+      const b = this._entities[(i * 7 + 4) % n];
+      if (a === b) continue;
+      result.push({
+        src:   [a.longitude, a.latitude]  as [number, number],
+        dst:   [b.longitude, b.latitude]  as [number, number],
+        phase: (i / count) * Math.PI * 2,
+      });
+    }
+    return result;
+  }
+
+  private _startIdlePulse(): void {
+    if (this._idleInterval !== null) return;
+    this._idleInterval = setInterval(() => {
+      this._idleAnimTime += 0.067;
+      if (this._rotationEnabled && !this._activePowerMapId && this._arcs.length === 0 && this._idleArcs.length > 0) {
+        this._redraw();
+      }
+    }, 67);
+  }
+
+  private _stopIdlePulse(): void {
+    if (this._idleInterval !== null) {
+      clearInterval(this._idleInterval);
+      this._idleInterval = null;
+    }
+  }
+
+  private _startClickAnim(entity: any): void {
+    this._clickEntity   = entity;
+    this._clickAnimStart = performance.now();
+    if (this._clickAnimRAF !== null) cancelAnimationFrame(this._clickAnimRAF);
+
+    const tick = () => {
+      const elapsed = performance.now() - this._clickAnimStart;
+      if (elapsed > 1200) {
+        this._clickEntity   = null;
+        this._clickAnimRAF  = null;
+        this._redraw();
+        return;
+      }
+      this._clickAnimRAF = requestAnimationFrame(tick);
+      this._redraw();
+    };
+    this._clickAnimRAF = requestAnimationFrame(tick);
+  }
+
+  private _stopClickAnim(): void {
+    if (this._clickAnimRAF !== null) cancelAnimationFrame(this._clickAnimRAF);
+    this._clickAnimRAF = null;
+    this._clickEntity  = null;
   }
 
   // ---------------------------------------------------------------------------
@@ -510,7 +892,7 @@ export class GlobeBridge implements IEngineBridge {
         this._lastTickMs = ts;
         return;
       }
-      if (this._userInteracting) {
+      if (this._userInteracting || !this._rotationEnabled) {
         this._lastTickMs = ts;
         return;
       }
@@ -561,8 +943,56 @@ export class GlobeBridge implements IEngineBridge {
     }, GlobeBridge.IDLE_RESUME_MS);
   }
 
-  private _flyTo(_target: { nodeId: string }): void {
-    // TODO Phase 3b: resolve entity coordinates from EntityRef and animate flyTo
+  private _flyTo(target: { nodeId: string }): void {
+    const entity = this._entities.find(e => e.nodeId === target.nodeId);
+    if (!entity) return;
+    this._executeFlyTo(entity.longitude, entity.latitude, 2.8, 1800, () => {
+      this._startArrivalPulse(entity.longitude, entity.latitude);
+    });
+  }
+
+  /**
+   * Cinematic fly-to via rAF lerp. Uses the same _selfDriving pattern as
+   * auto-rotation so onViewStateChange writeback doesn't recurse.
+   * FlyToInterpolator silently no-ops on _GlobeView (same issue as
+   * LinearInterpolator) so we drive frames manually.
+   */
+  private _executeFlyTo(lng: number, lat: number, zoom: number, duration: number, onComplete?: () => void): void {
+    if (!this._deck || this._status !== 'ready') return;
+    if (this._flyToTimer !== null) { clearTimeout(this._flyToTimer); this._flyToTimer = null; }
+    if (this._idleResumeTimer !== null) { clearTimeout(this._idleResumeTimer); this._idleResumeTimer = null; }
+    this._userInteracting = true;
+
+    const s0 = this._viewState?.longitude ?? 0;
+    const s1 = this._viewState?.latitude  ?? 0;
+    const s2 = this._viewState?.zoom      ?? 2;
+    const t0 = performance.now();
+    const ease = (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+    const tick = (now: number) => {
+      const t = Math.min((now - t0) / duration, 1);
+      const e = ease(t);
+      const next = {
+        ...this._viewState,
+        longitude: s0 + (lng - s0) * e,
+        latitude:  s1 + (lat - s1) * e,
+        zoom:      s2 + (zoom - s2) * e,
+      };
+      this._viewState  = next;
+      this._selfDriving = true;
+      this._deck?.setProps({ viewState: next });
+      this._selfDriving = false;
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        this._userInteracting = false;
+        this._lastTickMs = 0;
+        if (this._rotationEnabled) this._startRAFRotation();
+        onComplete?.();
+      }
+    };
+
+    requestAnimationFrame(tick);
   }
 
   // ---------------------------------------------------------------------------

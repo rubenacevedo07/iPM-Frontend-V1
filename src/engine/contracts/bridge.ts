@@ -36,7 +36,10 @@ export type BridgeCommand =
   | { type: 'CMD.SET_ARCS';     data: EngineArcData }
   | { type: 'CMD.SUSPEND' }
   | { type: 'CMD.RESUME' }
-  | { type: 'CMD.DISPOSE' };
+  | { type: 'CMD.DISPOSE' }
+  | { type: 'CMD.SET_POWERMAP'; powermapId: string | null }
+  | { type: 'CMD.FLY_TO'; longitude: number; latitude: number; zoom?: number; duration?: number }
+  | { type: 'CMD.SET_ROTATION'; enabled: boolean };
 
 /**
  * Bridge instance attached to a single engine slot.

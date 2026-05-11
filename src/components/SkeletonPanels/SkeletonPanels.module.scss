@@ -1,0 +1,136 @@
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.bar {
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.10) 50%,
+    rgba(255,255,255,0.04) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+
+// ── Person skeleton ────────────────────────────────────────────────────────────
+.personHost {
+  position: absolute;
+  inset: 0;
+  font-family: 'DM Sans', sans-serif;
+  pointer-events: none;
+}
+
+.header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  background: rgba(6, 9, 15, 0.96);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+}
+
+.avatar {
+  composes: bar;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.headerText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.headerPills {
+  display: flex;
+  gap: 6px;
+}
+
+.pill {
+  composes: bar;
+  height: 22px;
+  border-radius: 4px;
+}
+
+.left {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  bottom: 36px;
+  width: 280px;
+  background: rgba(6, 9, 15, 0.88);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.right {
+  position: absolute;
+  top: 56px;
+  right: 0;
+  bottom: 36px;
+  width: 300px;
+  background: rgba(6, 9, 15, 0.88);
+  border-left: 1px solid rgba(255,255,255,0.06);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bottom {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 36px;
+  background: rgba(6, 9, 15, 0.96);
+  border-top: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 14px;
+}
+
+// ── Graph skeleton ─────────────────────────────────────────────────────────────
+.graphHost {
+  width: 100%;
+  height: 100%;
+  background: #050810;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.graphNodes {
+  position: relative;
+  width: 320px;
+  height: 320px;
+}
+
+.graphNode {
+  composes: bar;
+  position: absolute;
+  border-radius: 50%;
+}
+
+// ── PowerMaps skeleton ─────────────────────────────────────────────────────────
+.powerMapsHost {
+  width: 240px;
+  background: rgba(6, 9, 15, 0.88);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

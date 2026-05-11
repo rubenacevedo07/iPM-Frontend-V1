@@ -21,8 +21,11 @@ type EngineManagerEvent =
   | { type: 'ENGINE.SWAP';      engineId: EngineId; input: EngineInitInput }
   | { type: 'ENGINE.DISPOSE' }
   | { type: '_BRIDGE.EVENT';    event: BridgeEvent }
-  | { type: 'CMD.SET_ENTITIES'; data: EngineEntityData }
-  | { type: 'CMD.SET_ARCS';     data: EngineArcData };
+  | { type: 'CMD.SET_ENTITIES';  data: EngineEntityData }
+  | { type: 'CMD.SET_ARCS';      data: EngineArcData }
+  | { type: 'CMD.SET_POWERMAP';  powermapId: string | null }
+  | { type: 'CMD.FLY_TO'; longitude: number; latitude: number; zoom?: number; duration?: number }
+  | { type: 'CMD.SET_ROTATION'; enabled: boolean };
 
 function isBridgeReady(event: EngineManagerEvent): boolean {
   return event.type === '_BRIDGE.EVENT' && event.event.type === 'ENGINE.READY';
@@ -150,6 +153,27 @@ export const engineManagerMachine = setup({
             'CMD.SET_ARCS': {
               actions: ({ context, event }) => {
                 context.bridge?.send({ type: 'CMD.SET_ARCS', data: event.data });
+              },
+            },
+            'CMD.SET_POWERMAP': {
+              actions: ({ context, event }) => {
+                context.bridge?.send({ type: 'CMD.SET_POWERMAP', powermapId: event.powermapId });
+              },
+            },
+            'CMD.FLY_TO': {
+              actions: ({ context, event }) => {
+                context.bridge?.send({
+                  type: 'CMD.FLY_TO',
+                  longitude: event.longitude,
+                  latitude:  event.latitude,
+                  zoom:      event.zoom,
+                  duration:  event.duration,
+                });
+              },
+            },
+            'CMD.SET_ROTATION': {
+              actions: ({ context, event }) => {
+                context.bridge?.send({ type: 'CMD.SET_ROTATION', enabled: event.enabled });
               },
             },
           },

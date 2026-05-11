@@ -16,7 +16,6 @@ export function GlowEdge({
   targetY,
   targetPosition,
   style = {},
-  markerEnd,
   data,
 }: EdgeProps<Edge<GraphViewEdgeData>>) {
   const [edgePath] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition })
@@ -78,7 +77,7 @@ export function GlowEdge({
       <BaseEdge
         id={id}
         path={edgePath}
-        markerEnd={markerEnd}
+
         style={{
           ...style,
           stroke,

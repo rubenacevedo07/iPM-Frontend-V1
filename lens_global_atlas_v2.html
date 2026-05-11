@@ -1,0 +1,2209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>iPM · Global Atlas</title>
+
+<!-- Workstation font stack -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500&display=swap"
+  rel="stylesheet"
+/>
+
+<!-- deck.gl 9 standalone – exposes window.deck.* -->
+<script src="https://unpkg.com/deck.gl@^9.0.0/dist.min.js"></script>
+
+<!-- topojson-client – for Natural Earth countries-110m decode -->
+<script src="https://unpkg.com/topojson-client@3"></script>
+
+<style>
+/* ============================================================
+   DESIGN TOKENS – locked
+   ============================================================ */
+:root {
+  --bg:        #030710;
+  --bg-deep:   #050c12;
+  --bg-panel:  rgba(8,14,22,0.82);
+  --bg-card:   rgba(8,14,22,0.94);
+  --bg-header: rgba(5,10,18,0.92);
+
+  --border:    rgba(255,255,255,0.08);
+  --border-lt: rgba(255,255,255,0.14);
+  --border-hi: rgba(255,255,255,0.22);
+
+  --cyan:    #00e5ff;
+  --gold:    #d4a847;
+  --red:     #e53935;
+  --green:   #00e676;
+  --blue:    #3b8bd4;
+  --purple:  #8B5CF6;
+
+  --text:        #e8edf5;
+  --text-2:      #8a9bb5;
+  --text-3:      #4a5568;
+  --text-bright: #ffffff;
+
+  --font-display: 'IBM Plex Sans', sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+  --font-ui:      'Rajdhani', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); }
+body {
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+button { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+input  { font-family: inherit; color: inherit; }
+::selection { background: rgba(0,229,255,0.25); color: var(--text-bright); }
+
+.scrollbar-quiet::-webkit-scrollbar { width: 4px; }
+.scrollbar-quiet::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-quiet::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.scrollbar-quiet::-webkit-scrollbar-thumb:hover { background: var(--border-lt); }
+
+/* ============================================================
+   NOISE OVERLAY – film grain
+   ============================================================ */
+.noise {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+}
+
+/* ============================================================
+   APP GRID
+   ============================================================ */
+.app {
+  display: grid;
+  grid-template-rows: 56px 1fr 44px;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+.topbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 0 24px;
+  background: var(--bg-header);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  position: relative;
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.22em;
+  color: var(--text-bright);
+  text-transform: uppercase;
+}
+.brand .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  animation: livePulse 1.5s ease-out infinite;
+}
+@keyframes livePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0,229,255,0.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(0,229,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,229,255,0); }
+}
+
+.tabs {
+  justify-self: center;
+  display: flex; gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px;
+  background: rgba(5,10,18,0.5);
+}
+.tabs button {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding: 6px 14px;
+  border-radius: 4px;
+  transition: all 120ms ease;
+}
+.tabs button.active {
+  background: rgba(0,229,255,0.08);
+  color: var(--cyan);
+}
+.tabs button:hover:not(.active) { color: var(--text); }
+
+.topbar-right {
+  display: flex; align-items: center; gap: 14px;
+}
+.search {
+  height: 32px; width: 240px;
+  padding: 0 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  outline: none;
+}
+.search::placeholder { color: var(--text-3); }
+.search:focus { border-color: var(--border-hi); }
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0,229,255,0.20), rgba(139,92,246,0.20));
+  border: 1px solid var(--border-lt);
+  display: grid; place-items: center;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* ============================================================
+   MAIN – left panel / globe / right rail
+   ============================================================ */
+.main {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  overflow: hidden;
+  position: relative;
+}
+.main.has-rail { grid-template-columns: 320px 1fr 340px; }
+
+/* ============================================================
+   LEFT PANEL – Power Maps
+   ============================================================ */
+.left-panel {
+  display: flex; flex-direction: column;
+  background: var(--bg-deep);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+.panel-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-kicker {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+.panel-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-bright);
+}
+.panel-sub {
+  font-size: 11px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+.powermap-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex; flex-direction: column;
+  gap: 8px;
+}
+.powermap-card {
+  position: relative;
+  padding: 12px 14px 12px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 160ms ease;
+  overflow: hidden;
+}
+.powermap-card:hover {
+  border-color: var(--border-lt);
+  transform: translateY(-1px);
+}
+.powermap-card .accent-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--text-3);
+  transition: all 160ms ease;
+}
+.powermap-card[data-active='1'] {
+  border-color: var(--border-hi);
+  background: rgba(15, 25, 38, 0.95);
+}
+.powermap-card[data-active='1'] .accent-bar {
+  width: 3px;
+  animation: accentPulse 2s ease-in-out infinite;
+}
+@keyframes accentPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+.powermap-card[data-color='cyan']   .accent-bar { background: var(--cyan); }
+.powermap-card[data-color='gold']   .accent-bar { background: var(--gold); }
+.powermap-card[data-color='red']    .accent-bar { background: var(--red); }
+.powermap-card[data-color='purple'] .accent-bar { background: var(--purple); }
+.powermap-card[data-color='blue']   .accent-bar { background: var(--blue); }
+
+/* unseeded ghost treatment – visually weaker, hints at "preview" */
+.powermap-card[data-seeded='0'] {
+  opacity: 0.45;
+}
+.powermap-card[data-seeded='0']:hover {
+  opacity: 0.85;
+  border-color: rgba(255,255,255,0.16);
+}
+.powermap-card[data-seeded='0'] .accent-bar {
+  opacity: 0.5;
+}
+.powermap-card[data-seeded='0'] .pm-status::after {
+  content: ' · PREVIEW';
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+.powermap-card[data-seeded='0'] .pm-meta {
+  filter: blur(0.6px);
+  opacity: 0.7;
+}
+.powermap-card[data-seeded='0']:hover .pm-meta {
+  filter: none;
+  opacity: 1;
+}
+/* tiny "Coming soon" ribbon at top-right of unseeded cards */
+.powermap-card[data-seeded='0']::after {
+  content: 'PREVIEW';
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--text-3);
+  padding: 2px 5px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 2px;
+  background: rgba(255,255,255,0.02);
+}
+
+.pm-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 4px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.pm-status {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.pm-status.live { color: var(--green); }
+.pm-meta {
+  display: flex; gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-2);
+}
+.pm-meta .sep { color: var(--text-3); }
+
+/* ============================================================
+   GLOBE REGION
+   ============================================================ */
+.globe-region {
+  position: relative;
+  overflow: hidden;
+  background: #02050c;
+}
+#globe-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+/* ============================================================
+   STARFIELD – 80 static stars
+   ============================================================ */
+.starfield {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.starfield .star {
+  position: absolute;
+  width: 1px; height: 1px;
+  background: white;
+  border-radius: 50%;
+  animation: starTwinkle 4s ease-in-out infinite;
+}
+@keyframes starTwinkle {
+  0%, 100% { opacity: var(--star-min, 0.3); }
+  50%      { opacity: var(--star-max, 0.8); }
+}
+
+/* ============================================================
+   RIM GLOW – atmospheric halo around globe
+   ============================================================ */
+.rim-glow {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: var(--globe-rim, 600px);
+  height: var(--globe-rim, 600px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: none;
+  z-index: 3;
+  transition: width 600ms ease, height 600ms ease, background 600ms ease;
+}
+.rim-glow.active {
+  background: radial-gradient(
+    circle,
+    transparent 48%,
+    rgba(0, 229, 255, 0.12) 50%,
+    rgba(0, 229, 255, 0.06) 52%,
+    transparent 56%
+  );
+}
+
+/* ============================================================
+   GLOBE OVERLAYS – narrative & legend
+   ============================================================ */
+.globe-narrative {
+  position: absolute;
+  top: 20px; left: 20px;
+  z-index: 15;
+  max-width: 380px;
+  padding: 14px 18px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity 400ms ease, transform 400ms ease;
+}
+.globe-narrative.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.globe-narrative::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-line, rgba(0,229,255,0.4)), transparent);
+}
+.gn-kicker {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-text, var(--cyan));
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.gn-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--text-bright);
+  margin-bottom: 4px;
+  letter-spacing: 0.01em;
+}
+.gn-sub {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.gn-stats {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.gn-stat .lbl {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.gn-stat .val {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 2px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.gn-stat .delta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.gn-stat .delta.up   { color: var(--green); }
+.gn-stat .delta.down { color: var(--red); }
+.gn-stat .delta.flat { color: var(--text-3); }
+.gn-stat .spark {
+  display: block;
+  margin-top: 4px;
+  width: 100%;
+  height: 16px;
+  opacity: 0.55;
+}
+.gn-stat .spark polyline {
+  fill: none;
+  stroke: var(--accent-text, var(--cyan));
+  stroke-width: 1;
+}
+.gn-stat .spark .spark-area {
+  fill: var(--accent-text, var(--cyan));
+  fill-opacity: 0.08;
+  stroke: none;
+}
+.gn-live {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.gn-live .live-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-right: 6px;
+  vertical-align: middle;
+  animation: livePulse 1.5s ease-out infinite;
+}
+
+.globe-legend {
+  position: absolute;
+  bottom: 20px; right: 20px;
+  z-index: 15;
+  padding: 10px 14px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+.globe-legend.visible { opacity: 1; }
+.legend-kicker {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 6px;
+}
+.legend-row {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  height: 18px;
+}
+.legend-swatch {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+}
+
+.idle-helper {
+  position: absolute;
+  bottom: 20px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  padding: 8px 14px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  opacity: 1;
+  transition: opacity 400ms ease;
+}
+.idle-helper.hidden { opacity: 0; pointer-events: none; }
+.idle-helper .dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--cyan);
+  margin-right: 8px;
+  vertical-align: middle;
+  animation: livePulse 1.5s ease-out infinite;
+}
+
+/* hover tooltip for entity dots */
+.entity-tooltip {
+  position: fixed;
+  z-index: 9500;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-lt);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  white-space: nowrap;
+}
+.entity-tooltip.visible { opacity: 1; }
+.entity-tooltip .et-label {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* hover tooltip for countries */
+.country-tooltip {
+  position: fixed;
+  z-index: 9500;
+  padding: 4px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.country-tooltip.visible { opacity: 1; }
+
+/* ============================================================
+   RIGHT RAIL – entity detail
+   ============================================================ */
+.right-rail {
+  background: var(--bg-deep);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 320ms ease;
+}
+.main.has-rail .right-rail {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.rail-header {
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.rail-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 24px; height: 24px;
+  display: grid; place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-2);
+  transition: all 120ms ease;
+}
+.rail-close:hover { color: var(--text); border-color: var(--border-lt); }
+
+.rail-entity-kicker {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 6px;
+}
+.rail-entity-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--text-bright);
+  letter-spacing: 0.01em;
+  margin-bottom: 4px;
+}
+.rail-entity-type {
+  display: inline-flex;
+  align-items: center; gap: 6px;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+}
+.rail-entity-type .swatch {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+}
+
+.rail-body {
+  padding: 16px 20px;
+  display: flex; flex-direction: column;
+  gap: 16px;
+}
+.rail-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.rail-stat {
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.rs-lbl {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+.rs-val {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+.rs-delta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  margin-top: 2px;
+}
+.rs-delta.green { color: var(--green); }
+.rs-delta.red   { color: var(--red); }
+
+.rail-section-kicker {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.rail-section-kicker::after {
+  content: '';
+  flex: 1; height: 1px;
+  background: var(--border);
+}
+
+.connection-list {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.connection-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+.connection-row:hover { border-color: var(--border-lt); }
+.conn-swatch {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.conn-name {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conn-strength {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-2);
+}
+
+.powermap-tags {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.pm-tag {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+}
+.pm-tag.active {
+  background: rgba(0,229,255,0.08);
+  border-color: rgba(0,229,255,0.3);
+  color: var(--cyan);
+}
+
+.news-item {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.news-item:last-child { border-bottom: none; }
+.news-time {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+  margin-bottom: 2px;
+}
+.news-title {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* ============================================================
+   FOOTER CHROME
+   ============================================================ */
+.footer {
+  display: flex;
+  align-items: center;
+  background: var(--bg-header);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-ui);
+}
+.footer-seg {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 0 16px;
+  height: 100%;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+}
+.footer-seg:first-child { padding-left: 24px; }
+.footer-seg:last-child { border-right: none; flex: 1; justify-content: flex-end; padding-right: 24px; }
+.footer-seg .lbl {
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-3);
+}
+.footer-seg .val {
+  font-size: 13px; font-weight: 600; color: var(--text);
+}
+.footer-seg .live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cyan);
+  margin-right: 6px;
+  animation: livePulse 1.5s ease-out infinite;
+}
+
+/* ============================================================
+   MIN-WIDTH GUARD
+   ============================================================ */
+.too-small {
+  display: none;
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 10000;
+  place-items: center;
+  text-align: center;
+  padding: 40px;
+}
+.too-small p {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-2);
+  max-width: 320px;
+  line-height: 1.55;
+}
+@media (max-width: 1280px) {
+  .app { display: none; }
+  .too-small { display: grid; }
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 70px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  z-index: 9500;
+  padding: 10px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-lt);
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+</style>
+</head>
+
+<body>
+
+<!-- film grain -->
+<svg class="noise" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <filter id="noise-filter">
+    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
+    <feColorMatrix type="matrix" values="0 0 0 0 1   0 0 0 0 1   0 0 0 0 1   0 0 0 0.05 0" />
+  </filter>
+  <rect width="100%" height="100%" filter="url(#noise-filter)" />
+</svg>
+
+<div class="too-small">
+  <p>Open on desktop for the full atlas.<br /><br />Minimum width 1280px.</p>
+</div>
+
+<div class="app">
+
+  <!-- ──── TOPBAR ──────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span>iPM</span>
+    </div>
+    <div class="tabs">
+      <button class="active">Globe</button>
+      <button>Network</button>
+      <button>Force</button>
+      <button>Studio Relation</button>
+    </div>
+    <div class="topbar-right">
+      <input type="text" class="search" placeholder="Search entities..." />
+      <div class="avatar">RB</div>
+    </div>
+  </header>
+
+  <!-- ──── MAIN ──────────────────────────────────────── -->
+  <main class="main" id="main">
+
+    <!-- ──── LEFT: POWER MAPS ──────────────────────── -->
+    <aside class="left-panel">
+      <div class="panel-header">
+        <div class="panel-kicker">Power Maps</div>
+        <div class="panel-title">Active intelligence</div>
+        <div class="panel-sub">5 curated networks · 2 seeded</div>
+      </div>
+      <div class="powermap-list scrollbar-quiet" id="powermap-list">
+        <!-- populated by JS -->
+      </div>
+    </aside>
+
+    <!-- ──── CENTER: GLOBE ──────────────────────── -->
+    <section class="globe-region" id="globe-region">
+
+      <!-- background starfield (CSS) -->
+      <div class="starfield" id="starfield"></div>
+
+      <!-- rim glow -->
+      <div class="rim-glow" id="rim-glow"></div>
+
+      <!-- deck.gl canvas mount -->
+      <div id="globe-canvas"></div>
+
+      <!-- narrative panel (top-left, when PowerMap active) -->
+      <div class="globe-narrative" id="globe-narrative">
+        <div class="gn-kicker" id="gn-kicker">
+          <span>→</span>
+        </div>
+        <div class="gn-title" id="gn-title">–</div>
+        <div class="gn-sub" id="gn-sub">–</div>
+        <div class="gn-stats" id="gn-stats"></div>
+      </div>
+
+      <!-- legend (bottom-right, when PowerMap active) -->
+      <div class="globe-legend" id="globe-legend">
+        <div class="legend-kicker">Legend</div>
+        <div id="legend-rows"></div>
+      </div>
+
+      <!-- idle helper (bottom-center, idle only) -->
+      <div class="idle-helper" id="idle-helper">
+        <span class="dot"></span>
+        Select a Power Map to begin
+      </div>
+
+      <!-- entity hover tooltip -->
+      <div class="entity-tooltip" id="entity-tooltip">
+        <span class="et-label" id="et-label">Entity</span>
+        <span id="et-name">–</span>
+      </div>
+
+      <!-- country hover tooltip -->
+      <div class="country-tooltip" id="country-tooltip">–</div>
+
+    </section>
+
+    <!-- ──── RIGHT: ENTITY DETAIL ──────────────────── -->
+    <aside class="right-rail scrollbar-quiet" id="right-rail">
+      <div class="rail-header">
+        <button class="rail-close" id="rail-close" aria-label="Close">×</button>
+        <div class="rail-entity-kicker">Entity</div>
+        <div class="rail-entity-name" id="re-name">–</div>
+        <div class="rail-entity-type" id="re-type">
+          <span class="swatch"></span>
+          <span id="re-type-text">–</span>
+        </div>
+      </div>
+      <div class="rail-body" id="rail-body">
+        <!-- populated by JS -->
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- ──── FOOTER ──────────────────────────────────── -->
+  <footer class="footer">
+    <div class="footer-seg">
+      <span class="lbl">View</span>
+      <span class="val">Globe</span>
+    </div>
+    <div class="footer-seg">
+      <span class="lbl">PowerMap</span>
+      <span class="val" id="footer-pm">–</span>
+    </div>
+    <div class="footer-seg">
+      <span class="lbl">Entities</span>
+      <span class="val" id="footer-entities">0</span>
+    </div>
+    <div class="footer-seg">
+      <span class="lbl">Connections</span>
+      <span class="val" id="footer-connections">0</span>
+    </div>
+    <div class="footer-seg">
+      <span class="live-dot"></span>
+      <span class="val" style="color: var(--cyan);">Live</span>
+    </div>
+  </footer>
+
+</div>
+
+<!-- toast for unseeded powermaps -->
+<div class="toast" id="toast">No data seeded yet</div>
+
+
+<script>
+/* ============================================================
+   IPM Global Atlas – interactive prototype
+   DECK.GL SKILL PATTERN: rAF rotation, controlled viewState, _selfDriving
+   ============================================================ */
+
+const {
+  Deck, _GlobeView, _GlobeController, FlyToInterpolator,
+  GeoJsonLayer, GreatCircleLayer, ScatterplotLayer, TextLayer, SolidPolygonLayer, PathLayer
+} = deck;
+
+/* ============================================================
+   CONSTANTS – deck.gl skill canonical values
+   ============================================================ */
+const INITIAL_VIEW_STATE = {
+  longitude: 20,
+  latitude: 20,
+  zoom: 1.2,
+  minZoom: 0.8,
+  maxZoom: 5
+};
+
+const ROTATION_DEG_PER_SEC = 3;
+const IDLE_RESUME_MS = 800;
+
+/* ============================================================
+   APP STATE – with deck.gl skill fields
+   ============================================================ */
+const appState = {
+  activePowerMapId: null,
+  selectedEntityId: null,
+  hoveredEntityId: null,
+  hoveredCountryName: null,
+  arcAnimationProgress: 1,
+  arcAnimationStart: 0,
+  viewState: { ...INITIAL_VIEW_STATE },
+
+  // deck.gl skill pattern fields
+  _selfDriving: false,       // critical: "this setProps is mine, don't writeback"
+  _userInteracting: false,   // pause rotation only on genuine gestures
+  _idleResumeTimer: null,    // idle resume handle
+  _lastTickMs: 0             // for dt calculation in rAF
+};
+
+let countriesGeoJson = null;
+let deckInstance = null;
+let rotationRafHandle = null;
+let arcAnimRafId = null;
+
+
+/* ============================================================
+   STARFIELD
+   ============================================================ */
+function generateStarfield() {
+  const sf = document.getElementById('starfield');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = (Math.random() * 100) + '%';
+    s.style.top  = (Math.random() * 100) + '%';
+    const brightness = Math.random();
+    s.style.setProperty('--star-min', String(brightness * 0.3));
+    s.style.setProperty('--star-max', String(0.4 + brightness * 0.5));
+    s.style.animationDelay = (Math.random() * 4) + 's';
+    if (brightness > 0.7) {
+      s.style.width = '2px';
+      s.style.height = '2px';
+    }
+    sf.appendChild(s);
+  }
+}
+generateStarfield();
+
+
+/* ============================================================
+   POWER MAPS – definitions
+   ============================================================ */
+const POWER_MAPS = [
+  {
+    id: 'wall-street',
+    name: 'Wall Street',
+    accent: 'cyan',
+    accentRgb: [0, 229, 255],
+    status: 'live',
+    region: 'US financial',
+    entities: 412,
+    connections: 1847,
+    flyTo: { longitude: -74.0, latitude: 38.5, zoom: 2.3 },
+    narrative: {
+      kicker: 'Capital concentration',
+      title: 'Wall Street',
+      sub: 'Ownership webs, cross-shareholdings, and the systemic players that anchor US capital markets.',
+      stats: [
+        { lbl: 'Top-10 AUM',  val: '$87T',  delta: '+0.4%', direction: 'up',   spark: [82,83,84,85,85,86,86,87] },
+        { lbl: 'Conc. ratio', val: '0.41',  delta: '+0.02', direction: 'up',   spark: [0.38,0.38,0.39,0.39,0.40,0.40,0.41,0.41] },
+        { lbl: 'Entities',    val: '412',   delta: 'live',  direction: 'flat', spark: [408,409,410,410,411,411,412,412] }
+      ]
+    },
+    legend: [
+      { swatch: 'cyan',   label: 'Financial' },
+      { swatch: 'gold',   label: 'Political' },
+      { swatch: 'purple', label: 'Tech' }
+    ],
+    highlightCountries: ['United States of America'],
+    countryColor: { fill: [0, 229, 255, 30], stroke: [0, 229, 255, 110] }
+  },
+  {
+    id: 'ai-power',
+    name: 'AI Power',
+    accent: 'purple',
+    accentRgb: [139, 92, 246],
+    status: 'live',
+    region: 'Global',
+    entities: 187,
+    connections: 642,
+    seeded: false
+  },
+  {
+    id: 'ownership-concentration',
+    name: 'Ownership concentration',
+    accent: 'gold',
+    accentRgb: [212, 168, 71],
+    status: 'live',
+    region: 'Global',
+    entities: 94,
+    connections: 1102,
+    seeded: false
+  },
+  {
+    id: 'german-industries',
+    name: 'German industries',
+    accent: 'cyan',
+    accentRgb: [0, 229, 255],
+    status: 'live',
+    region: 'DACH',
+    entities: 218,
+    connections: 891,
+    seeded: false
+  },
+  {
+    id: 'strait-of-hormuz',
+    name: 'Strait of Hormuz',
+    accent: 'red',
+    accentRgb: [229, 57, 53],
+    status: 'elevated',
+    region: 'Persian Gulf',
+    entities: 47,
+    connections: 184,
+    flyTo: { longitude: 54.0, latitude: 26.55, zoom: 3.8 },
+    narrative: {
+      kicker: 'Scenario · Phase 2',
+      title: 'Strait of Hormuz',
+      sub: 'Iran threatens partial closure following IRGC tanker harassment. US 5th Fleet repositioned.',
+      stats: [
+        { lbl: 'Disruption', val: '34%',     delta: '+2pp',   direction: 'up',   spark: [28,29,30,31,32,33,34,34] },
+        { lbl: 'Brent',      val: '$94.20',  delta: '+0.8%',  direction: 'up',   spark: [91.2,91.8,92.4,92.9,93.3,93.7,94.0,94.2] },
+        { lbl: 'Gold',       val: '$2,408',  delta: '+1.2%',  direction: 'up',   spark: [2378,2382,2390,2395,2399,2403,2406,2408] }
+      ]
+    },
+    legend: [
+      { swatch: 'red',   label: 'Iran-aligned' },
+      { swatch: 'blue',  label: 'US-aligned' },
+      { swatch: 'gold',  label: 'Contested' }
+    ],
+    highlightCountries: ['Iran', 'Saudi Arabia', 'United Arab Emirates', 'Iraq', 'Oman', 'Kuwait', 'Qatar'],
+    countryColor: 'per-tier'
+  }
+];
+
+const TIER_TINTS = {
+  iran:       { fill: [229, 57, 53, 40], stroke: [229, 57, 53, 130] },
+  us:         { fill: [59, 139, 212, 28], stroke: [59, 139, 212, 100] },
+  contested:  { fill: [212, 168, 71, 28], stroke: [212, 168, 71, 100] },
+  neutral:    { fill: [255, 255, 255, 14], stroke: [255, 255, 255, 50] }
+};
+const HORMUZ_TIER = {
+  'Iran': 'iran',
+  'Saudi Arabia': 'us',
+  'United Arab Emirates': 'us',
+  'Kuwait': 'us',
+  'Bahrain': 'us',
+  'Qatar': 'us',
+  'Iraq': 'contested',
+  'Oman': 'neutral'
+};
+
+
+/* ============================================================
+   ENTITIES
+   ============================================================ */
+const ENTITIES = {
+  'wall-street': [
+    { id: 'blackrock', name: 'BlackRock',  type: 'financial', coords: [-74.0060, 40.7128], aum: '$11.5T', hq: 'New York', connections: 24, powermaps: ['wall-street','ownership-concentration','ai-power'] },
+    { id: 'jpm',       name: 'JPMorgan',   type: 'financial', coords: [-74.0090, 40.7140], aum: '$4.0T',  hq: 'New York', connections: 18, powermaps: ['wall-street','ownership-concentration'] },
+    { id: 'goldman',   name: 'Goldman Sachs', type: 'financial', coords: [-74.0150, 40.7165], aum: '$2.8T', hq: 'New York', connections: 16, powermaps: ['wall-street'] },
+    { id: 'vanguard',  name: 'Vanguard',   type: 'financial', coords: [-75.3500, 40.0500], aum: '$8.6T',  hq: 'Pennsylvania', connections: 22, powermaps: ['wall-street','ownership-concentration'] },
+    { id: 'apple',     name: 'Apple',      type: 'tech',      coords: [-122.0322, 37.3318], aum: '$3.4T', hq: 'Cupertino', connections: 14, powermaps: ['wall-street','ai-power'] },
+    { id: 'tesla',     name: 'Tesla',      type: 'tech',      coords: [-97.7431, 30.2672], aum: '$0.8T', hq: 'Austin',     connections: 11, powermaps: ['wall-street','ai-power'] },
+    { id: 'fed',       name: 'Federal Reserve', type: 'political', coords: [-77.0466, 38.8924], aum: '–', hq: 'Washington DC', connections: 32, powermaps: ['wall-street','ownership-concentration'] }
+  ],
+  'strait-of-hormuz': [
+    { id: 'tehran',    name: 'Iran',          type: 'political', coords: [51.4, 35.7], hq: 'Tehran',       connections: 18, powermaps: ['strait-of-hormuz'] },
+    { id: 'fifth-fleet', name: 'US 5th Fleet', type: 'political', coords: [50.58, 26.22], hq: 'Bahrain',    connections: 21, powermaps: ['strait-of-hormuz'] },
+    { id: 'irgc',      name: 'IRGC Bandar Abbas', type: 'political', coords: [56.27, 27.18], hq: 'Iran',  connections: 12, powermaps: ['strait-of-hormuz'] },
+    { id: 'riyadh',    name: 'Saudi Arabia',  type: 'political', coords: [46.7, 24.7],   hq: 'Riyadh',     connections: 14, powermaps: ['strait-of-hormuz'] },
+    { id: 'uae',       name: 'UAE',           type: 'political', coords: [54.4, 24.5],   hq: 'Abu Dhabi',  connections: 11, powermaps: ['strait-of-hormuz'] },
+    { id: 'chokepoint', name: 'Strait of Hormuz', type: 'political', coords: [56.25, 26.55], hq: 'Chokepoint', connections: 24, powermaps: ['strait-of-hormuz'] }
+  ]
+};
+
+const CONNECTIONS = {
+  'wall-street': [
+    { from: 'blackrock', to: 'apple',   strength: 0.92 },
+    { from: 'blackrock', to: 'tesla',   strength: 0.88 },
+    { from: 'blackrock', to: 'jpm',     strength: 0.75 },
+    { from: 'vanguard',  to: 'apple',   strength: 0.90 },
+    { from: 'vanguard',  to: 'tesla',   strength: 0.84 },
+    { from: 'vanguard',  to: 'goldman', strength: 0.70 },
+    { from: 'fed',       to: 'jpm',     strength: 0.95 },
+    { from: 'fed',       to: 'goldman', strength: 0.93 },
+    { from: 'goldman',   to: 'apple',   strength: 0.65 },
+    { from: 'jpm',       to: 'tesla',   strength: 0.58 }
+  ],
+  'strait-of-hormuz': [
+    { from: 'tehran',     to: 'irgc',         strength: 0.95 },
+    { from: 'irgc',       to: 'chokepoint',   strength: 0.90 },
+    { from: 'fifth-fleet',to: 'chokepoint',   strength: 0.88 },
+    { from: 'fifth-fleet',to: 'riyadh',       strength: 0.82 },
+    { from: 'fifth-fleet',to: 'uae',          strength: 0.78 },
+    { from: 'tehran',     to: 'riyadh',       strength: 0.40, hostile: true },
+    { from: 'tehran',     to: 'fifth-fleet',  strength: 0.30, hostile: true },
+    { from: 'uae',        to: 'riyadh',       strength: 0.85 }
+  ]
+};
+
+
+/* ============================================================
+   ENTITY TYPE COLORS
+   ============================================================ */
+const TYPE_COLOR = {
+  financial: [0, 229, 255],
+  political: [212, 168, 71],
+  tech:      [139, 92, 246]
+};
+
+const SWATCH_HEX = {
+  cyan: '#00e5ff', gold: '#d4a847', red: '#e53935',
+  green: '#00e676', blue: '#3b8bd4', purple: '#8B5CF6'
+};
+
+
+/* ============================================================
+   POWERMAP LIST RENDERING
+   ============================================================ */
+function renderPowerMapList() {
+  const list = document.getElementById('powermap-list');
+  list.innerHTML = '';
+  POWER_MAPS.forEach(pm => {
+    const card = document.createElement('div');
+    card.className = 'powermap-card';
+    card.dataset.id = pm.id;
+    card.dataset.color = pm.accent;
+    card.dataset.active = (appState.activePowerMapId === pm.id) ? '1' : '0';
+    card.dataset.seeded = (pm.seeded === false) ? '0' : '1';
+    card.innerHTML = `
+      <span class="accent-bar"></span>
+      <div class="pm-name">
+        ${pm.name}
+        <span class="pm-status ${pm.status === 'live' ? 'live' : ''}">${pm.status}</span>
+      </div>
+      <div class="pm-meta">
+        <span>${pm.region}</span>
+        <span class="sep">·</span>
+        <span>${pm.entities} ent</span>
+        <span class="sep">·</span>
+        <span>${pm.connections} conn</span>
+      </div>
+    `;
+    card.addEventListener('click', () => onPowerMapSelect(pm));
+    list.appendChild(card);
+  });
+}
+
+
+/* ============================================================
+   COUNTRY TINTING
+   ============================================================ */
+function tintForCountry(featureName) {
+  const pm = currentPowerMap();
+  if (!pm) {
+    return { fill: [255, 255, 255, 6], stroke: [255, 255, 255, 30] };
+  }
+  if (pm.countryColor === 'per-tier') {
+    const tier = HORMUZ_TIER[featureName];
+    if (tier) return TIER_TINTS[tier];
+    return { fill: [255, 255, 255, 6], stroke: [255, 255, 255, 24] };
+  }
+  if (pm.highlightCountries && pm.highlightCountries.includes(featureName)) {
+    return pm.countryColor;
+  }
+  return { fill: [255, 255, 255, 6], stroke: [255, 255, 255, 24] };
+}
+
+function currentPowerMap() {
+  if (!appState.activePowerMapId) return null;
+  return POWER_MAPS.find(p => p.id === appState.activePowerMapId);
+}
+
+
+/* ============================================================
+   BUILD LAYERS
+   ============================================================ */
+function buildOceanSphere() {
+  const sphereRing = [
+    [-179.999, -89.999],
+    [ 179.999, -89.999],
+    [ 179.999,  89.999],
+    [-179.999,  89.999],
+    [-179.999, -89.999]
+  ];
+  return new SolidPolygonLayer({
+    id: 'ocean-sphere',
+    data: [{ polygon: sphereRing }],
+    getPolygon: d => d.polygon,
+    getFillColor: [2, 5, 12, 255],
+    filled: true,
+    stroked: false,
+    pickable: false,
+    parameters: { depthTest: false }
+  });
+}
+
+function buildGraticuleLayer() {
+  const paths = [];
+  for (let lng = -180; lng < 180; lng += 30) {
+    const pts = [];
+    for (let lat = -85; lat <= 85; lat += 5) pts.push([lng, lat]);
+    paths.push({ path: pts });
+  }
+  for (let lat = -60; lat <= 60; lat += 30) {
+    const pts = [];
+    for (let lng = -180; lng <= 180; lng += 10) pts.push([lng, lat]);
+    paths.push({ path: pts });
+  }
+  return new PathLayer({
+    id: 'graticule',
+    data: paths,
+    getPath: d => d.path,
+    getColor: [255, 255, 255, 14],
+    getWidth: 0.6,
+    widthUnits: 'pixels',
+    widthMinPixels: 0.6,
+    pickable: false,
+    parameters: { depthTest: false }
+  });
+}
+
+function buildTerminatorLayer() {
+  const now = new Date();
+  const hours = now.getUTCHours() + now.getUTCMinutes() / 60;
+  const subsolarLng = 180 - hours * 15;
+  const dayOfYear = Math.floor((now - new Date(now.getUTCFullYear(), 0, 0)) / 86400000);
+  const subsolarLat = 23.44 * Math.sin((dayOfYear - 80) / 365 * 2 * Math.PI);
+  const antiLng = ((subsolarLng + 180 + 540) % 360) - 180;
+  const antiLat = -subsolarLat;
+
+  const ringPoints = [];
+  const N = 64;
+  for (let i = 0; i <= N; i++) {
+    const angle = (i / N) * 2 * Math.PI;
+    const dLat = Math.cos(angle) * 90;
+    const dLng = Math.sin(angle) * 90;
+    let lat = antiLat + dLat;
+    let lng = antiLng + dLng;
+    lat = Math.max(-89, Math.min(89, lat));
+    lng = ((lng + 540) % 360) - 180;
+    ringPoints.push([lng, lat]);
+  }
+
+  return new SolidPolygonLayer({
+    id: 'terminator',
+    data: [{ polygon: ringPoints }],
+    getPolygon: d => d.polygon,
+    getFillColor: [0, 0, 8, 90],
+    filled: true,
+    stroked: false,
+    pickable: false,
+    parameters: { depthTest: false }
+  });
+}
+
+const COUNTRY_CENTROIDS = {
+  'United States of America': [-98.5, 39.8],
+  'Iran':                     [54.0, 32.0],
+  'Saudi Arabia':             [45.0, 24.0],
+  'United Arab Emirates':     [54.0, 24.0],
+  'Iraq':                     [44.0, 33.0],
+  'Oman':                     [56.0, 22.0],
+  'Kuwait':                   [47.5, 29.3],
+  'Qatar':                    [51.2, 25.3],
+  'Bahrain':                  [50.5, 26.0]
+};
+
+function buildGroundGlowLayer() {
+  const pm = currentPowerMap();
+  if (!pm || !pm.highlightCountries) return null;
+  const points = pm.highlightCountries
+    .map(name => ({ name, coords: COUNTRY_CENTROIDS[name] }))
+    .filter(p => p.coords);
+  if (points.length === 0) return null;
+  const rgb = pm.accentRgb;
+  return new ScatterplotLayer({
+    id: 'ground-glow',
+    data: points,
+    getPosition: d => d.coords,
+    getRadius: 800000,
+    radiusUnits: 'meters',
+    filled: true,
+    stroked: false,
+    getFillColor: [rgb[0], rgb[1], rgb[2], 22],
+    pickable: false,
+    parameters: { depthTest: false },
+    updateTriggers: {
+      getFillColor: appState.activePowerMapId
+    }
+  });
+}
+
+function buildCountryLayers() {
+  if (!countriesGeoJson) return [];
+
+  const halo = new GeoJsonLayer({
+    id: 'countries-halo',
+    data: countriesGeoJson,
+    pickable: false,
+    stroked: true,
+    filled: false,
+    getLineColor: f => {
+      const t = tintForCountry(f.properties.name);
+      const s = t.stroke;
+      return [s[0], s[1], s[2], Math.floor(s[3] * 0.35)];
+    },
+    lineWidthUnits: 'pixels',
+    getLineWidth: 2.5,
+    lineWidthMinPixels: 2.5,
+    parameters: { depthTest: false },
+    updateTriggers: { getLineColor: appState.activePowerMapId }
+  });
+
+  const fills = new GeoJsonLayer({
+    id: 'countries',
+    data: countriesGeoJson,
+    pickable: true,
+    stroked: true,
+    filled: true,
+    getFillColor: f => tintForCountry(f.properties.name).fill,
+    getLineColor: f => tintForCountry(f.properties.name).stroke,
+    lineWidthUnits: 'pixels',
+    getLineWidth: 1,
+    lineWidthMinPixels: 1,
+    onHover: info => {
+      const name = info.object ? info.object.properties.name : null;
+      onCountryHover(name, info);
+    },
+    onClick: info => {
+      if (!info.object) onOceanClick();
+    },
+    updateTriggers: {
+      getFillColor: appState.activePowerMapId,
+      getLineColor: appState.activePowerMapId
+    }
+  });
+
+  return [halo, fills];
+}
+
+function buildEntityLayers() {
+  const pm = currentPowerMap();
+  if (!pm) return [];
+  const ents = ENTITIES[pm.id];
+  if (!ents) return [];
+
+  const halo = new ScatterplotLayer({
+    id: 'entity-halo',
+    data: ents,
+    getPosition: d => d.coords,
+    getRadius: 18,
+    radiusUnits: 'pixels',
+    filled: true,
+    stroked: false,
+    getFillColor: d => {
+      const c = TYPE_COLOR[d.type] || [255, 255, 255];
+      return [c[0], c[1], c[2], 22];
+    },
+    pickable: false,
+    parameters: { depthTest: false }
+  });
+
+  const ring = new ScatterplotLayer({
+    id: 'entity-ring',
+    data: ents,
+    pickable: true,
+    getPosition: d => d.coords,
+    getRadius: d => (d.id === appState.hoveredEntityId || d.id === appState.selectedEntityId ? 9 : 7),
+    radiusUnits: 'pixels',
+    filled: true,
+    stroked: true,
+    lineWidthUnits: 'pixels',
+    getLineWidth: d => (d.id === appState.selectedEntityId ? 2 : 1.5),
+    getFillColor: d => {
+      const c = TYPE_COLOR[d.type] || [255, 255, 255];
+      return [c[0], c[1], c[2], 50];
+    },
+    getLineColor: d => {
+      const c = TYPE_COLOR[d.type] || [255, 255, 255];
+      return [c[0], c[1], c[2], 240];
+    },
+    onHover: info => onEntityHover(info),
+    onClick: info => {
+      if (info.object) onEntitySelect(info.object);
+    },
+    updateTriggers: {
+      getRadius: [appState.hoveredEntityId, appState.selectedEntityId],
+      getLineWidth: appState.selectedEntityId
+    }
+  });
+
+  const showLabels = ents.filter(e =>
+    e.id === appState.hoveredEntityId || e.id === appState.selectedEntityId
+  );
+  const labels = new TextLayer({
+    id: 'entity-labels',
+    data: showLabels,
+    getPosition: d => d.coords,
+    getText: d => d.name.toUpperCase(),
+    getSize: 11,
+    getColor: [232, 237, 245, 240],
+    getPixelOffset: [0, -18],
+    fontFamily: '"IBM Plex Sans", sans-serif',
+    fontWeight: 600,
+    sizeScale: 1,
+    getTextAnchor: 'middle',
+    getAlignmentBaseline: 'center',
+    pickable: false,
+    background: true,
+    getBackgroundColor: [8, 14, 22, 220],
+    getBorderColor: [255, 255, 255, 25],
+    backgroundPadding: [6, 3]
+  });
+
+  return [halo, ring, labels];
+}
+
+function buildConnectionLayer() {
+  const pm = currentPowerMap();
+  if (!pm) return [];
+  const conns = CONNECTIONS[pm.id];
+  if (!conns) return [];
+  const ents = ENTITIES[pm.id];
+  const byId = Object.fromEntries(ents.map(e => [e.id, e]));
+
+  const data = conns.map(c => {
+    const from = byId[c.from], to = byId[c.to];
+    return from && to ? {
+      from: from.coords,
+      to: to.coords,
+      strength: c.strength,
+      hostile: !!c.hostile,
+      fromId: c.from, toId: c.to
+    } : null;
+  }).filter(Boolean);
+
+  return [new GreatCircleLayer({
+    id: 'connections',
+    data,
+    getSourcePosition: d => d.from,
+    getTargetPosition: d => d.to,
+    getSourceColor: d => {
+      const prog = appState.arcAnimationProgress;
+      if (d.hostile) return [229, 57, 53, Math.floor(220 * prog)];
+      const isHighlighted =
+        appState.selectedEntityId &&
+        (d.fromId === appState.selectedEntityId || d.toId === appState.selectedEntityId);
+      const alphaBase = isHighlighted ? 255 : (appState.selectedEntityId ? 60 : 200);
+      const alpha = Math.floor(alphaBase * prog);
+      const rgb = pm.accentRgb;
+      return [rgb[0], rgb[1], rgb[2], alpha];
+    },
+    getTargetColor: d => {
+      const prog = appState.arcAnimationProgress;
+      if (d.hostile) return [229, 57, 53, Math.floor(80 * prog)];
+      const isHighlighted =
+        appState.selectedEntityId &&
+        (d.fromId === appState.selectedEntityId || d.toId === appState.selectedEntityId);
+      const alphaBase = isHighlighted ? 140 : (appState.selectedEntityId ? 30 : 80);
+      const alpha = Math.floor(alphaBase * prog);
+      const rgb = pm.accentRgb;
+      return [rgb[0], rgb[1], rgb[2], alpha];
+    },
+    getWidth: d => (0.8 + d.strength * 1.4) * (0.6 + 0.4 * appState.arcAnimationProgress),
+    widthUnits: 'pixels',
+    pickable: false,
+    parameters: { depthTest: false },
+    updateTriggers: {
+      getSourceColor: [appState.selectedEntityId, appState.arcAnimationProgress],
+      getTargetColor: [appState.selectedEntityId, appState.arcAnimationProgress],
+      getWidth: appState.arcAnimationProgress
+    }
+  })];
+}
+
+function buildAllLayers() {
+  const groundGlow = buildGroundGlowLayer();
+  return [
+    // ocean color comes from clearColor — no SolidPolygonLayer needed
+    buildTerminatorLayer(),
+    buildGraticuleLayer(),
+    ...buildCountryLayers(),
+    ...(groundGlow ? [groundGlow] : []),
+    ...buildConnectionLayer(),
+    ...buildEntityLayers()
+  ];
+}
+
+
+/* ============================================================
+   DECK.GL INIT – controlled mode (deck.gl skill pattern)
+   ============================================================ */
+deckInstance = new Deck({
+  parent: document.getElementById('globe-canvas'),
+  views: [new _GlobeView({
+    resolution: 8,
+    nearZMultiplier: 0.5,
+    farZMultiplier: 2
+  })],
+  viewState: { ...appState.viewState },  // CONTROLLED mode, not initialViewState
+  controller: { dragRotate: false },
+  onViewStateChange: ({ viewState, interactionState }) => {
+    // (1) rAF self-driven frame: capture, no writeback (would recurse)
+    if (appState._selfDriving) {
+      appState.viewState = viewState;
+      return;
+    }
+    // (2) User input or deck internal: writeback to commit in controlled mode
+    appState.viewState = viewState;
+    deckInstance.setProps({ viewState });
+
+    // (3) Pause ONLY for genuine gestures; NOT mount handshake
+    const userDriven = !!(
+      interactionState?.isDragging ||
+      interactionState?.isPanning  ||
+      interactionState?.isZooming  ||
+      interactionState?.isRotating
+    );
+    if (userDriven || appState._idleResumeTimer !== null) {
+      appState._userInteracting = true;
+      armIdleResume();
+    }
+  },
+  parameters: {
+    clearColor: [2/255, 5/255, 12/255, 1]
+  },
+  layers: buildAllLayers()
+});
+
+
+function render() {
+  deckInstance.setProps({ layers: buildAllLayers() });
+}
+
+
+/* ============================================================
+   ROTATION – rAF loop (deck.gl skill canonical pattern)
+   ============================================================ */
+function startRAFRotation() {
+  if (rotationRafHandle !== null) return;
+  appState._lastTickMs = 0;
+
+  const tick = (ts) => {
+    rotationRafHandle = requestAnimationFrame(tick);
+    if (!deckInstance || appState._userInteracting) {
+      appState._lastTickMs = ts;
+      return;
+    }
+
+    const dt = appState._lastTickMs === 0 ? 0 : (ts - appState._lastTickMs) / 1000;
+    appState._lastTickMs = ts;
+    const base = appState.viewState;
+    const newLng = base.longitude + ROTATION_DEG_PER_SEC * dt;
+
+    // CRITICAL: flag BEFORE setProps, unflag AFTER (fires sync in controlled mode)
+    appState._selfDriving = true;
+    deckInstance.setProps({ viewState: { ...base, longitude: newLng } });
+    appState._selfDriving = false;
+
+    appState.viewState = { ...base, longitude: newLng };
+  };
+
+  rotationRafHandle = requestAnimationFrame(tick);
+}
+
+function stopRAFRotation() {
+  if (rotationRafHandle !== null) {
+    cancelAnimationFrame(rotationRafHandle);
+  }
+  rotationRafHandle = null;
+  appState._lastTickMs = 0;
+}
+
+function armIdleResume() {
+  if (appState._idleResumeTimer !== null) clearTimeout(appState._idleResumeTimer);
+  appState._idleResumeTimer = setTimeout(() => {
+    appState._idleResumeTimer = null;
+    appState._userInteracting = false;
+    appState._lastTickMs = 0;  // reset dt so first resumed frame doesn't jump
+  }, IDLE_RESUME_MS);
+}
+
+
+/* ============================================================
+   POWERMAP SELECT – fly-to + activate
+   ============================================================ */
+function onPowerMapSelect(pm) {
+  if (pm.seeded === false) {
+    showToast(`${pm.name} · no data seeded yet`);
+    return;
+  }
+
+  if (appState.activePowerMapId === pm.id) {
+    deactivatePowerMap();
+    return;
+  }
+
+  appState.activePowerMapId = pm.id;
+  appState.selectedEntityId = null;
+  closeRail();
+  stopRAFRotation();
+  document.getElementById('idle-helper').classList.add('hidden');
+  document.getElementById('rim-glow').classList.add('active');
+
+  appState.arcAnimationProgress = 0;
+  appState.arcAnimationStart = performance.now() + 600;
+  startArcAnimation();
+
+  appState.viewState = {
+    ...appState.viewState,
+    ...pm.flyTo,
+    transitionDuration: 2000,
+    transitionInterpolator: new FlyToInterpolator({ speed: 1.4 })
+  };
+  deckInstance.setProps({ viewState: appState.viewState });
+
+  setTimeout(() => {
+    showNarrative(pm);
+    showLegend(pm);
+    updateFooter(pm);
+    renderPowerMapList();
+    render();
+  }, 100);
+}
+
+function startArcAnimation() {
+  if (arcAnimRafId) cancelAnimationFrame(arcAnimRafId);
+  function tick(now) {
+    const elapsed = now - appState.arcAnimationStart;
+    if (elapsed < 0) {
+      appState.arcAnimationProgress = 0;
+      render();
+      arcAnimRafId = requestAnimationFrame(tick);
+      return;
+    }
+    const duration = 1500;
+    const raw = Math.min(1, elapsed / duration);
+    const eased = 1 - Math.pow(1 - raw, 3);
+    appState.arcAnimationProgress = eased;
+    render();
+    if (raw < 1) {
+      arcAnimRafId = requestAnimationFrame(tick);
+    } else {
+      arcAnimRafId = null;
+    }
+  }
+  arcAnimRafId = requestAnimationFrame(tick);
+}
+
+function deactivatePowerMap() {
+  appState.activePowerMapId = null;
+  appState.selectedEntityId = null;
+  appState.arcAnimationProgress = 1;
+  if (arcAnimRafId) { cancelAnimationFrame(arcAnimRafId); arcAnimRafId = null; }
+  closeRail();
+  hideNarrative();
+  hideLegend();
+  document.getElementById('idle-helper').classList.remove('hidden');
+  document.getElementById('rim-glow').classList.remove('active');
+  appState._userInteracting = false;
+  appState._lastTickMs = 0;
+  startRAFRotation();
+  updateFooter(null);
+  renderPowerMapList();
+  render();
+}
+
+
+/* ============================================================
+   NARRATIVE / LEGEND
+   ============================================================ */
+function showNarrative(pm) {
+  if (!pm.narrative) { hideNarrative(); return; }
+  const n = pm.narrative;
+  const accentRgb = pm.accentRgb;
+  const accentCss = `rgb(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]})`;
+
+  document.getElementById('gn-kicker').innerHTML = `<span>${n.kicker}</span>`;
+  document.getElementById('gn-title').textContent = n.title;
+  document.getElementById('gn-sub').textContent = n.sub;
+
+  function sparkSVG(values) {
+    if (!values || values.length < 2) return '';
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+    const w = 100, h = 16;
+    const stepX = w / (values.length - 1);
+    const pts = values.map((v, i) => {
+      const x = (i * stepX).toFixed(1);
+      const y = (h - ((v - min) / range) * (h - 2) - 1).toFixed(1);
+      return `${x},${y}`;
+    }).join(' ');
+    const areaPts = `0,${h} ${pts} ${w},${h}`;
+    return `
+      <svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <polyline class="spark-area" points="${areaPts}"></polyline>
+        <polyline points="${pts}"></polyline>
+      </svg>`;
+  }
+
+  const statsEl = document.getElementById('gn-stats');
+  statsEl.innerHTML = n.stats.map(s => {
+    const dir = s.direction || 'flat';
+    const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '·';
+    const deltaText = s.delta ? `<span class="delta ${dir}">${arrow} ${s.delta}</span>` : '';
+    const spark = s.spark ? sparkSVG(s.spark) : '';
+    return `
+      <div class="gn-stat">
+        <div class="lbl">${s.lbl}</div>
+        <div class="val">${s.val} ${deltaText}</div>
+        ${spark}
+      </div>
+    `;
+  }).join('');
+
+  let liveEl = document.getElementById('gn-live');
+  if (!liveEl) {
+    liveEl = document.createElement('div');
+    liveEl.id = 'gn-live';
+    liveEl.className = 'gn-live';
+    statsEl.parentElement.appendChild(liveEl);
+  }
+  const now = new Date();
+  const hh = String(now.getUTCHours()).padStart(2, '0');
+  const mm = String(now.getUTCMinutes()).padStart(2, '0');
+  liveEl.innerHTML = `
+    <span><span class="live-dot"></span>LIVE</span>
+    <span>${hh}:${mm} UTC</span>
+  `;
+
+  const el = document.getElementById('globe-narrative');
+  el.style.setProperty('--accent-line', `rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, 0.4)`);
+  el.style.setProperty('--accent-text', accentCss);
+  el.classList.add('visible');
+}
+function hideNarrative() {
+  document.getElementById('globe-narrative').classList.remove('visible');
+  const liveEl = document.getElementById('gn-live');
+  if (liveEl) liveEl.remove();
+}
+
+function showLegend(pm) {
+  if (!pm.legend) { hideLegend(); return; }
+  const rows = pm.legend.map(l => `
+    <div class="legend-row">
+      <span class="legend-swatch" style="background: ${SWATCH_HEX[l.swatch]}"></span>
+      ${l.label}
+    </div>
+  `).join('');
+  document.getElementById('legend-rows').innerHTML = rows;
+  document.getElementById('globe-legend').classList.add('visible');
+}
+function hideLegend() {
+  document.getElementById('globe-legend').classList.remove('visible');
+}
+
+
+/* ============================================================
+   ENTITY HOVER / SELECT
+   ============================================================ */
+function onEntityHover(info) {
+  const next = info.object ? info.object.id : null;
+  const changed = next !== appState.hoveredEntityId;
+  appState.hoveredEntityId = next;
+
+  const tip = document.getElementById('entity-tooltip');
+  if (info.object) {
+    tip.style.left = (info.x + 14) + 'px';
+    tip.style.top  = (info.y - 10) + 'px';
+    document.getElementById('et-label').textContent = info.object.type;
+    document.getElementById('et-name').textContent  = info.object.name;
+    tip.classList.add('visible');
+  } else {
+    tip.classList.remove('visible');
+  }
+
+  const canvas = document.querySelector('#globe-canvas canvas');
+  if (canvas) canvas.style.cursor = info.object ? 'pointer' : 'grab';
+
+  if (changed) render();
+}
+
+function onEntitySelect(entity) {
+  appState.selectedEntityId = entity.id;
+  openRail(entity);
+  render();
+}
+
+
+/* ============================================================
+   COUNTRY HOVER
+   ============================================================ */
+function onCountryHover(name, info) {
+  appState.hoveredCountryName = name;
+  const tip = document.getElementById('country-tooltip');
+  if (name) {
+    tip.style.left = (info.x + 14) + 'px';
+    tip.style.top  = (info.y + 10) + 'px';
+    tip.textContent = name;
+    tip.classList.add('visible');
+  } else {
+    tip.classList.remove('visible');
+  }
+}
+
+
+/* ============================================================
+   RIGHT RAIL – entity detail
+   ============================================================ */
+function openRail(entity) {
+  document.getElementById('main').classList.add('has-rail');
+  const pm = currentPowerMap();
+
+  document.getElementById('re-name').textContent = entity.name;
+  document.getElementById('re-type-text').textContent = entity.type;
+  const swatch = document.querySelector('#re-type .swatch');
+  const tc = TYPE_COLOR[entity.type];
+  swatch.style.background = `rgb(${tc[0]},${tc[1]},${tc[2]})`;
+
+  const body = document.getElementById('rail-body');
+
+  const conns = (CONNECTIONS[pm.id] || []).filter(c =>
+    c.from === entity.id || c.to === entity.id
+  );
+  const ents = ENTITIES[pm.id];
+  const byId = Object.fromEntries(ents.map(e => [e.id, e]));
+  const connRows = conns.map(c => {
+    const otherId = c.from === entity.id ? c.to : c.from;
+    const other = byId[otherId];
+    if (!other) return '';
+    const tc = TYPE_COLOR[other.type];
+    return `
+      <div class="connection-row" data-id="${other.id}">
+        <span class="conn-swatch" style="background: rgb(${tc[0]},${tc[1]},${tc[2]})"></span>
+        <span class="conn-name">${other.name}</span>
+        <span class="conn-strength">${(c.strength * 100).toFixed(0)}%</span>
+      </div>
+    `;
+  }).join('');
+
+  const tags = (entity.powermaps || [pm.id]).map(pmid => {
+    const found = POWER_MAPS.find(p => p.id === pmid);
+    const active = pmid === appState.activePowerMapId;
+    return `<span class="pm-tag ${active ? 'active' : ''}">${found ? found.name : pmid}</span>`;
+  }).join('');
+
+  const news = entity.id === 'blackrock' ? [
+    { time: '12 min ago', title: 'BlackRock raises proxy voting threshold for ESG resolutions' },
+    { time: '2 hr ago',   title: 'Q3 inflows hit $221B, AUM passes $11.5T milestone' },
+    { time: 'yesterday',  title: 'Fink memo signals expanded private credit allocation' }
+  ] : entity.id === 'tehran' ? [
+    { time: '8 min ago',  title: 'IRGC issues new statement on Strait transit protocols' },
+    { time: '1 hr ago',   title: 'Foreign ministry holds emergency session on US carrier movement' },
+    { time: 'today',      title: 'Oil futures spike 4.2% on harassment cycle escalation' }
+  ] : [];
+
+  body.innerHTML = `
+    <div class="rail-stats">
+      ${entity.aum && entity.aum !== '–' ? `
+        <div class="rail-stat">
+          <div class="rs-lbl">AUM</div>
+          <div class="rs-val">${entity.aum}</div>
+          <div class="rs-delta green">+2.4% QoQ</div>
+        </div>` : ''}
+      <div class="rail-stat">
+        <div class="rs-lbl">HQ</div>
+        <div class="rs-val" style="font-size: 13px;">${entity.hq}</div>
+      </div>
+      <div class="rail-stat">
+        <div class="rs-lbl">Connections</div>
+        <div class="rs-val">${entity.connections}</div>
+      </div>
+      <div class="rail-stat">
+        <div class="rs-lbl">PowerMaps</div>
+        <div class="rs-val">${(entity.powermaps || []).length}</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="rail-section-kicker">In this graph</div>
+      <div class="connection-list">${connRows || '<div style="font-size: 11px; color: var(--text-3); padding: 8px 0;">No direct connections in active map</div>'}</div>
+    </div>
+
+    <div>
+      <div class="rail-section-kicker">Power Maps</div>
+      <div class="powermap-tags">${tags}</div>
+    </div>
+
+    ${news.length > 0 ? `
+    <div>
+      <div class="rail-section-kicker">Recent signals</div>
+      <div>${news.map(n => `
+        <div class="news-item">
+          <div class="news-time">${n.time}</div>
+          <div class="news-title">${n.title}</div>
+        </div>
+      `).join('')}</div>
+    </div>` : ''}
+  `;
+
+  body.querySelectorAll('.connection-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const id = row.dataset.id;
+      const e = byId[id];
+      if (e) onEntitySelect(e);
+    });
+  });
+}
+
+function closeRail() {
+  document.getElementById('main').classList.remove('has-rail');
+  appState.selectedEntityId = null;
+}
+document.getElementById('rail-close').addEventListener('click', () => {
+  closeRail();
+  render();
+});
+
+
+/* ============================================================
+   OCEAN CLICK
+   ============================================================ */
+function onOceanClick() {
+  if (appState.selectedEntityId) {
+    closeRail();
+    render();
+  }
+}
+
+
+/* ============================================================
+   FOOTER UPDATE
+   ============================================================ */
+function updateFooter(pm) {
+  document.getElementById('footer-pm').textContent = pm ? pm.name : '–';
+  document.getElementById('footer-entities').textContent    = pm ? pm.entities    : '0';
+  document.getElementById('footer-connections').textContent = pm ? pm.connections : '0';
+}
+
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('visible'), 2200);
+}
+
+
+/* ============================================================
+   RIM GLOW SIZING
+   ============================================================ */
+function updateRimSize() {
+  const region = document.getElementById('globe-region');
+  const w = region.clientWidth, h = region.clientHeight;
+  const d = Math.min(w, h) * 0.78;
+  document.getElementById('rim-glow').style.setProperty('--globe-rim', d + 'px');
+}
+updateRimSize();
+window.addEventListener('resize', updateRimSize);
+
+
+/* ============================================================
+   LOAD COUNTRIES
+   ============================================================ */
+fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+  .then(r => r.json())
+  .then(topo => {
+    countriesGeoJson = topojson.feature(topo, topo.objects.countries);
+    console.log('[atlas:countries]', countriesGeoJson.features.length, 'features loaded');
+    render();
+  })
+  .catch(err => {
+    console.warn('[atlas:countries] failed', err);
+  });
+
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+renderPowerMapList();
+startRAFRotation();
+
+document.querySelectorAll('.tabs button').forEach(b => {
+  b.addEventListener('click', () => {
+    if (b.textContent.trim() === 'Globe') return;
+    showToast(`${b.textContent} view · not in prototype`);
+  });
+});
+</script>
+
+</body>
+</html>
