@@ -5,7 +5,41 @@ import type { EntityRef } from '@/app/app.events';
 import type { AtlasView } from '@/types/atlas';
 
 /** Canonical identifier for a registered engine implementation */
-export type EngineId = 'globe' | 'network' | 'force';
+export type EngineId = 'globe' | 'network' | 'force' | 'graph';
+
+/**
+ * Sprint 2 — graph layout in flat buffers (no DTO; mapper at service boundary
+ * maps domain → these arrays). Aligned with `ipm-engine-runtime` TypedArray rule.
+ */
+export interface GraphEngineInput {
+  nodeCount: number
+  edgeCount: number
+  nodeIds: string[]
+  /** [x0,y0,x1,y1,...] in normalized layout space (e.g. -1..1; mapper-defined). */
+  nodeXY: Float32Array
+  edgeFrom: Uint32Array
+  edgeTo: Uint32Array
+  selectedNodeIndex: number
+  highlightedEdgeIndex: number
+  degraded?: boolean
+}
+
+export interface GraphEngineData {
+  graph: GraphEngineInput
+}
+
+export function createEmptyGraphEngineInput(): GraphEngineInput {
+  return {
+    nodeCount:         0,
+    edgeCount:         0,
+    nodeIds:           [],
+    nodeXY:            new Float32Array(0),
+    edgeFrom:          new Uint32Array(0),
+    edgeTo:            new Uint32Array(0),
+    selectedNodeIndex:  -1,
+    highlightedEdgeIndex: -1,
+  };
+}
 
 /** Input passed to an engine on initialization */
 export interface EngineInitInput {
@@ -77,4 +111,21 @@ export interface EngineArc {
 
 export interface EngineArcData {
   arcs: EngineArc[];
+}
+
+/**
+ * Phase 8+: company-selection context pushed from CompanyGlobe.tsx when an
+ * overlay is open. Carries the data the globe needs to render layers 2 + 10-13:
+ * market-continent fills, fabric halos, and the selected-company glow.
+ *
+ * Pure engine input — no DTO fields. Mapper at CompanyGlobe (service boundary).
+ */
+export interface EngineCompanySelection {
+  company: { nodeId: string; latitude: number; longitude: number };
+  fabrics: Array<{ lat: number; lng: number; employees: number; name: string }>;
+  marketContinents: string[];
+}
+
+export interface EngineCompanySelectionData {
+  selection: EngineCompanySelection | null;
 }
