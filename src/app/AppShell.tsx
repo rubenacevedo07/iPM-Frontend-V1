@@ -134,7 +134,9 @@ export function AppShell() {
     }
   }, [engineRef])
 
-  // Phase 4.1: push top-50 companies by marketCap to the globe once loaded.
+  // Phase 4.1 + persons: push companies (top 30 by marketCap) and persons (top 15
+  // by compositeScore) to the globe. Companies render immediately; persons are
+  // appended once the /api/persons/top15 response arrives (persons starts as []).
   useEffect(() => {
     if (companiesLoading || companies.length === 0) return
 
@@ -162,8 +164,20 @@ export function AppShell() {
       isGold:       i < 15,
     }))
 
-    engineRef.send({ type: 'CMD.SET_ENTITIES', data: { entities: top30 } })
-  }, [companies, companiesLoading, engineRef])
+    const top15persons = persons
+      .filter(p => p.countryLat != null && p.countryLng != null)
+      .map(p => ({
+        id:        p.id,
+        nodeId:    p.nodeId,
+        type:      'PERSON' as const,
+        slug:      p.slug,
+        name:      p.fullName,
+        latitude:  p.countryLat!,
+        longitude: p.countryLng!,
+      }))
+
+    engineRef.send({ type: 'CMD.SET_ENTITIES', data: { entities: [...top30, ...top15persons] } })
+  }, [companies, companiesLoading, persons, engineRef])
 
   const activePowermapId = useMemo(() => {
     const q = query.trim().toLowerCase()
