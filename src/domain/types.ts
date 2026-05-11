@@ -209,6 +209,10 @@ export interface NeighborNode {
   name: string
   type: NodeType
   compositeScore: number | null
+  // Backend ships `Person.Photo` / `Company.Logo` here when available.
+  // Format may be filename only (`Musk.jpeg`), relative path (`/persons/Musk.jpeg`),
+  // or absolute URL. The graph-view adapter normalizes all three forms.
+  photoUrl?: string | null
 }
 
 export interface NeighborEdge {

@@ -8,6 +8,7 @@
 
 import type { NeighborsResponse, NodeType } from '@/domain/types'
 import { getEdgeTypeMeta } from '@/types/_ext/edgeTypes'
+import { getEntityImage, toInitials } from '@/types/_ext/entityImages'
 import type { LayoutInput, LayoutInputNode } from './layout/graphLayoutEngine'
 
 type LayoutNodeType = LayoutInputNode['Type']
@@ -31,6 +32,58 @@ function scoreToLabel(score: number | null | undefined): string | undefined {
 }
 
 /**
+ * Normalize the value backend ships as `photoUrl`. Three accepted formats:
+ *   1. Filename only        — "Musk.jpeg"           → prefixed by type
+ *   2. Relative path        — "/persons/Musk.jpeg"  → as-is
+ *   3. Absolute URL         — "https://cdn.../"     → as-is
+ * Returns undefined for null/empty.
+ */
+function normalizePhotoUrl(raw: string | null | undefined, type: NodeType): string | undefined {
+  if (!raw) return undefined
+  const v = raw.trim()
+  if (!v) return undefined
+  if (v.startsWith('http://') || v.startsWith('https://')) return v
+  if (v.startsWith('/')) return v
+  // Filename only — pick directory by entity type.
+  const t = String(type).toLowerCase()
+  if (t === 'person')  return `/persons/${v}`
+  if (t === 'company') return `/logos/${v}`
+  return undefined  // unknown type → can't safely prefix
+}
+
+/**
+ * Backend tech-debt: `/graph/node/{nodeId}/neighbors` returns a flat array of
+ * GraphNodeDto-shape objects today, not the typed `NeighborsResponse` envelope.
+ * Until the backend honors the contract documented in `docs/backend-graph-brief.md`,
+ * we coerce the live array shape into a `NeighborsResponse` here.
+ */
+type LegacyNeighborNode = {
+  id?:       string
+  nodeId?:   string | null
+  entityId?: number
+  type?:     string
+  label?:    string
+  name?:     string | null
+  photoUrl?: string | null
+  score?:    number | null
+}
+
+function isLegacyArrayShape(res: unknown): res is LegacyNeighborNode[] {
+  return Array.isArray(res)
+}
+
+function coerceLegacyShape(arr: LegacyNeighborNode[], centerNodeId: string): NeighborsResponse {
+  const nodes: NeighborsResponse['nodes'] = arr.map(n => ({
+    nodeId:         n.nodeId ?? n.id ?? '',
+    name:           n.name ?? n.label ?? '',
+    type:           (String(n.type ?? '').toUpperCase()) as NodeType,
+    compositeScore: n.score ?? null,
+    photoUrl:       n.photoUrl ?? null,
+  }))
+  return { centralNodeId: centerNodeId, nodes, edges: [] }
+}
+
+/**
  * Build a `LayoutInput` from a `NeighborsResponse`. The response's
  * `centralNodeId` becomes the layout center; remaining nodes form ring 1.
  *
@@ -39,11 +92,25 @@ function scoreToLabel(score: number | null | undefined): string | undefined {
  *                       `res.nodes` (e.g. some endpoints omit it from the list)
  */
 export function toLayoutInput(
-  res: NeighborsResponse,
-  centerFallback?: { name?: string; type?: NodeType },
+  res: NeighborsResponse | LegacyNeighborNode[],
+  centerFallback?: { name?: string; type?: NodeType; nodeId?: string },
 ): LayoutInput {
-  const centerNeighbor = res.nodes.find(n => n.nodeId === res.centralNodeId)
-  const otherNodes     = res.nodes.filter(n => n.nodeId !== res.centralNodeId)
+  // Defensive: backend still returns the legacy array shape. Coerce to envelope.
+  const envelope: NeighborsResponse = isLegacyArrayShape(res)
+    ? coerceLegacyShape(res, centerFallback?.nodeId ?? '')
+    : res
+
+  const centerNeighbor = envelope.nodes.find(n => n.nodeId === envelope.centralNodeId)
+  const otherNodes     = envelope.nodes.filter(n => n.nodeId !== envelope.centralNodeId)
+
+  // Cascading avatar resolution (best → fallback):
+  //   1. Backend `photoUrl`         — authoritative once backend ships Ask 1
+  //   2. Local lookup table          — temporary shim while backend is wired
+  //   3. Initials of label/name     — final fallback (e.g. "EM")
+  const resolveAvatar = (name: string, type: NodeType, photoUrl?: string | null): string =>
+    normalizePhotoUrl(photoUrl, type)
+      ?? getEntityImage(name, type)
+      ?? toInitials(name)
 
   const center: LayoutInputNode = centerNeighbor
     ? {
@@ -53,13 +120,17 @@ export function toLayoutInput(
         DbId:   dbIdFromNodeId(centerNeighbor.nodeId),
         Score:  scoreToLabel(centerNeighbor.compositeScore),
         Accent: 'primary',
+        Avatar: resolveAvatar(centerNeighbor.name, centerNeighbor.type, centerNeighbor.photoUrl),
       }
     : {
-        NodeId: res.centralNodeId,
-        Label:  centerFallback?.name ?? res.centralNodeId,
+        NodeId: envelope.centralNodeId,
+        Label:  centerFallback?.name ?? envelope.centralNodeId,
         Type:   nodeTypeToLayoutType((centerFallback?.type ?? 'PERSON') as NodeType),
-        DbId:   dbIdFromNodeId(res.centralNodeId),
+        DbId:   dbIdFromNodeId(envelope.centralNodeId),
         Accent: 'primary',
+        Avatar: centerFallback?.name
+          ? resolveAvatar(centerFallback.name, centerFallback.type ?? 'PERSON', null)
+          : undefined,
       }
 
   return {
@@ -70,8 +141,9 @@ export function toLayoutInput(
       Type:   nodeTypeToLayoutType(n.type),
       DbId:   dbIdFromNodeId(n.nodeId),
       Score:  scoreToLabel(n.compositeScore),
+      Avatar: resolveAvatar(n.name, n.type, n.photoUrl),
     })),
-    edges: res.edges.map((e, i) => {
+    edges: envelope.edges.map((e, i) => {
       const meta = getEdgeTypeMeta(e.edgeType)
       return {
         EdgeId:   `${e.sourceNodeId}__${e.targetNodeId}__${i}`,

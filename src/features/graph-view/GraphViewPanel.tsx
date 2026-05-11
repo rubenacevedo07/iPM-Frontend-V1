@@ -58,7 +58,7 @@ export function GraphViewPanel() {
     if (data) {
       return layoutEngine.calculate({
         mode: 'orbital',
-        data: toLayoutInput(data, { name: CENTRAL_NAME, type: 'PERSON' }),
+        data: toLayoutInput(data, { name: CENTRAL_NAME, type: 'PERSON', nodeId: CENTRAL_NODE_ID }),
       })
     }
     if (isError) {

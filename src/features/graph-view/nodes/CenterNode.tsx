@@ -1,11 +1,17 @@
+import { useState } from 'react'
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react'
 import { useGraphHover } from '../contexts/GraphHoverContext'
+import { toInitials } from '@/types/_ext/entityImages'
 import type { GraphViewNodeData } from '@/types/graphView'
 import styles from './CenterNode.module.scss'
 
 export function CenterNode({ id, data, selected }: NodeProps<Node<GraphViewNodeData>>) {
   const { hoveredNodeId, setHoveredNodeId } = useGraphHover()
-  const initials = String(data.label || 'EM').slice(0, 2).toUpperCase()
+  const [imageFailed, setImageFailed] = useState(false)
+
+  const avatarStr  = data.avatar != null ? String(data.avatar) : ''
+  const isImageUrl = avatarStr.startsWith('/')
+  const initials   = toInitials(String(data.label || 'EM'))
 
   const dimmed = hoveredNodeId !== null && hoveredNodeId !== id
   const opacity = dimmed ? 0.22 : 1
@@ -36,9 +42,20 @@ export function CenterNode({ id, data, selected }: NodeProps<Node<GraphViewNodeD
       <div className={styles.pulse + ' ' + styles.r2} />
       <div className={styles.pulse + ' ' + styles.r3} />
 
-      {/* Ring with gradient */}
+      {/* Ring with gradient — image takes precedence over initials when present */}
       <div className={styles.ring} style={{ boxShadow, transform: scale, transition: 'box-shadow 0.2s ease, transform 0.2s ease' }}>
-        <div className={styles.inner}>{initials}</div>
+        <div className={styles.inner} style={{ overflow: 'hidden' }}>
+          {isImageUrl && !imageFailed ? (
+            <img
+              src={avatarStr}
+              alt=""
+              onError={() => setImageFailed(true)}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', display: 'block' }}
+            />
+          ) : (
+            initials
+          )}
+        </div>
       </div>
 
       {/* Handles */}

@@ -7,22 +7,23 @@ import { normalizeGraphData } from './transformers/normalizeGraphData'
 const MOCK_SUBGRAPH: GraphSubgraph = {
   center: {
     NodeId:   'you',
-    Label:    'Subject EM',
-    Type:     'company',
-    DbId:     '0',
+    Label:    'Elon Musk',
+    Type:     'person',
+    DbId:     '7',
     Subtitle: 'Primary Entity',
     Accent:   'primary',
     Score:    'ID-78902',
+    Avatar:   '/persons/Musk.jpeg',
   },
 
   nodes: [
-    { NodeId: 'company:1',  Label: 'NVIDIA',        Type: 'company', DbId: '1',  Subtitle: 'AI Hardware',    Avatar: 'NV', Accent: 'primary'   },
-    { NodeId: 'company:7',  Label: 'Tesla',          Type: 'company', DbId: '7',  Subtitle: 'Auto/Energy',    Avatar: 'TS', Accent: 'warning'   },
-    { NodeId: 'company:3',  Label: 'Microsoft',      Type: 'company', DbId: '3',  Subtitle: 'Cloud/AI',       Avatar: 'MS', Accent: 'success'   },
-    { NodeId: 'company:96', Label: 'Palantir',       Type: 'company', DbId: '96', Subtitle: 'Data/Analytics', Avatar: 'PL', Accent: 'secondary' },
-    { NodeId: 'company:2',  Label: 'Apple',          Type: 'company', DbId: '2',  Subtitle: 'Consumer Tech',  Avatar: 'AP', Accent: 'default'   },
-    { NodeId: 'person:7',   Label: 'Elon Musk',      Type: 'person',  DbId: '7',  Subtitle: 'Entrepreneur',   Avatar: 'EM', Accent: 'warning'   },
-    { NodeId: 'person:1',   Label: 'Jensen Huang',   Type: 'person',  DbId: '1',  Subtitle: 'CEO NVIDIA',     Avatar: 'JH', Accent: 'primary'   },
+    { NodeId: 'company:1',  Label: 'NVIDIA',       Type: 'company', DbId: '1',  Subtitle: 'AI Hardware',    Avatar: '/logos/nvidia.jpeg',    Accent: 'primary'   },
+    { NodeId: 'company:7',  Label: 'Tesla',        Type: 'company', DbId: '7',  Subtitle: 'Auto/Energy',    Avatar: '/logos/tesla.png',      Accent: 'warning'   },
+    { NodeId: 'company:3',  Label: 'Microsoft',    Type: 'company', DbId: '3',  Subtitle: 'Cloud/AI',       Avatar: '/logos/microsoft.jpeg', Accent: 'success'   },
+    { NodeId: 'company:96', Label: 'Palantir',     Type: 'company', DbId: '96', Subtitle: 'Data/Analytics', Avatar: '/logos/palantir.png',   Accent: 'secondary' },
+    { NodeId: 'company:2',  Label: 'Apple',        Type: 'company', DbId: '2',  Subtitle: 'Consumer Tech',  Avatar: '/logos/apple.png',      Accent: 'default'   },
+    { NodeId: 'person:7',   Label: 'Elon Musk',    Type: 'person',  DbId: '7',  Subtitle: 'Entrepreneur',   Avatar: '/persons/Musk.jpeg',    Accent: 'warning'   },
+    { NodeId: 'person:1',   Label: 'Jensen Huang', Type: 'person',  DbId: '1',  Subtitle: 'CEO NVIDIA',     Avatar: '/persons/Huang.jpeg',   Accent: 'primary'   },
   ],
 
   edges: [
