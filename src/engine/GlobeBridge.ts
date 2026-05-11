@@ -902,13 +902,31 @@ export class GlobeBridge implements IEngineBridge {
     this._lastTickMs = 0;
 
     const tick = (ts: number) => {
+      // ───────────────────────────────────────────────────────────────────
+      // Rule 7 belt-and-braces: SELF-TERMINATE if rotation has been disabled.
+      // The order matters — check BEFORE re-scheduling. If we re-scheduled
+      // first and then bailed (the previous pattern), the RAF would keep
+      // scheduling itself forever, and any code that flipped _userInteracting
+      // back to false would cause rotation to silently resume.
+      //
+      // Now: when _rotationEnabled goes false, the tick stops re-scheduling
+      // → the RAF loop terminates naturally even if `_stopRAFRotation`'s
+      // `cancelAnimationFrame` somehow missed (e.g., during a render race).
+      // The only way to start rotation again is the SET_ROTATION true
+      // handler explicitly calling `_startRAFRotation`.
+      // ───────────────────────────────────────────────────────────────────
+      if (!this._rotationEnabled) {
+        this._rafHandle = null;
+        this._lastTickMs = 0;
+        return;
+      }
       this._rafHandle = requestAnimationFrame(tick);
 
       if (!this._deck || this._status !== 'ready') {
         this._lastTickMs = ts;
         return;
       }
-      if (this._userInteracting || !this._rotationEnabled) {
+      if (this._userInteracting) {
         this._lastTickMs = ts;
         return;
       }
