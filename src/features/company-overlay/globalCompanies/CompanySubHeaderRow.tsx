@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import type { Company } from '@/types/company';
 import '@/app/styles/overlay.scss';
 import 'flag-icons/css/flag-icons.min.css';
@@ -11,14 +10,9 @@ interface Props {
 
 export default function CompanySubHeaderRow({ company, onCeoClick }: Props) {
   return (
-    <motion.div
+    <div
       id="company-subheader"
       className="co-sub"
-      key={company.id + '-sub'}
-      initial={{ opacity: 1, y: 0 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -4 }}
-      transition={{ duration: 0.3, delay: 0.05 }}
       style={{ height: SUB_ROW_H }}
     >
       {/* Meta (replaces KPIs) */}
@@ -64,6 +58,6 @@ export default function CompanySubHeaderRow({ company, onCeoClick }: Props) {
           {company.category.toUpperCase().slice(0, 18)}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { useSearch } from '@tanstack/react-router'
-import { AnimatePresence } from 'framer-motion'
 import { AppActor } from './app.machine'
 import { GoldOverlay } from '@/features/gold-overlay/GoldOverlay'
 import {
@@ -25,11 +24,6 @@ export function GoldOverlayHost() {
     actor.send({ type: 'PERSON_NETWORK_RESOLVED', personId: id, arcs })
   }, [isGold, id, actor])
 
-  return (
-    <AnimatePresence>
-      {isGold && id != null && (
-        <GoldOverlay key={`gold-${id}`} entityName={`Company #${id}`} />
-      )}
-    </AnimatePresence>
-  )
+  if (!isGold || id == null) return null
+  return <GoldOverlay entityName={`Company #${id}`} />
 }

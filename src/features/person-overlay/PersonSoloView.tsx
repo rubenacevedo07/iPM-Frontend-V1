@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import type { PersonIntelligence, NeighborsResponse } from '@/domain/types'
 import type { ActorRefFrom } from 'xstate'
 import { useSelector } from '@xstate/react'
@@ -54,12 +53,8 @@ export function PersonSoloView({
     <div className="pe__host">
 
       {/* Header bar — full width, 56px */}
-      <motion.div
+      <div
         className="pe__header-bar"
-        initial={{ opacity: 1, y: 0 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ y: -60 }}
-        transition={{ duration: 0.18, ease: 'easeIn' }}
         style={{ pointerEvents: 'auto' }}
       >
         <div className="pe__hdr-identity">
@@ -84,15 +79,11 @@ export function PersonSoloView({
           </span>
         </div>
         <button className="ov__close" onClick={onClose}>×</button>
-      </motion.div>
+      </div>
 
       {/* Left panel */}
-      <motion.div
+      <div
         className="pe__left-wrap"
-        initial={{ opacity: 1, x: 0 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ x: -290 }}
-        transition={{ duration: 0.18, ease: 'easeIn' }}
         style={{ pointerEvents: 'auto' }}
       >
         <PersonLeftPanel
@@ -102,15 +93,11 @@ export function PersonSoloView({
           entityName={entityName}
           isLoading={isLoading}
         />
-      </motion.div>
+      </div>
 
       {/* Right panel — tabs + scrollable data */}
-      <motion.div
+      <div
         className="pe__right-wrap"
-        initial={{ opacity: 1, x: 0 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ x: 310 }}
-        transition={{ duration: 0.18, ease: 'easeIn' }}
         style={{ pointerEvents: 'auto' }}
       >
 
@@ -271,15 +258,11 @@ export function PersonSoloView({
           </div>
 
         </div>
-      </motion.div>
+      </div>
 
       {/* Bottom bar — full width */}
-      <motion.div
+      <div
         className="pe__bottom-bar"
-        initial={{ opacity: 1, y: 0 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ y: 36 }}
-        transition={{ duration: 0.22, ease: 'easeIn' }}
         style={{ pointerEvents: 'auto' }}
       >
         <span className="pe__bar-label">VIEWING</span>
@@ -301,7 +284,7 @@ export function PersonSoloView({
           </span>
           <span className="badge badge--teal">6 EDGES · 3 TIMELINES</span>
         </div>
-      </motion.div>
+      </div>
 
     </div>
   )
