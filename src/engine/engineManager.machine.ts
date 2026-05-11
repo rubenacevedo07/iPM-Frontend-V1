@@ -2,7 +2,7 @@
 // Single createBridgeAndSubscribe action (as designed in Phase 2b)
 
 import { setup, assign, sendParent }                        from 'xstate';
-import type { EngineId, EngineInitInput, EngineEntityData, EngineArcData } from './contracts/inputs';
+import type { EngineId, EngineInitInput, EngineEntityData, EngineArcData, GraphEngineData, EngineCompanySelectionData } from './contracts/inputs';
 import type { IEngineBridge, BridgeEvent, Unsubscribe }     from './contracts/bridge';
 import { createEngine }                                     from './engineFactory';
 
@@ -17,12 +17,14 @@ interface EngineManagerContext {
 }
 
 type EngineManagerEvent =
-  | { type: 'ENGINE.REQUEST';   engineId: EngineId; input: EngineInitInput }
-  | { type: 'ENGINE.SWAP';      engineId: EngineId; input: EngineInitInput }
+  | { type: 'ENGINE.REQUEST';              engineId: EngineId; input: EngineInitInput }
+  | { type: 'ENGINE.SWAP';                 engineId: EngineId; input: EngineInitInput }
   | { type: 'ENGINE.DISPOSE' }
-  | { type: '_BRIDGE.EVENT';    event: BridgeEvent }
-  | { type: 'CMD.SET_ENTITIES'; data: EngineEntityData }
-  | { type: 'CMD.SET_ARCS';     data: EngineArcData };
+  | { type: '_BRIDGE.EVENT';               event: BridgeEvent }
+  | { type: 'CMD.SET_ENTITIES';            data: EngineEntityData }
+  | { type: 'CMD.SET_ARCS';               data: EngineArcData }
+  | { type: 'CMD.SET_GRAPH';              data: GraphEngineData }
+  | { type: 'CMD.SET_COMPANY_SELECTION';  data: EngineCompanySelectionData };
 
 function isBridgeReady(event: EngineManagerEvent): boolean {
   return event.type === '_BRIDGE.EVENT' && event.event.type === 'ENGINE.READY';
@@ -150,6 +152,16 @@ export const engineManagerMachine = setup({
             'CMD.SET_ARCS': {
               actions: ({ context, event }) => {
                 context.bridge?.send({ type: 'CMD.SET_ARCS', data: event.data });
+              },
+            },
+            'CMD.SET_GRAPH': {
+              actions: ({ context, event }) => {
+                context.bridge?.send({ type: 'CMD.SET_GRAPH', data: event.data });
+              },
+            },
+            'CMD.SET_COMPANY_SELECTION': {
+              actions: ({ context, event }) => {
+                context.bridge?.send({ type: 'CMD.SET_COMPANY_SELECTION', data: event.data });
               },
             },
           },
