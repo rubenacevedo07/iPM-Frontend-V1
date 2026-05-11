@@ -168,12 +168,6 @@ export function GraphViewPanel() {
       <GraphHoverContext.Provider value={{ hoveredNodeId, connectedNodeIds, setHoveredNodeId }}>
         <GraphEdgeContext.Provider value={{ selectedEdgeId }}>
           <div className={styles.graphViewPanel}>
-          <div className={styles.header}>
-            <span className={styles.title}>Network Graph</span>
-            <span className={styles.count}>
-              {nodes.length} nodes · {edges.length} edges
-            </span>
-          </div>
           <ReactFlow
             nodes={nodes}
             edges={edges}

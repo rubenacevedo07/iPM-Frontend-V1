@@ -26,10 +26,11 @@ const GraphViewPanel     = lazy(() => import('@/features/graph-view/GraphViewPan
 const WallStreetPage     = lazy(() => import('@/features/wall-street/WallStreetPage').then(m => ({ default: m.WallStreetPage })))
 const CompanyOverlayHost = lazy(() => import('./CompanyOverlayHost').then(m => ({ default: m.CompanyOverlayHost })))
 const PersonOverlayHost  = lazy(() => import('./PersonOverlayHost').then(m => ({ default: m.PersonOverlayHost })))
-const GoldOverlayHost    = lazy(() => import('./GoldOverlayHost').then(m => ({ default: m.GoldOverlayHost })))
-const PowerMapsPanel     = lazy(() => import('@/features/gold-overlay/PowerMapsPanel').then(m => ({ default: m.PowerMapsPanel })))
-const PersonViewPanel    = lazy(() => import('@/features/person-view/PersonViewPanel').then(m => ({ default: m.PersonViewPanel })))
-const RelationViewPanel  = lazy(() => import('@/features/relation-view/RelationViewPanel').then(m => ({ default: m.RelationViewPanel })))
+const GoldOverlayHost     = lazy(() => import('./GoldOverlayHost').then(m => ({ default: m.GoldOverlayHost })))
+const PowerMapOverlayHost = lazy(() => import('./PowerMapOverlayHost').then(m => ({ default: m.PowerMapOverlayHost })))
+const PowerMapsPanel      = lazy(() => import('@/features/gold-overlay/PowerMapsPanel').then(m => ({ default: m.PowerMapsPanel })))
+const PersonViewPanel     = lazy(() => import('@/features/person-view/PersonViewPanel').then(m => ({ default: m.PersonViewPanel })))
+const RelationViewPanel   = lazy(() => import('@/features/relation-view/RelationViewPanel').then(m => ({ default: m.RelationViewPanel })))
 
 function RouterSync() {
   const search = useSearch({ from: '/workstation' })
@@ -109,6 +110,7 @@ export function AppShell() {
   const search      = useSearch({ from: '/workstation' })
   const isGoldOpen  = search.overlay === 'gold'
   const isPersonOpen = search.overlay === 'person'
+  const isPowerMapOverlayOpen = search.overlay === 'powermap'
 
   // Globe stays full-viewport regardless of overlay state. Overlays float on top
   // as glass panels. Prior design shrunk the canvas behind gold via `graphInset`,
@@ -201,7 +203,7 @@ export function AppShell() {
   //   1. SET_POWERMAP   (layers)
   //   2. SET_ROTATION   (stop rotation, mark cancel)
   //   3. FLY_TO         (reset cancel, start cinematic)
-  const shouldRotate = !activePowermapId && !isGoldOpen && !isPersonOpen && search.overlay !== 'company'
+  const shouldRotate = !activePowermapId && !isGoldOpen && !isPersonOpen && !isPowerMapOverlayOpen && search.overlay !== 'company'
   useEffect(() => {
     engineRef.send({ type: 'CMD.SET_ROTATION', enabled: shouldRotate })
   }, [shouldRotate, engineRef])
@@ -218,6 +220,24 @@ export function AppShell() {
       duration:  2000,
     })
   }, [activePowermapId, engineRef])
+
+  // URL-driven power-map overlay: when ?powermapId=... opens the overlay,
+  // also drive the globe (set the layer + fly-to). Mirrors the query-driven
+  // path above but keyed on the URL so back/forward navigation works.
+  useEffect(() => {
+    if (!search.powermapId) return
+    engineRef.send({ type: 'CMD.SET_POWERMAP', powermapId: search.powermapId })
+    const cfg = POWER_MAP_CONFIGS[search.powermapId]
+    if (cfg?.flyTo) {
+      engineRef.send({
+        type:      'CMD.FLY_TO',
+        longitude: cfg.flyTo.longitude,
+        latitude:  cfg.flyTo.latitude,
+        zoom:      cfg.flyTo.zoom,
+        duration:  2000,
+      })
+    }
+  }, [search.powermapId, engineRef])
 
   // Warm cache for the heavy graph chunks (@xyflow/react ~150 KB + d3-force)
   // when the browser is idle. The first click on Network / Wall Street then
@@ -315,7 +335,8 @@ export function AppShell() {
         top: 4,
         left: '50%',
         transform: 'translateX(-50%)',
-        zIndex: 35,
+        zIndex: 80,
+        pointerEvents: 'auto',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         borderRadius: 8,
@@ -335,8 +356,8 @@ export function AppShell() {
       </div>
 
       {/* Power Maps panel — visible over both globe and network views.
-          Hidden when an entity overlay (person/gold/company) is open. */}
-      {!isGoldOpen && !isPersonOpen && search.overlay !== 'company' && (
+          Hidden when any entity overlay (person/gold/company/powermap) is open. */}
+      {!isGoldOpen && !isPersonOpen && !isPowerMapOverlayOpen && search.overlay !== 'company' && (
         <div
           style={{
             position: 'absolute',
@@ -392,6 +413,18 @@ export function AppShell() {
             style={{ position: 'absolute', inset: 0, zIndex: 50, pointerEvents: 'none' }}
           >
             <Suspense fallback={<GoldOverlaySkeleton />}><GoldOverlayHost /></Suspense>
+          </motion.div>
+        )}
+        {isPowerMapOverlayOpen && (
+          <motion.div
+            key="overlay-powermap"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'linear' }}
+            style={{ position: 'absolute', inset: 0, zIndex: 50, pointerEvents: 'none' }}
+          >
+            <Suspense fallback={null}><PowerMapOverlayHost /></Suspense>
           </motion.div>
         )}
       </AnimatePresence>

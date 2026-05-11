@@ -4,11 +4,12 @@ import { rootRoute } from './__root'
 import { AppShell } from '@/app/AppShell'
 
 const workstationSearchSchema = z.object({
-  overlay: z.enum(['person', 'company', 'vs', 'gold']).optional(),
-  id: z.coerce.number().int().positive().optional(),
-  a:  z.coerce.number().int().positive().optional(),
-  b:  z.coerce.number().int().positive().optional(),
-  q:  z.string().optional(),
+  overlay:    z.enum(['person', 'company', 'vs', 'gold', 'powermap']).optional(),
+  id:         z.coerce.number().int().positive().optional(),
+  a:          z.coerce.number().int().positive().optional(),
+  b:          z.coerce.number().int().positive().optional(),
+  q:          z.string().optional(),
+  powermapId: z.string().optional(),
 })
 
 export type WorkstationSearch = z.infer<typeof workstationSearchSchema>

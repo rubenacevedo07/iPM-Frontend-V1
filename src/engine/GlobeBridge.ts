@@ -86,13 +86,6 @@ export class GlobeBridge implements IEngineBridge {
   private _idleResumeTimer: ReturnType<typeof setTimeout> | null = null;
   private _userInteracting = false;
 
-  // Rule 7 (USER INVARIANT): set true to abort an in-flight fly-to.
-  // SET_ROTATION enabled:false flips this to true so the camera freezes the
-  // instant any overlay opens (otherwise the longitude interpolation keeps
-  // gliding for up to 2s after the overlay is on screen — visually identical
-  // to rotation continuing).
-  private _flyToCancelled = false;
-
   private static readonly ROTATION_DEG_PER_SEC = 3;
   private static readonly IDLE_RESUME_MS = 800;
 
@@ -388,25 +381,38 @@ export class GlobeBridge implements IEngineBridge {
         break;
       }
       case 'CMD.SET_ROTATION': {
+        // ═══════════════════════════════════════════════════════════════════
+        // ROTATION LIFECYCLE — Rule 7 (CLAUDE.md), single source of truth
+        // ═══════════════════════════════════════════════════════════════════
+        // Auto-rotation is controlled SOLELY by this command. AppShell sends
+        // SET_ROTATION false whenever an overlay or power map is active and
+        // SET_ROTATION true when none are. No other code path should start or
+        // stop the rotation RAF — not fly-to completion, not idle timers, not
+        // gesture handlers. This prevents the recurring bug where the globe
+        // keeps rotating after the cinematic fly-to completes while an
+        // overlay is open.
+        //
+        // The cinematic fly-to is a separate RAF loop (see _executeFlyTo). It
+        // is NEVER cancelled — the camera always lands on the target — but it
+        // does not re-enable rotation on completion. If the user is in an
+        // overlay when fly-to ends, the globe rests on the target. If not, the
+        // rotation RAF is already running underneath (see init at line 263).
+        // ═══════════════════════════════════════════════════════════════════
         this._rotationEnabled = command.enabled;
         if (command.enabled) {
           // Clear any lingering user-interaction block so the loop actually advances.
           this._userInteracting = false;
-          this._flyToCancelled  = false;
           this._startRAFRotation(); // (re)start the loop — no-op if already running
           this._startIdlePulse();
         } else {
-          // Hard-stop ALL camera motion. Rule 7 invariant: when an overlay opens,
-          // the globe must FREEZE — not just stop auto-rotating. That means we also
-          // abort any in-flight fly-to (longitude interpolation looks like rotation
-          // to the user) and any idle-resume timer that could re-enable rotation.
+          // Hard-stop auto-rotation. In-flight fly-to is intentionally left
+          // alone so the cinematic completes.
           this._stopRAFRotation();
           if (this._idleResumeTimer !== null) {
             clearTimeout(this._idleResumeTimer);
             this._idleResumeTimer = null;
           }
-          this._userInteracting = true;  // belt-and-braces
-          this._flyToCancelled  = true;  // freeze in-flight fly-to at current frame
+          this._userInteracting = true; // belt-and-braces
           this._stopIdlePulse();
         }
         break;
@@ -895,13 +901,31 @@ export class GlobeBridge implements IEngineBridge {
     this._lastTickMs = 0;
 
     const tick = (ts: number) => {
+      // ───────────────────────────────────────────────────────────────────
+      // Rule 7 belt-and-braces: SELF-TERMINATE if rotation has been disabled.
+      // The order matters — check BEFORE re-scheduling. If we re-scheduled
+      // first and then bailed (the previous pattern), the RAF would keep
+      // scheduling itself forever, and any code that flipped _userInteracting
+      // back to false would cause rotation to silently resume.
+      //
+      // Now: when _rotationEnabled goes false, the tick stops re-scheduling
+      // → the RAF loop terminates naturally even if `_stopRAFRotation`'s
+      // `cancelAnimationFrame` somehow missed (e.g., during a render race).
+      // The only way to start rotation again is the SET_ROTATION true
+      // handler explicitly calling `_startRAFRotation`.
+      // ───────────────────────────────────────────────────────────────────
+      if (!this._rotationEnabled) {
+        this._rafHandle = null;
+        this._lastTickMs = 0;
+        return;
+      }
       this._rafHandle = requestAnimationFrame(tick);
 
       if (!this._deck || this._status !== 'ready') {
         this._lastTickMs = ts;
         return;
       }
-      if (this._userInteracting || !this._rotationEnabled) {
+      if (this._userInteracting) {
         this._lastTickMs = ts;
         return;
       }
@@ -971,9 +995,6 @@ export class GlobeBridge implements IEngineBridge {
     if (this._flyToTimer !== null) { clearTimeout(this._flyToTimer); this._flyToTimer = null; }
     if (this._idleResumeTimer !== null) { clearTimeout(this._idleResumeTimer); this._idleResumeTimer = null; }
     this._userInteracting = true;
-    // Fresh fly-to: reset the cancel flag. SET_ROTATION false will flip it
-    // back to true mid-flight if an overlay opens during the animation.
-    this._flyToCancelled = false;
 
     const s0 = this._viewState?.longitude ?? 0;
     const s1 = this._viewState?.latitude  ?? 0;
@@ -982,10 +1003,6 @@ export class GlobeBridge implements IEngineBridge {
     const ease = (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
     const tick = (now: number) => {
-      // Rule 7: if an overlay opened mid-flight, freeze the camera at its current
-      // viewState. Do not write further setProps, do not restart rotation.
-      if (this._flyToCancelled) return;
-
       const t = Math.min((now - t0) / duration, 1);
       const e = ease(t);
       const next = {
@@ -1001,9 +1018,20 @@ export class GlobeBridge implements IEngineBridge {
       if (t < 1) {
         requestAnimationFrame(tick);
       } else {
+        // Fly-to complete. Clear the user-interaction block so future user
+        // gestures can resume rotation (after IDLE_RESUME_MS via _armIdleResume).
         this._userInteracting = false;
         this._lastTickMs = 0;
-        if (this._rotationEnabled && !this._flyToCancelled) this._startRAFRotation();
+        // INTENTIONALLY DO NOT call _startRAFRotation() here.
+        // Rule 7: rotation lifecycle is owned ONLY by CMD.SET_ROTATION (see
+        // handler comments). Restarting rotation here caused a recurring bug
+        // where the globe kept rotating after the cinematic completed even
+        // though an overlay was open — because SET_ROTATION false had killed
+        // the RAF, but this line resurrected it. If rotation should be on
+        // (no overlay), the RAF set up at init (line 263) is already alive
+        // and just resumes ticking. If rotation should be off (overlay open),
+        // the RAF stays dead until the overlay closes and SET_ROTATION true
+        // is sent. Either way, fly-to end has no business re-enabling rotation.
         onComplete?.();
       }
     };
