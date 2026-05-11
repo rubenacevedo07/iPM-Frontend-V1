@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { AppActor } from '@/app/AppProviders'
 import { PersonLeftPanel } from '@/features/person-overlay/PersonLeftPanel'
 import {
@@ -30,14 +29,8 @@ export function GoldOverlay({ entityName }: GoldOverlayProps) {
 
   return (
     <div className="gov__root">
-      {/* Left panel — slides in from left */}
-      <motion.div
-        className="gov__panel-wrap"
-        initial={{ x: 0, opacity: 1 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={{ x: -300, opacity: 0 }}
-        transition={{ duration: 0.35, ease: 'easeOut' }}
-      >
+      {/* Left panel */}
+      <div className="gov__panel-wrap">
         <button className="gov__close" onClick={handleClose}>×</button>
         <PersonLeftPanel
           person={elonMuskFallback}
@@ -46,16 +39,10 @@ export function GoldOverlay({ entityName }: GoldOverlayProps) {
           entityName={entityName}
           isLoading={false}
         />
-      </motion.div>
+      </div>
 
-      {/* Bottom panel — slides up */}
-      <motion.div
-        className="gov__bottom"
-        initial={{ y: 0, opacity: 1, scale: 1 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        exit={{    y: 20, opacity: 0, scale: 0.97 }}
-        transition={{ duration: 0.3, delay: 0.15, ease: 'easeOut' }}
-      >
+      {/* Bottom panel */}
+      <div className="gov__bottom">
         {/* Key Connections */}
         <div className="gov__bottom-section">
           <div className="pe__section-label">Key Connections</div>
@@ -123,16 +110,10 @@ export function GoldOverlay({ entityName }: GoldOverlayProps) {
             </div>
           ))}
         </div>
-      </motion.div>
+      </div>
 
-      {/* Right panel — Key Data, slides in from right */}
-      <motion.div
-        className="gov__right"
-        initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-        animate={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-        exit={{    x: 30, y: -10, opacity: 0, scale: 0.96 }}
-        transition={{ duration: 0.3, delay: 0.15, ease: 'easeOut' }}
-      >
+      {/* Right panel — Key Data */}
+      <div className="gov__right">
         <div className="pe__section-label">Key Data</div>
         <div className="pe__kv-grid">
           <div className="pe__kv-cell">
@@ -166,7 +147,7 @@ export function GoldOverlay({ entityName }: GoldOverlayProps) {
             <div className="pe__kv-val">1971</div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale,
@@ -46,11 +45,7 @@ export default function BottomChartStrip({ providers, clients }: Props) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 1, y: 0 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      transition={{ duration: 0.4 }}
+    <div
       style={{
         position: 'absolute',
         bottom: 0, left: 268, right: 280,
@@ -85,6 +80,6 @@ export default function BottomChartStrip({ providers, clients }: Props) {
       <div style={{ flex: 1, minHeight: 0 }}>
         <Line data={fcfData} options={fcfOptions as any} />
       </div>
-    </motion.div>
+    </div>
   );
 }

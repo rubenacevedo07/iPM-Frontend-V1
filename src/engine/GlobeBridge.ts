@@ -87,6 +87,13 @@ export class GlobeBridge implements IEngineBridge {
   private _idleResumeTimer: ReturnType<typeof setTimeout> | null = null;
   private _userInteracting = false;
 
+  // Rule 7 (USER INVARIANT): set true to abort an in-flight fly-to.
+  // SET_ROTATION enabled:false flips this to true so the camera freezes the
+  // instant any overlay opens (otherwise the longitude interpolation keeps
+  // gliding for up to 2s after the overlay is on screen — visually identical
+  // to rotation continuing).
+  private _flyToCancelled = false;
+
   private static readonly ROTATION_DEG_PER_SEC = 3;
   private static readonly IDLE_RESUME_MS = 800;
 
@@ -386,18 +393,21 @@ export class GlobeBridge implements IEngineBridge {
         if (command.enabled) {
           // Clear any lingering user-interaction block so the loop actually advances.
           this._userInteracting = false;
+          this._flyToCancelled  = false;
           this._startRAFRotation(); // (re)start the loop — no-op if already running
           this._startIdlePulse();
         } else {
-          // Hard-stop the RAF loop entirely — do not rely solely on the tick guard.
-          // Any path that clears _userInteracting (fly-to end, idle-resume timer)
-          // would reopen the rotation window if the loop is still alive.
+          // Hard-stop ALL camera motion. Rule 7 invariant: when an overlay opens,
+          // the globe must FREEZE — not just stop auto-rotating. That means we also
+          // abort any in-flight fly-to (longitude interpolation looks like rotation
+          // to the user) and any idle-resume timer that could re-enable rotation.
           this._stopRAFRotation();
           if (this._idleResumeTimer !== null) {
             clearTimeout(this._idleResumeTimer);
             this._idleResumeTimer = null;
           }
-          this._userInteracting = true; // belt-and-braces
+          this._userInteracting = true;  // belt-and-braces
+          this._flyToCancelled  = true;  // freeze in-flight fly-to at current frame
           this._stopIdlePulse();
         }
         break;
@@ -962,6 +972,9 @@ export class GlobeBridge implements IEngineBridge {
     if (this._flyToTimer !== null) { clearTimeout(this._flyToTimer); this._flyToTimer = null; }
     if (this._idleResumeTimer !== null) { clearTimeout(this._idleResumeTimer); this._idleResumeTimer = null; }
     this._userInteracting = true;
+    // Fresh fly-to: reset the cancel flag. SET_ROTATION false will flip it
+    // back to true mid-flight if an overlay opens during the animation.
+    this._flyToCancelled = false;
 
     const s0 = this._viewState?.longitude ?? 0;
     const s1 = this._viewState?.latitude  ?? 0;
@@ -970,6 +983,10 @@ export class GlobeBridge implements IEngineBridge {
     const ease = (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
     const tick = (now: number) => {
+      // Rule 7: if an overlay opened mid-flight, freeze the camera at its current
+      // viewState. Do not write further setProps, do not restart rotation.
+      if (this._flyToCancelled) return;
+
       const t = Math.min((now - t0) / duration, 1);
       const e = ease(t);
       const next = {
@@ -987,7 +1004,7 @@ export class GlobeBridge implements IEngineBridge {
       } else {
         this._userInteracting = false;
         this._lastTickMs = 0;
-        if (this._rotationEnabled) this._startRAFRotation();
+        if (this._rotationEnabled && !this._flyToCancelled) this._startRAFRotation();
         onComplete?.();
       }
     };

@@ -80,11 +80,11 @@ export function AppShell() {
   const isGoldOpen  = search.overlay === 'gold'
   const isPersonOpen = search.overlay === 'person'
 
-  // Gold overlay: shrink canvas to the free area not covered by its floating panels.
-  // Person overlay: side panels (left 280px + right 300px) float over the globe — canvas stays full-size.
-  const graphInset = isGoldOpen
-    ? { left: 280, top: 0, right: 268, bottom: 210 }
-    : { left: 0,   top: 0, right: 0,   bottom: 0   }
+  // Globe stays full-viewport regardless of overlay state. Overlays float on top
+  // as glass panels. Prior design shrunk the canvas behind gold via `graphInset`,
+  // but the CSS transition desynchronized from the panel framer animations,
+  // exposing the page background during overlay transitions. Keeping `inset: 0`
+  // means the globe is always behind every panel — no exposed black.
 
   // Phase 9 (GATE C): release deck.gl / WebGL when the user leaves the page (tab
   // close, external nav). Only window unload hooks — not React unmount (StrictMode
@@ -171,19 +171,13 @@ export function AppShell() {
       <main style={{ flex: 1, position: 'relative', minHeight: 0 }}>
       <RouterSync />
 
-      {/* Globe — always mounted; cinematic zoom+fade driven by useMotionValue.
-          Container shrinks to the free area when an overlay is open so the
-          sphere re-centers in the visible space (same insets as the graph). */}
+      {/* Globe — always mounted, always full-viewport. Overlays float on top. */}
       <motion.div
         style={{
           opacity: globeOpacity,
           scale:   globeScale,
           position: 'absolute',
-          top:    graphInset.top,
-          left:   graphInset.left,
-          right:  graphInset.right,
-          bottom: graphInset.bottom,
-          transition: 'top 0.35s ease, left 0.35s ease, right 0.35s ease, bottom 0.35s ease',
+          inset:    0,
         }}
       >
         <EngineSlot actorRef={engineRef} onRefsReady={handleRefsReady} />
@@ -200,12 +194,8 @@ export function AppShell() {
             transition={{ duration: 0.5, delay: 0.3, ease: 'easeOut' }}
             style={{
               position: 'absolute',
-              top:    graphInset.top,
-              left:   graphInset.left,
-              right:  graphInset.right,
-              bottom: graphInset.bottom,
-              zIndex: 10,
-              transition: 'top 0.35s ease, left 0.35s ease, right 0.35s ease, bottom 0.35s ease',
+              inset:    0,
+              zIndex:   10,
             }}
           >
             <Suspense fallback={<GraphSkeleton />}>
@@ -285,12 +275,10 @@ export function AppShell() {
         </div>
       )}
 
-      {/* Overlay hosts — all three share a single AnimatePresence (mode="sync",
-          the default) so outgoing and incoming overlays cross-fade simultaneously.
-          This prevents the black flash that occurred when switching company→gold:
-          with mode="wait" the outgoing overlay faded out 0.22s before gold could
-          mount, exposing the black page background. mode="sync" keeps both alive
-          during the transition so combined opacity never drops to 0. */}
+      {/* Overlay hosts — one shared AnimatePresence (sync mode, the default).
+          All three use IDENTICAL animation specs so cross-fades never have a
+          desynchronized frame. The globe (always full-viewport behind these)
+          is the visual backdrop — black background is never exposed. */}
       <AnimatePresence>
         {search.overlay === 'company' && (
           <motion.div
@@ -298,7 +286,7 @@ export function AppShell() {
             initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.22, ease: 'easeIn' }}
+            transition={{ duration: 0.2, ease: 'linear' }}
             style={{ position: 'absolute', inset: 0, zIndex: 50, pointerEvents: 'none' }}
           >
             <Suspense fallback={<CompanyOverlaySkeleton />}><CompanyOverlayHost /></Suspense>
@@ -310,7 +298,7 @@ export function AppShell() {
             initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.22, ease: 'easeIn' }}
+            transition={{ duration: 0.2, ease: 'linear' }}
             style={{ position: 'absolute', inset: 0, zIndex: 50, pointerEvents: 'none' }}
           >
             <Suspense key="person-host" fallback={<PersonOverlaySkeleton />}><PersonOverlayHost /></Suspense>
@@ -322,7 +310,7 @@ export function AppShell() {
             initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={{ duration: 0.2, ease: 'linear' }}
             style={{ position: 'absolute', inset: 0, zIndex: 50, pointerEvents: 'none' }}
           >
             <Suspense fallback={<GoldOverlaySkeleton />}><GoldOverlayHost /></Suspense>

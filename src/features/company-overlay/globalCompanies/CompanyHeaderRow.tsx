@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import type { Company } from '@/types/company';
 import type { CompanySector } from '@/types/companySector';
 import CompanyLogo from '@/features/company-overlay/CompanyLogo';
@@ -15,14 +14,9 @@ interface Props {
 
 export default function CompanyHeaderRow({ company, sectors, activeTab, onTabChange }: Props) {
   return (
-    <motion.div
+    <div
       id="company-header"
       className="co-hdr"
-      key={company.id}
-      initial={{ opacity: 1, y: 0 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.35 }}
       style={{ height: COMPANY_ROW_H }}
     >
       <div className="co-hdr__inner">
@@ -62,6 +56,6 @@ export default function CompanyHeaderRow({ company, sectors, activeTab, onTabCha
           })}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

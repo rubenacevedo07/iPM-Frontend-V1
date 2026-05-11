@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import type { CompanyMarket } from '@/types/companyMarket';
 import { glass, PANEL_TOP, CHART_STRIP_H } from './shared';
 import type { NavTab } from './shared';
@@ -14,13 +13,9 @@ interface Props {
 
 export default function FirstPanel({ activeTab, markets, fabrics, products }: Props) {
   return (
-    <motion.div
+    <div
       id="company-first-panel"
       className="co-first"
-      initial={{ opacity: 1, x: 0 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.4 }}
       style={{ top: PANEL_TOP, bottom: CHART_STRIP_H }}
     >
       <div className="co-first__title">
@@ -37,6 +32,6 @@ export default function FirstPanel({ activeTab, markets, fabrics, products }: Pr
           </div>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }
