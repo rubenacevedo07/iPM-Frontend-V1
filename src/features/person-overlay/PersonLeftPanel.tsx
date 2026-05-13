@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { PersonIntelligence } from '@/domain/types'
 import type { DemoCompany, DemoSignal } from './personFallbackData'
 import './person-overlay.scss'
@@ -20,15 +20,15 @@ export function PersonLeftPanel({
 }: PersonLeftPanelProps) {
   const [photoError, setPhotoError] = useState(false)
   const displayName = person?.fullName ?? entityName
-  const initials    = displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
-  const rawPhotoUrl = person?.photoUrl ?? '/persons/Musk.jpeg'
-  // Resolve URL: absolute URLs pass through; bare filenames get /persons/ prefix
+  const rawPhotoUrl = person?.photoUrl ?? null
   const photoUrl = rawPhotoUrl
     ? (rawPhotoUrl.startsWith('/') || rawPhotoUrl.startsWith('http')
         ? rawPhotoUrl
         : `/persons/${rawPhotoUrl}`)
     : null
+  useEffect(() => { setPhotoError(false) }, [photoUrl])
+  const initials    = displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
   return (
     <div className="pe__panel">
@@ -97,36 +97,6 @@ export function PersonLeftPanel({
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="pe__divider" />
-
-      {/* Supply Chain Risk */}
-      <div className="pe__section-wrap">
-        <div className="pe__section-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          Supply Chain Risk
-          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#e53935', display: 'inline-block' }} />
-        </div>
-        <div className="pe__risk-card pe__risk-card--critical">
-          <div className="pe__risk-header">
-            <span className="pe__risk-name">Detroit / Shanghai</span>
-            <span className="badge badge--red">CRITICAL</span>
-          </div>
-          <div className="pe__risk-grid">
-            <div>
-              <div className="pe__risk-label">GPE</div>
-              <div className="pe__risk-value" style={{ color: '#e0e6ef' }}>72</div>
-            </div>
-            <div>
-              <div className="pe__risk-label">Risk</div>
-              <div className="pe__risk-value" style={{ color: '#e53935' }}>Chips</div>
-            </div>
-            <div>
-              <div className="pe__risk-label">Exposure</div>
-              <div className="pe__risk-value" style={{ color: '#00d4aa' }}>Low</div>
-            </div>
-          </div>
-        </div>
       </div>
 
     </div>

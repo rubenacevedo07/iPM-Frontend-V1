@@ -105,26 +105,28 @@ export function CompactProfilePanel({
           <div className="cp__kv-cell">
             <div className="cp__kv-key">Domain</div>
             <div className="cp__kv-val">
-              {side === 'left' ? 'Tech / Space' : 'Government'}
+              {person?.influenceDomain ?? '—'}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="cp__divider" />
-
-      {/* Companies (top 3) */}
-      <div className="cp__section-wrap">
-        <div className="cp__section-label">Companies</div>
-        {companies.slice(0, 3).map((c, i) => (
-          <div key={i} className="cp__co-row">
-            <div className="cp__co-icon" style={{ color: c.color }}>{c.icon}</div>
-            <span className="cp__co-name">{c.name}</span>
-            {c.role && <span className="cp__co-edge">{c.role}</span>}
-            <span className="cp__co-cap">{c.cap}</span>
+      {companies.length > 0 && (
+        <>
+          <div className="cp__divider" />
+          <div className="cp__section-wrap">
+            <div className="cp__section-label">Companies</div>
+            {companies.slice(0, 3).map((c, i) => (
+              <div key={i} className="cp__co-row">
+                <div className="cp__co-icon" style={{ color: c.color }}>{c.icon}</div>
+                <span className="cp__co-name">{c.name}</span>
+                {c.role && <span className="cp__co-edge">{c.role}</span>}
+                <span className="cp__co-cap">{c.cap}</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
       <div className="cp__divider" />
 

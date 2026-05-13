@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPM · Dashboard · Default State</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#090b10; --panel:#0d1017; --card:#111620; --hover:#161d2c;
+  --border:rgba(255,255,255,0.07); --borderLt:rgba(255,255,255,0.12);
+  --teal:#00e5ff; --green:#00d4aa; --gold:#f5a623; --red:#e53935;
+  --purple:#a855f7; --blue:#378ADD; --amber:#f59e0b;
+  --text:#e8edf5; --text2:#8a9bb5; --text3:#4a5568;
+  --mono:'JetBrains Mono',monospace; --raj:'Rajdhani',sans-serif; --sans:'DM Sans',sans-serif;
+  --topH:48px; --tickH:36px; --botH:30px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
+
+/* ══ TOP BAR ══ */
+.topbar{
+  position:fixed;top:0;left:0;right:0;height:var(--topH);z-index:600;
+  background:rgba(9,11,16,0.96);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(16px);
+  display:flex;align-items:center;
+}
+.tb-burger{
+  width:46px;height:var(--topH);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;border-right:1px solid var(--border);
+}
+.tb-burger:hover{background:var(--hover)}
+.bl{display:flex;flex-direction:column;gap:4px}
+.bl span{display:block;width:17px;height:1.5px;background:var(--text2);border-radius:2px}
+
+.tb-logo{
+  padding:0 14px;font-family:var(--raj);font-size:17px;font-weight:700;
+  color:var(--green);letter-spacing:1.5px;flex-shrink:0;border-right:1px solid var(--border);
+}
+.tb-search{
+  flex:1;display:flex;align-items:center;gap:8px;padding:0 14px;border-right:1px solid var(--border);
+  min-width:0;
+}
+.tb-search-icon{font-size:13px;color:var(--text3);flex-shrink:0}
+.tb-search input{
+  flex:1;background:transparent;border:none;outline:none;
+  font-family:var(--mono);font-size:11px;color:var(--text);min-width:0;
+}
+.tb-search input::placeholder{color:var(--text3)}
+.tb-stags{display:flex;gap:4px;flex-shrink:0}
+.stag{
+  font-family:var(--mono);font-size:7px;padding:2px 6px;border-radius:3px;
+  background:rgba(255,255,255,0.04);color:var(--text3);border:1px solid var(--border);
+  white-space:nowrap;cursor:pointer;transition:all .12s;
+}
+.stag:hover{color:var(--teal);border-color:rgba(0,229,255,.3)}
+
+/* Place buttons in top bar */
+.tb-user{
+  width:46px;height:var(--topH);display:flex;align-items:center;justify-content:center;
+  border-left:1px solid var(--border);cursor:pointer;flex-shrink:0;
+}
+.tb-user:hover{background:var(--hover)}
+.avatar{
+  width:26px;height:26px;border-radius:50%;
+  background:linear-gradient(135deg,var(--purple),var(--blue));
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:9px;font-weight:700;
+}
+
+/* ══ TICKER ══ */
+.ticker{
+  position:fixed;top:var(--topH);left:0;right:0;height:var(--tickH);z-index:500;
+  background:rgba(7,9,14,0.97);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;overflow:hidden;
+}
+.ticker-scroll{flex:1;overflow:hidden;position:relative}
+.ticker-track{
+  display:flex;align-items:center;
+  animation:scrollTicker 60s linear infinite;
+  width:max-content;
+}
+.ticker-track:hover{animation-play-state:paused}
+@keyframes scrollTicker{
+  0%{transform:translateX(0)}
+  100%{transform:translateX(-50%)}
+}
+.tick-item{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:0 12px;height:var(--tickH);border-right:1px solid var(--border);
+  cursor:pointer;flex-shrink:0;transition:background .1s;
+}
+.tick-item:hover{background:var(--hover)}
+
+/* Person chip — circular photo style */
+.t-person{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:8px;font-weight:700;
+  border:2px solid;
+}
+/* Company chip — logo rounded rect */
+.t-company{
+  width:22px;height:22px;border-radius:4px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:8px;font-weight:700;
+  border:1px solid;
+}
+/* Country chip — flag circle */
+.t-flag{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.t-name{font-family:var(--mono);font-size:9px;color:var(--text2);white-space:nowrap}
+.t-badge{
+  font-family:var(--mono);font-size:7px;padding:1px 5px;border-radius:2px;
+  white-space:nowrap;
+}
+.t-idx-label{font-family:var(--mono);font-size:7px;color:var(--text3);white-space:nowrap}
+.t-idx-val{font-family:var(--mono);font-size:11px;font-weight:700;white-space:nowrap}
+.t-sep{width:1px;height:18px;background:rgba(255,255,255,.06);flex-shrink:0;margin:0 2px}
+
+/* ══ GLOBE AREA ══ */
+.globe-wrap{
+  position:fixed;
+  top:calc(var(--topH) + var(--tickH));
+  left:0;right:0;bottom:var(--botH);
+  overflow:hidden;background:var(--bg);
+}
+
+/* Simulated DeckGL globe */
+.globe-canvas{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.globe-svg{transition:all .5s cubic-bezier(.4,0,.2,1)}
+
+/* Entity markers ON the globe */
+.globe-markers{position:absolute;inset:0;pointer-events:none}
+.gm{
+  position:absolute;transform:translate(-50%,-50%);
+  pointer-events:all;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+}
+/* Person marker — circular photo (WhatsApp style) */
+.gm-person{
+  width:38px;height:38px;border-radius:50%;
+  border:2.5px solid;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:11px;font-weight:700;
+  transition:all .2s;box-shadow:0 0 0 0 currentColor;
+  flex-shrink:0;
+}
+.gm:hover .gm-person,.gm.selected .gm-person{
+  transform:scale(1.25);box-shadow:0 0 0 3px rgba(255,255,255,.15);
+}
+/* Company marker — logo rounded rect */
+.gm-company{
+  width:32px;height:32px;border-radius:5px;
+  border:1.5px solid;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10px;font-weight:700;
+  transition:all .2s;
+  flex-shrink:0;
+}
+.gm:hover .gm-company,.gm.selected .gm-company{transform:scale(1.3);}
+/* Country marker — flag circle */
+.gm-country{
+  width:28px;height:28px;border-radius:50%;border:1.5px solid;
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+  transition:all .2s;flex-shrink:0;
+}
+.gm:hover .gm-country{transform:scale(1.2);}
+
+.gm-label{
+  font-family:var(--mono);font-size:7px;color:var(--text2);white-space:nowrap;
+  background:rgba(9,11,16,.8);padding:1px 5px;border-radius:2px;
+  opacity:0;transition:opacity .15s;pointer-events:none;
+}
+.gm:hover .gm-label,.gm.selected .gm-label{opacity:1}
+
+/* Pulse ring on persons */
+.gm-pulse{
+  position:absolute;width:38px;height:38px;border-radius:50%;border:1px solid;
+  animation:pulseRing 2.5s ease-out infinite;pointer-events:none;
+}
+@keyframes pulseRing{
+  0%{transform:scale(1);opacity:.5}
+  100%{transform:scale(2);opacity:0}
+}
+
+/* Arc connections */
+.globe-arcs{position:absolute;inset:0;pointer-events:none}
+
+/* ══ GLOBE NAV BUTTONS (on the map) ══ */
+.globe-nav{
+  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  display:flex;gap:0;background:rgba(9,11,16,.88);
+  border:1px solid var(--borderLt);border-radius:8px;overflow:hidden;
+  backdrop-filter:blur(12px);z-index:10;
+}
+.gnav-btn{
+  padding:8px 16px;font-family:var(--mono);font-size:8px;letter-spacing:.8px;
+  color:var(--text2);cursor:pointer;border-right:1px solid var(--border);
+  display:flex;align-items:center;gap:5px;transition:all .12s;white-space:nowrap;
+}
+.gnav-btn:last-child{border-right:none}
+.gnav-btn:hover{background:var(--hover);color:var(--text)}
+.gnav-btn.active{color:var(--green);background:rgba(0,212,170,.06)}
+.gnav-icon{font-size:10px}
+
+/* Globe theme selector */
+.globe-themes{
+  position:absolute;top:12px;right:12px;
+  display:flex;gap:6px;z-index:10;
+}
+.gtheme{
+  width:20px;height:20px;border-radius:50%;cursor:pointer;
+  border:2px solid transparent;transition:all .15s;
+}
+.gtheme:hover,.gtheme.active{border-color:rgba(255,255,255,.4);transform:scale(1.2)}
+
+/* Globe stats top-left */
+.globe-stats{
+  position:absolute;top:12px;left:12px;
+  display:flex;flex-direction:column;gap:5px;z-index:10;
+}
+.gstat{
+  background:rgba(9,11,16,.8);border:1px solid var(--border);border-radius:4px;
+  padding:4px 10px;display:flex;align-items:center;gap:7px;backdrop-filter:blur(8px);
+}
+.gstat-label{font-family:var(--mono);font-size:7px;color:var(--text3);letter-spacing:1px}
+.gstat-val{font-family:var(--mono);font-size:10px;font-weight:700}
+
+/* ══ BOTTOM BAR ══ */
+.botbar{
+  position:fixed;bottom:0;left:0;right:0;height:var(--botH);z-index:600;
+  background:rgba(9,11,16,.96);border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;
+}
+.bot-left{display:flex;align-items:center;gap:14px}
+.bot-stat{font-family:var(--mono);font-size:8px;color:var(--text3)}
+.bot-stat span{color:var(--teal)}
+.bot-right{display:flex;align-items:center;gap:6px}
+.bot-badge{font-family:var(--mono);font-size:7px;padding:2px 7px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ══ TOP BAR ══ -->
+<div class="topbar">
+  <div class="tb-burger"><div class="bl"><span></span><span></span><span></span></div></div>
+  <div class="tb-logo">IPM</div>
+
+  <div class="tb-search">
+    <span class="tb-search-icon">⌕</span>
+    <input placeholder="Search persons, companies, countries, commodities, power maps…">
+    <div class="tb-stags">
+      <span class="stag">PERSONS</span>
+      <span class="stag">COMPANIES</span>
+      <span class="stag">COUNTRIES</span>
+      <span class="stag">COMMODITIES</span>
+      <span class="stag">POWER MAPS</span>
+    </div>
+  </div>
+
+  <!-- Place buttons — right of search, stay here always --><div class="tb-user"><div class="avatar">O7</div></div>
+</div>
+
+<!-- ══ TICKER — entities + indexes only, no nav buttons ══ -->
+<div class="ticker">
+  <div class="ticker-scroll">
+    <div class="ticker-track">
+
+      <!-- PERSONS — circular photo style -->
+      <div class="tick-item">
+        <div class="t-person" style="background:#201010;color:#e53935;border-color:#e5393560">DT</div>
+        <span class="t-name">Trump</span>
+        <span class="t-badge" style="background:#e5393512;color:#e53935;border:1px solid #e5393530">#4 · 76pts</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-person" style="background:#101020;color:#00e5ff;border-color:#00e5ff60">EM</div>
+        <span class="t-name">Musk</span>
+        <span class="t-badge" style="background:#00e5ff12;color:#00e5ff;border:1px solid #00e5ff30">#5 · 74pts</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-person" style="background:#201520;color:#a855f7;border-color:#a855f760">XI</div>
+        <span class="t-name">Xi Jinping</span>
+        <span class="t-badge" style="background:#a855f712;color:#a855f7;border:1px solid #a855f730">#2 · 79pts</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-person" style="background:#1a1010;color:#f5a623;border-color:#f5a62360">VP</div>
+        <span class="t-name">Putin</span>
+        <span class="t-badge" style="background:#f5a62312;color:#f5a623;border:1px solid #f5a62330">#3 · 81pts</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-person" style="background:#101520;color:#00d4aa;border-color:#00d4aa60">LF</div>
+        <span class="t-name">Larry Fink</span>
+        <span class="t-badge" style="background:#00d4aa12;color:#00d4aa;border:1px solid #00d4aa30">FIN · 72pts</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-person" style="background:#0d1520;color:#378ADD;border-color:#378ADD60">JD</div>
+        <span class="t-name">Dimon</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-person" style="background:#101020;color:#a855f7;border-color:#a855f760">JH</div>
+        <span class="t-name">Jensen Huang</span>
+        <span class="t-badge" style="background:#a855f712;color:#a855f7;border:1px solid #a855f730">TECH · 68pts</span>
+      </div>
+
+      <div class="t-sep"></div>
+
+      <!-- COMPANIES — logo rounded rect -->
+      <div class="tick-item">
+        <div class="t-company" style="background:#0a1520;color:#00e5ff;border-color:#00e5ff30">NV</div>
+        <span class="t-name">NVIDIA</span>
+        <span class="t-badge" style="background:#00e5ff12;color:#00e5ff;border:1px solid #00e5ff30">$3.2T</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-company" style="background:#1a1a2a;color:#378ADD;border-color:#378ADD30">JP</div>
+        <span class="t-name">JPMorgan</span>
+        <span class="t-badge" style="background:#378ADD12;color:#378ADD;border:1px solid #378ADD30">$680B</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-company" style="background:#1a1020;color:#a855f7;border-color:#a855f730">BR</div>
+        <span class="t-name">BlackRock</span>
+        <span class="t-badge" style="background:#a855f712;color:#a855f7;border:1px solid #a855f730">$10T AUM</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-company" style="background:#0a1a1a;color:#00d4aa;border-color:#00d4aa30">TS</div>
+        <span class="t-name">TSMC</span>
+        <span class="t-badge" style="background:#00d4aa12;color:#00d4aa;border:1px solid #00d4aa30">72mo latency</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-company" style="background:#0a1520;color:#00e5ff;border-color:#00e5ff30">AS</div>
+        <span class="t-name">ASML</span>
+        <span class="t-badge" style="background:#00e5ff12;color:#00e5ff;border:1px solid #00e5ff30">60mo latency</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-company" style="background:#181010;color:#e53935;border-color:#e5393530">LM</div>
+        <span class="t-name">Lockheed</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-company" style="background:#101520;color:#378ADD;border-color:#378ADD30">SM</div>
+        <span class="t-name">Siemens</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-company" style="background:#151020;color:#a855f7;border-color:#a855f730">AB</div>
+        <span class="t-name">Airbus</span>
+      </div>
+
+      <div class="t-sep"></div>
+
+      <!-- COUNTRIES — flag circles -->
+      <div class="tick-item">
+        <div class="t-flag" style="border:1.5px solid rgba(55,138,221,.4)">🇺🇸</div>
+        <span class="t-name">USA</span>
+        <span class="t-badge" style="background:#e5393512;color:#e53935;border:1px solid #e5393530">MPI 92</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-flag" style="border:1.5px solid rgba(229,57,53,.4)">🇨🇳</div>
+        <span class="t-name">China</span>
+        <span class="t-badge" style="background:#f5a62312;color:#f5a623;border:1px solid #f5a62330">PPI 79</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-flag" style="border:1.5px solid rgba(245,166,35,.4)">🇷🇺</div>
+        <span class="t-name">Russia</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-flag" style="border:1.5px solid rgba(0,229,255,.4)">🇩🇪</div>
+        <span class="t-name">Germany</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-flag" style="border:1.5px solid rgba(245,166,35,.4)">🇸🇦</div>
+        <span class="t-name">Saudi Arabia</span>
+        <span class="t-badge" style="background:#f5a62312;color:#f5a623;border:1px solid #f5a62330">CPI 78</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-flag" style="border:1.5px solid rgba(0,212,170,.4)">🇹🇼</div>
+        <span class="t-name">Taiwan</span>
+        <span class="t-badge" style="background:#e5393512;color:#e53935;border:1px solid #e5393530">HIGH RISK</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-flag" style="border:1.5px solid rgba(229,57,53,.4)">🇮🇷</div>
+        <span class="t-name">Iran</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-flag" style="border:1.5px solid rgba(0,229,255,.4)">🇯🇵</div>
+        <span class="t-name">Japan</span>
+      </div>
+
+      <div class="t-sep"></div>
+
+      <!-- COMPOSITE INDEXES -->
+      <div class="tick-item" style="gap:8px">
+        <span class="t-idx-label">GCRI</span>
+        <span class="t-idx-val" style="color:#e53935">63.5</span>
+        <span class="t-badge" style="background:#e5393512;color:#e53935;border:1px solid #e5393530">↑ +1.2</span>
+      </div>
+      <div class="tick-item" style="gap:8px">
+        <span class="t-idx-label">DSI</span>
+        <span class="t-idx-val" style="color:#f5a623">59.5</span>
+        <span class="t-badge" style="background:#f5a62312;color:#f5a623;border:1px solid #f5a62330">↓ -0.8</span>
+      </div>
+      <div class="tick-item" style="gap:8px">
+        <span class="t-idx-label">WPI</span>
+        <span class="t-idx-val" style="color:#e53935">45.3</span>
+      </div>
+      <div class="tick-item" style="gap:8px">
+        <span class="t-idx-label">GPI</span>
+        <span class="t-idx-val" style="color:#f5a623">54.6</span>
+      </div>
+
+      <!-- DUPLICATE for seamless loop -->
+      <div class="tick-item">
+        <div class="t-person" style="background:#201010;color:#e53935;border-color:#e5393560">DT</div>
+        <span class="t-name">Trump</span>
+        <span class="t-badge" style="background:#e5393512;color:#e53935;border:1px solid #e5393530">#4 · 76pts</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-person" style="background:#101020;color:#00e5ff;border-color:#00e5ff60">EM</div>
+        <span class="t-name">Musk</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-person" style="background:#201520;color:#a855f7;border-color:#a855f760">XI</div>
+        <span class="t-name">Xi Jinping</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-company" style="background:#0a1520;color:#00e5ff;border-color:#00e5ff30">NV</div>
+        <span class="t-name">NVIDIA</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-company" style="background:#1a1a2a;color:#378ADD;border-color:#378ADD30">JP</div>
+        <span class="t-name">JPMorgan</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-company" style="background:#1a1020;color:#a855f7;border-color:#a855f730">BR</div>
+        <span class="t-name">BlackRock</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-flag" style="border:1.5px solid rgba(55,138,221,.4)">🇺🇸</div>
+        <span class="t-name">USA</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-flag" style="border:1.5px solid rgba(229,57,53,.4)">🇨🇳</div>
+        <span class="t-name">China</span>
+      </div>
+      <div class="tick-item">
+        <div class="t-flag" style="border:1.5px solid rgba(0,212,170,.4)">🇹🇼</div>
+        <span class="t-name">Taiwan</span>
+      </div>
+      <div class="tick-item" style="gap:8px">
+        <span class="t-idx-label">GCRI</span>
+        <span class="t-idx-val" style="color:#e53935">63.5</span>
+      </div>
+      <div class="tick-item" style="gap:8px">
+        <span class="t-idx-label">DSI</span>
+        <span class="t-idx-val" style="color:#f5a623">59.5</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GLOBE ══ -->
+<div class="globe-wrap">
+  <div class="globe-canvas">
+    <svg width="700" height="700" viewBox="0 0 700 700" class="globe-svg">
+      <defs>
+        <radialGradient id="gGrad" cx="36%" cy="32%">
+          <stop offset="0%" stop-color="#162234"/>
+          <stop offset="55%" stop-color="#0c1520"/>
+          <stop offset="100%" stop-color="#060c14"/>
+        </radialGradient>
+        <radialGradient id="gAtm" cx="50%" cy="50%">
+          <stop offset="78%" stop-color="transparent"/>
+          <stop offset="100%" stop-color="rgba(0,229,255,0.07)"/>
+        </radialGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <clipPath id="gClip"><circle cx="350" cy="350" r="300"/></clipPath>
+      </defs>
+
+      <!-- Atmosphere glow -->
+      <circle cx="350" cy="350" r="308" fill="none" stroke="rgba(0,229,255,0.12)" stroke-width="8" opacity=".5"/>
+      <!-- Globe body -->
+      <circle cx="350" cy="350" r="300" fill="url(#gGrad)" stroke="rgba(0,229,255,0.18)" stroke-width="1"/>
+
+      <!-- Grid lines -->
+      <g clip-path="url(#gClip)" stroke="rgba(255,255,255,0.06)" stroke-width="0.5" fill="none">
+        <!-- Latitudes -->
+        <ellipse cx="350" cy="350" rx="300" ry="48"/>
+        <ellipse cx="350" cy="350" rx="300" ry="118"/>
+        <ellipse cx="350" cy="350" rx="300" ry="188"/>
+        <ellipse cx="350" cy="350" rx="270" ry="235"/>
+        <!-- Longitudes -->
+        <line x1="350" y1="50" x2="350" y2="650"/>
+        <line x1="170" y1="80" x2="530" y2="620"/>
+        <line x1="80" y1="200" x2="620" y2="500"/>
+        <line x1="75" y1="420" x2="625" y2="280"/>
+        <line x1="170" y1="600" x2="530" y2="100"/>
+      </g>
+
+      <!-- Continents — colored by region -->
+      <g clip-path="url(#gClip)">
+        <!-- North America -->
+        <path d="M 180 220 Q 240 180 280 200 Q 300 240 280 300 Q 260 340 230 350 Q 200 340 180 310 Q 160 280 180 220 Z"
+              fill="rgba(55,138,221,0.18)" stroke="rgba(55,138,221,0.45)" stroke-width="1"/>
+        <!-- South America -->
+        <path d="M 220 360 Q 255 345 275 370 Q 285 410 275 460 Q 260 500 235 510 Q 210 500 205 460 Q 195 420 220 360 Z"
+              fill="rgba(0,212,170,0.12)" stroke="rgba(0,212,170,0.35)" stroke-width="1"/>
+        <!-- Europe -->
+        <path d="M 340 195 Q 375 178 400 195 Q 415 215 405 240 Q 390 255 365 250 Q 340 240 335 218 Z"
+              fill="rgba(168,85,247,0.2)" stroke="rgba(168,85,247,0.5)" stroke-width="1"/>
+        <!-- Africa -->
+        <path d="M 345 265 Q 385 260 400 290 Q 415 330 405 390 Q 390 430 365 440 Q 340 430 330 390 Q 318 340 330 295 Z"
+              fill="rgba(229,57,53,0.12)" stroke="rgba(229,57,53,0.35)" stroke-width="1"/>
+        <!-- Middle East / Saudi -->
+        <path d="M 405 255 Q 435 248 455 265 Q 465 285 455 305 Q 440 318 415 312 Q 398 298 405 275 Z"
+              fill="rgba(245,166,35,0.15)" stroke="rgba(245,166,35,0.4)" stroke-width="1"/>
+        <!-- Russia -->
+        <path d="M 390 155 Q 520 140 560 165 Q 575 185 555 205 Q 510 220 450 215 Q 400 210 385 190 Z"
+              fill="rgba(229,57,53,0.1)" stroke="rgba(229,57,53,0.3)" stroke-width="1"/>
+        <!-- Asia (China/India) -->
+        <path d="M 470 195 Q 555 185 585 215 Q 600 245 580 280 Q 550 300 510 295 Q 472 278 462 245 Q 455 218 470 195 Z"
+              fill="rgba(245,166,35,0.15)" stroke="rgba(245,166,35,0.38)" stroke-width="1"/>
+        <!-- SE Asia / Taiwan -->
+        <path d="M 555 270 Q 580 265 590 280 Q 592 295 578 302 Q 563 302 554 288 Z"
+              fill="rgba(0,212,170,0.25)" stroke="rgba(0,212,170,0.6)" stroke-width="1.2"/>
+        <!-- Japan -->
+        <path d="M 575 210 Q 592 205 598 218 Q 600 232 586 236 Q 572 233 570 220 Z"
+              fill="rgba(0,229,255,0.18)" stroke="rgba(0,229,255,0.45)" stroke-width="1"/>
+        <!-- Australia -->
+        <path d="M 540 390 Q 585 378 608 400 Q 618 428 602 450 Q 578 462 550 452 Q 528 435 530 410 Z"
+              fill="rgba(0,212,170,0.1)" stroke="rgba(0,212,170,0.3)" stroke-width="1"/>
+      </g>
+
+      <!-- Connection arcs (animated) -->
+      <!-- Wall St ↔ City of London -->
+      <path d="M 225 262 Q 280 190 362 228" fill="none" stroke="rgba(55,138,221,0.6)" stroke-width="1.5" stroke-dasharray="6,4">
+        <animate attributeName="stroke-dashoffset" values="0;-20" dur="2s" repeatCount="indefinite"/>
+      </path>
+      <!-- BlackRock → US Treasury -->
+      <path d="M 228 265 Q 200 240 195 255" fill="none" stroke="rgba(168,85,247,0.5)" stroke-width="1.2" stroke-dasharray="5,4">
+        <animate attributeName="stroke-dashoffset" values="0;-18" dur="1.8s" repeatCount="indefinite"/>
+      </path>
+      <!-- TSMC → NVIDIA (Taiwan→US) -->
+      <path d="M 562 280 Q 450 190 248 248" fill="none" stroke="rgba(0,212,170,0.45)" stroke-width="1.5" stroke-dasharray="6,5">
+        <animate attributeName="stroke-dashoffset" values="0;-22" dur="3s" repeatCount="indefinite"/>
+      </path>
+      <!-- Saudi → USA (oil flow) -->
+      <path d="M 432 282 Q 360 230 240 262" fill="none" stroke="rgba(245,166,35,0.4)" stroke-width="1" stroke-dasharray="4,5">
+        <animate attributeName="stroke-dashoffset" values="0;-18" dur="2.5s" repeatCount="indefinite"/>
+      </path>
+      <!-- Russia → Iran -->
+      <path d="M 480 185 Q 470 230 440 268" fill="none" stroke="rgba(229,57,53,0.4)" stroke-width="1" stroke-dasharray="4,5">
+        <animate attributeName="stroke-dashoffset" values="0;-18" dur="2.2s" repeatCount="indefinite"/>
+      </path>
+      <!-- Pentagon → Lockheed (same area, local) -->
+      <path d="M 210 260 Q 215 272 220 278" fill="none" stroke="rgba(229,57,53,0.5)" stroke-width="1" stroke-dasharray="3,3">
+        <animate attributeName="stroke-dashoffset" values="0;-12" dur="1.5s" repeatCount="indefinite"/>
+      </path>
+
+      <!-- Atmosphere -->
+      <circle cx="350" cy="350" r="300" fill="url(#gAtm)"/>
+    </svg>
+  </div>
+
+  <!-- ══ ENTITY MARKERS — Persons (circles), Companies (rects), Countries (flags) ══ -->
+  <div class="globe-markers">
+
+    <!-- PERSONS — WhatsApp circle style -->
+    <div class="gm" style="left:31%;top:39%">
+      <div class="gm-pulse" style="border-color:rgba(229,57,53,.4);color:#e53935"></div>
+      <div class="gm-person" style="background:#201010;color:#e53935;border-color:#e5393570">DT</div>
+      <div class="gm-label">Donald Trump</div>
+    </div>
+    <div class="gm" style="left:29%;top:41%">
+      <div class="gm-person" style="background:#101020;color:#00e5ff;border-color:#00e5ff70;width:32px;height:32px;font-size:9px">EM</div>
+      <div class="gm-label">Elon Musk</div>
+    </div>
+    <div class="gm" style="left:52%;top:39%">
+      <div class="gm-pulse" style="border-color:rgba(168,85,247,.4);color:#a855f7"></div>
+      <div class="gm-person" style="background:#1a1020;color:#a855f7;border-color:#a855f770">LF</div>
+      <div class="gm-label">Larry Fink</div>
+    </div>
+    <div class="gm" style="left:69%;top:33%">
+      <div class="gm-pulse" style="border-color:rgba(229,57,53,.4);color:#e53935"></div>
+      <div class="gm-person" style="background:#201520;color:#a855f7;border-color:#a855f770">XI</div>
+      <div class="gm-label">Xi Jinping</div>
+    </div>
+    <div class="gm" style="left:64%;top:27%">
+      <div class="gm-person" style="background:#1a1010;color:#f5a623;border-color:#f5a62370">VP</div>
+      <div class="gm-label">Vladimir Putin</div>
+    </div>
+    <div class="gm" style="left:61%;top:42%">
+      <div class="gm-person" style="background:#1a1208;color:#f5a623;border-color:#f5a62370;width:32px;height:32px;font-size:9px">MB</div>
+      <div class="gm-label">MBS</div>
+    </div>
+    <div class="gm" style="left:30%;top:38%">
+      <div class="gm-person" style="background:#0d1520;color:#378ADD;border-color:#378ADD70;width:28px;height:28px;font-size:8px">JD</div>
+      <div class="gm-label">Jamie Dimon</div>
+    </div>
+
+    <!-- COMPANIES — rounded rect logo style -->
+    <div class="gm" style="left:30%;top:38%">
+      <div class="gm-company" style="background:#1a1a2a;color:#378ADD;border-color:#378ADD50">JP</div>
+      <div class="gm-label">JPMorgan</div>
+    </div>
+    <div class="gm" style="left:51%;top:38%">
+      <div class="gm-company" style="background:#1a1020;color:#a855f7;border-color:#a855f750">BR</div>
+      <div class="gm-label">BlackRock</div>
+    </div>
+    <div class="gm" style="left:79%;top:41%">
+      <div class="gm-company" style="background:#0a1a18;color:#00d4aa;border-color:#00d4aa50">TS</div>
+      <div class="gm-label">TSMC · Taiwan</div>
+    </div>
+    <div class="gm" style="left:52%;top:35%">
+      <div class="gm-company" style="background:#0a1520;color:#00e5ff;border-color:#00e5ff50;width:26px;height:26px;font-size:8px">AS</div>
+      <div class="gm-label">ASML</div>
+    </div>
+    <div class="gm" style="left:29%;top:42%">
+      <div class="gm-company" style="background:#1a1010;color:#e53935;border-color:#e5393550;width:26px;height:26px;font-size:8px">LM</div>
+      <div class="gm-label">Lockheed</div>
+    </div>
+    <div class="gm" style="left:62%;top:43%">
+      <div class="gm-company" style="background:#181208;color:#f5a623;border-color:#f5a62350">SA</div>
+      <div class="gm-label">Saudi Aramco</div>
+    </div>
+    <div class="gm" style="left:81%;top:32%">
+      <div class="gm-company" style="background:#0a1520;color:#00e5ff;border-color:#00e5ff50;width:26px;height:26px;font-size:8px">SB</div>
+      <div class="gm-label">Samsung</div>
+    </div>
+    <div class="gm" style="left:52%;top:37%">
+      <div class="gm-company" style="background:#101520;color:#378ADD;border-color:#378ADD50;width:26px;height:26px;font-size:8px">SM</div>
+      <div class="gm-label">Siemens</div>
+    </div>
+
+    <!-- COUNTRIES — flag circles -->
+    <div class="gm" style="left:27%;top:37%">
+      <div class="gm-country" style="border-color:#378ADD50;background:rgba(55,138,221,.1)">🇺🇸</div>
+      <div class="gm-label">USA</div>
+    </div>
+    <div class="gm" style="left:68%;top:32%">
+      <div class="gm-country" style="border-color:#e5393550;background:rgba(229,57,53,.1)">🇨🇳</div>
+      <div class="gm-label">China</div>
+    </div>
+    <div class="gm" style="left:63%;top:26%">
+      <div class="gm-country" style="border-color:#f5a62350;background:rgba(245,166,35,.1)">🇷🇺</div>
+      <div class="gm-label">Russia</div>
+    </div>
+    <div class="gm" style="left:61%;top:41%">
+      <div class="gm-country" style="border-color:#f5a62350;background:rgba(245,166,35,.1);width:22px;height:22px;font-size:12px">🇸🇦</div>
+      <div class="gm-label">Saudi Arabia</div>
+    </div>
+    <div class="gm" style="left:78%;top:40%">
+      <div class="gm-country" style="border-color:#00d4aa60;background:rgba(0,212,170,.15);width:22px;height:22px;font-size:12px">🇹🇼</div>
+      <div class="gm-label">Taiwan</div>
+    </div>
+    <div class="gm" style="left:61%;top:46%">
+      <div class="gm-country" style="border-color:#e5393550;background:rgba(229,57,53,.1);width:22px;height:22px;font-size:12px">🇮🇷</div>
+      <div class="gm-label">Iran</div>
+    </div>
+    <div class="gm" style="left:50%;top:35%">
+      <div class="gm-country" style="border-color:#a855f750;background:rgba(168,85,247,.1);width:22px;height:22px;font-size:12px">🇩🇪</div>
+      <div class="gm-label">Germany</div>
+    </div>
+    <div class="gm" style="left:82%;top:31%">
+      <div class="gm-country" style="border-color:#00e5ff40;background:rgba(0,229,255,.1);width:22px;height:22px;font-size:12px">🇯🇵</div>
+      <div class="gm-label">Japan</div>
+    </div>
+  </div>
+
+  <!-- ══ GLOBE NAV BUTTONS — ON THE MAP, not in ticker ══ -->
+  <div class="globe-nav">
+    <div class="gnav-btn active"><span class="gnav-icon">⚡</span>EVENTS</div>
+    <div class="gnav-btn"><span class="gnav-icon">⏱</span>TIMELINES</div>
+    <div class="gnav-btn"><span class="gnav-icon">🗺</span>POWER MAP</div>
+    <div class="gnav-btn"><span class="gnav-icon">⛽</span>CHOKEPOINTS</div>
+  </div>
+
+  <!-- Globe theme dots -->
+  <div class="globe-themes">
+    <div class="gtheme active" style="background:var(--teal)" title="Atlas"></div>
+    <div class="gtheme" style="background:var(--purple)" title="Obsidian"></div>
+    <div class="gtheme" style="background:var(--red)" title="Warfare"></div>
+    <div class="gtheme" style="background:var(--gold)" title="Finance"></div>
+    <div class="gtheme" style="background:#1a3a6a" title="Interstellar"></div>
+  </div>
+
+  <!-- Live stats top-left -->
+  <div class="globe-stats">
+    <div class="gstat">
+      <span class="gstat-label">GCRI</span>
+      <span class="gstat-val" style="color:var(--red)">63.5</span>
+    </div>
+    <div class="gstat">
+      <span class="gstat-label">DSI</span>
+      <span class="gstat-val" style="color:var(--gold)">59.5</span>
+    </div>
+    <div class="gstat">
+      <span class="gstat-label">WPI</span>
+      <span class="gstat-val" style="color:var(--red)">45.3</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BOTTOM BAR ══ -->
+<div class="botbar">
+  <div class="bot-left">
+    <span class="bot-stat">PERSONS <span>545</span></span>
+    <span class="bot-stat">COMPANIES <span>239</span></span>
+    <span class="bot-stat">COUNTRIES <span>171</span></span>
+    <span class="bot-stat">RELATIONS <span>1,246+</span></span>
+    <span class="bot-stat">EDGES WITH TIMELINES <span>324</span></span>
+  </div>
+  <div class="bot-right">
+    <span class="bot-badge" style="background:#00d4aa12;color:var(--green);border:1px solid #00d4aa30">● LIVE</span>
+    <span class="bot-badge" style="background:#f5a62312;color:var(--gold);border:1px solid #f5a62330">PX-008 PENDING</span>
+  </div>
+</div>
+
+<script>
+// Globe nav buttons
+document.querySelectorAll('.gnav-btn').forEach(b => {
+  b.addEventListener('click', function(){
+    document.querySelectorAll('.gnav-btn').forEach(x=>x.classList.remove('active'))
+    this.classList.add('active')
+  })
+})
+// Theme selector
+document.querySelectorAll('.gtheme').forEach(t => {
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.gtheme').forEach(x=>x.classList.remove('active'))
+    this.classList.add('active')
+  })
+})
+</script>
+</body>
+</html>

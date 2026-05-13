@@ -4,8 +4,21 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preload" as="video" href="/videos/iPM_1.mp4" type="video/mp4" />
-    <link rel="preload" as="fetch" href="/data/countries-110m.geojson" type="application/json" crossorigin="anonymous" />
+    <!--
+      Removed `<link rel="preload" as="video" ...>` — "video" is not a valid
+      `as` value (Chrome supports only: audio, document, embed, fetch, font,
+      image, object, script, style, track, worker). The intro <video> element
+      already has `autoPlay` which implies `preload="auto"`, so the browser
+      starts buffering as soon as the LandingPage mounts. No perf regression.
+    -->
+    <!--
+      Same-origin URL — `crossorigin="anonymous"` would force CORS mode and
+      cause a preload-mismatch with deck.gl's default same-origin fetch
+      (loaders.gl uses bare `fetch(url)`), so the browser would warn and the
+      preload would be discarded. Without the attribute, the preload mode
+      matches the actual fetch and the JSON is reused from the preload cache.
+    -->
+    <link rel="preload" as="fetch" href="/data/countries-110m.geojson" type="application/json" />
     <title>Intelligence Power Map</title>
   </head>
   <body>

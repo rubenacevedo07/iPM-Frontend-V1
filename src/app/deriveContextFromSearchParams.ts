@@ -1,7 +1,7 @@
 import type { WorkstationSearch } from '@/routes/workstation'
 
 export type NavigationContext = {
-  overlayType: 'person' | 'company' | 'vs' | 'gold' | 'powermap' | null
+  overlayType: 'company' | 'vs' | 'gold' | 'powermap' | 'hq' | null
   overlayId:   number | null
   overlayIdB:  number | null
   powermapId:  string | null

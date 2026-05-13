@@ -60,16 +60,11 @@ const appMachine = setup({
         { overlayId: d.overlayId,       overlayIdB: d.overlayIdB,       powermapId: d.powermapId,       searchQuery: d.searchQuery },
       )
     },
-    isPersonUrl:   ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'person',
     isCompanyUrl:  ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'company',
     isVsUrl:       ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'vs',
     isGoldUrl:     ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'gold',
     isPowermapUrl: ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'powermap',
     noOverlayUrl:  ({ event }) => event.type === 'URL_CHANGED' && !event.search.overlay,
-    isGoldCompanyClick: ({ event }) =>
-      event.type === 'ATLAS.ENTITY_CLICK' &&
-      event.entity.type === 'COMPANY' &&
-      event.entity.isGold === true,
     // Phase 8: stale-id guard for NETWORK_RESOLVED. Drops events whose
     // companyId no longer matches the open overlay (user closed/switched
     // overlays while the fetch was in flight).
@@ -99,10 +94,10 @@ const appMachine = setup({
         closed: {
           on: {
             OPEN_PERSON: {
-              target: 'person',
+              target: 'gold',
               actions: [
                 assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'person' as const, id: event.id } })),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'gold' as const, id: event.id } })),
               ],
             },
             OPEN_COMPANY: {
@@ -127,64 +122,11 @@ const appMachine = setup({
               ],
             },
             URL_CHANGED: [
-              { guard: 'isPersonUrl',   target: 'person',   actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null, powermapId: null }) },
               { guard: 'isCompanyUrl',  target: 'company',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null, powermapId: null }) },
               { guard: 'isVsUrl',       target: 'vs',       actions: assign({ overlayId: ({ event }) => getSearch(event)?.a   ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null, powermapId: null }) },
               { guard: 'isGoldUrl',     target: 'gold',     actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null, powermapId: null }) },
               { guard: 'isPowermapUrl', target: 'powermap', actions: assign({ overlayId: null, overlayIdB: null, powermapId: ({ event }) => getSearch(event)?.powermapId ?? null }) },
             ],
-          },
-        },
-        person: {
-          on: {
-            CLOSE_OVERLAY: {
-              target: 'closed',
-              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
-            },
-            // Phase 6: v3 canonical PersonOverlay dispatches ENTITY.CLOSE on close.
-            // Handled as alias for CLOSE_OVERLAY so canonical stays untouched (Rule 6).
-            'ENTITY.CLOSE': {
-              target: 'closed',
-              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
-            },
-            OPEN_COMPANY: {
-              target: 'company',
-              actions: [
-                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'company' as const, id: event.id } })),
-              ],
-            },
-            OPEN_VS: {
-              target: 'vs',
-              actions: [
-                assign({ overlayId: ({ event }) => event.a, overlayIdB: ({ event }) => event.b, powermapId: null }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'vs' as const, a: event.a, b: event.b } })),
-              ],
-            },
-            OPEN_POWERMAP: {
-              target: 'powermap',
-              actions: [
-                assign({ powermapId: ({ event }) => event.id, overlayId: null, overlayIdB: null }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'powermap' as const, powermapId: event.id } })),
-              ],
-            },
-            URL_CHANGED: [
-              { guard: 'noOverlayUrl',  target: 'closed',   actions: assign({ overlayId: null, overlayIdB: null, powermapId: null }) },
-              { guard: 'isCompanyUrl',  target: 'company',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null, powermapId: null }) },
-              { guard: 'isVsUrl',       target: 'vs',       actions: assign({ overlayId: ({ event }) => getSearch(event)?.a   ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null, powermapId: null }) },
-              { guard: 'isGoldUrl',     target: 'gold',     actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null, powermapId: null }) },
-              { guard: 'isPowermapUrl', target: 'powermap', actions: assign({ overlayId: null, overlayIdB: null, powermapId: ({ event }) => getSearch(event)?.powermapId ?? null }) },
-            ],
-            PERSON_NETWORK_RESOLVED: {
-              guard: 'personNetworkMatchesOverlay',
-              actions: [
-                assign({ companyArcs: ({ event }) => event.type === 'PERSON_NETWORK_RESOLVED' ? event.arcs : [] }),
-                sendTo(({ context }) => context.engineManagerRef, ({ event }) => ({
-                  type: 'CMD.SET_ARCS' as const,
-                  data: { arcs: event.type === 'PERSON_NETWORK_RESOLVED' ? event.arcs : [] },
-                })),
-              ],
-            },
           },
         },
         company: {
@@ -200,10 +142,10 @@ const appMachine = setup({
               actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
             },
             OPEN_PERSON: {
-              target: 'person',
+              target: 'gold',
               actions: [
                 assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'person' as const, id: event.id } })),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'gold' as const, id: event.id } })),
               ],
             },
             OPEN_VS: {
@@ -222,7 +164,6 @@ const appMachine = setup({
             },
             URL_CHANGED: [
               { guard: 'noOverlayUrl',  target: 'closed',   actions: assign({ overlayId: null, overlayIdB: null, powermapId: null }) },
-              { guard: 'isPersonUrl',   target: 'person',   actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null, powermapId: null }) },
               { guard: 'isVsUrl',       target: 'vs',       actions: assign({ overlayId: ({ event }) => getSearch(event)?.a   ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null, powermapId: null }) },
               { guard: 'isGoldUrl',     target: 'gold',     actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null, powermapId: null }) },
               { guard: 'isPowermapUrl', target: 'powermap', actions: assign({ overlayId: null, overlayIdB: null, powermapId: ({ event }) => getSearch(event)?.powermapId ?? null }) },
@@ -242,10 +183,10 @@ const appMachine = setup({
               actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
             },
             OPEN_PERSON: {
-              target: 'person',
+              target: 'gold',
               actions: [
                 assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'person' as const, id: event.id } })),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'gold' as const, id: event.id } })),
               ],
             },
             OPEN_COMPANY: {
@@ -264,7 +205,6 @@ const appMachine = setup({
             },
             URL_CHANGED: [
               { guard: 'noOverlayUrl',  target: 'closed',   actions: assign({ overlayId: null, overlayIdB: null, powermapId: null }) },
-              { guard: 'isPersonUrl',   target: 'person',   actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
               { guard: 'isCompanyUrl',  target: 'company',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
               { guard: 'isGoldUrl',     target: 'gold',     actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
               { guard: 'isPowermapUrl', target: 'powermap', actions: assign({ overlayId: null, overlayIdB: null, powermapId: ({ event }) => getSearch(event)?.powermapId ?? null }) },
@@ -282,10 +222,10 @@ const appMachine = setup({
               actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
             },
             OPEN_PERSON: {
-              target: 'person',
+              target: 'gold',
               actions: [
                 assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'person' as const, id: event.id } })),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'gold' as const, id: event.id } })),
               ],
             },
             OPEN_COMPANY: {
@@ -311,7 +251,6 @@ const appMachine = setup({
             },
             URL_CHANGED: [
               { guard: 'noOverlayUrl',  target: 'closed',   actions: assign({ overlayId: null, overlayIdB: null, powermapId: null }) },
-              { guard: 'isPersonUrl',   target: 'person',   actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
               { guard: 'isCompanyUrl',  target: 'company',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
               { guard: 'isVsUrl',       target: 'vs',       actions: assign({ overlayId: ({ event }) => getSearch(event)?.a  ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null, powermapId: null }) },
               { guard: 'isPowermapUrl', target: 'powermap', actions: assign({ overlayId: null, overlayIdB: null, powermapId: ({ event }) => getSearch(event)?.powermapId ?? null }) },
@@ -333,10 +272,10 @@ const appMachine = setup({
             CLOSE_OVERLAY:  { target: 'closed', actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'] },
             'ENTITY.CLOSE': { target: 'closed', actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'] },
             OPEN_PERSON: {
-              target: 'person',
+              target: 'gold',
               actions: [
                 assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'person' as const, id: event.id } })),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'gold' as const, id: event.id } })),
               ],
             },
             OPEN_COMPANY: {
@@ -355,7 +294,6 @@ const appMachine = setup({
             },
             URL_CHANGED: [
               { guard: 'noOverlayUrl', target: 'closed',  actions: assign({ overlayId: null, overlayIdB: null, powermapId: null }) },
-              { guard: 'isPersonUrl',  target: 'person',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
               { guard: 'isCompanyUrl', target: 'company', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
               { guard: 'isVsUrl',      target: 'vs',      actions: assign({ overlayId: ({ event }) => getSearch(event)?.a  ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null, powermapId: null }) },
               { guard: 'isGoldUrl',    target: 'gold',    actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
@@ -404,23 +342,30 @@ const appMachine = setup({
         },
         'ATLAS.ENTITY_CLICK': [
           {
-            guard: 'isGoldCompanyClick',
-            actions: sendTo(
-              ({ context }) => context.navRef,
-              ({ event }) => ({
-                type: 'NAVIGATE',
-                search: { overlay: 'gold' as const, id: event.entity.id },
-              })
-            ),
-          },
-          {
+            // PERSON entity click. If the entity was pre-tagged in AppShell
+            // with a coLocatedCompanyId (i.e. the person is the CEO of a
+            // company at the same headquarters), open the HEADQUARTERS dual
+            // overlay (?overlay=hq). Otherwise fall back to the single gold
+            // overlay (?overlay=gold).
             guard: ({ event }) => event.entity.type === 'PERSON',
             actions: sendTo(
               ({ context }) => context.navRef,
-              ({ event }) => ({
-                type: 'NAVIGATE',
-                search: { overlay: 'person' as const, id: event.entity.id },
-              })
+              ({ event }) => {
+                if (event.type !== 'ATLAS.ENTITY_CLICK') {
+                  return { type: 'NAVIGATE' as const, search: {} }
+                }
+                const co = event.entity.coLocatedCompanyId
+                if (typeof co === 'number') {
+                  return {
+                    type: 'NAVIGATE' as const,
+                    search: { overlay: 'hq' as const, personId: event.entity.id, companyId: co },
+                  }
+                }
+                return {
+                  type: 'NAVIGATE' as const,
+                  search: { overlay: 'gold' as const, id: event.entity.id },
+                }
+              }
             ),
           },
           {
@@ -442,19 +387,6 @@ const appMachine = setup({
   },
 
   on: {
-    // Wall Street is a separate route (`/wall-street`) — single-writer rule
-    // (Rule 3) requires URL mutations to go through navigationActor.
-    'WALL_STREET.OPEN': {
-      actions: sendTo(
-        ({ context }) => context.navRef,
-        ({ event }) => ({
-          type: 'NAVIGATE_WALL_STREET' as const,
-          search: event.type === 'WALL_STREET.OPEN' && event.view
-            ? { view: event.view }
-            : undefined,
-        }),
-      ),
-    },
     URL_CHANGED: {
       guard: 'urlActuallyChanged',
       // Phase 8: keep context.companyArcs and the active bridge in sync.

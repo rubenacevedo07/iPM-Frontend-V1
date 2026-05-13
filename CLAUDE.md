@@ -5,6 +5,7 @@ When working on data pipeline → read docs/skills/ipm-data-fusion-enforcer.md
 When resuming the sprint → read docs/skills/ipm-frontend-v1-sprint.md
 Architectural rules → read docs/skills/ipm-frontend.md
 When touching GlobeBridge / deck.gl auto-rotation / viewState / wheel-zoom issues → read docs/skills/deck-gl-globe-rotation.md
+When touching AppShell overlays / OverlayPanel / CompanyOverlayHost / GoldOverlay / HeadquartersView → read docs/skills/ipm-appshell-overlay.md
 
 ## The six non-negotiable rules
 1. NO handwritten types...

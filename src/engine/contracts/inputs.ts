@@ -86,6 +86,20 @@ export interface EngineEntityData {
     marketCapUsd?: number | null;
     isChokepoint?: boolean;
     isGold?:       boolean;
+    // Optional URL to a raster logo/avatar to render at the entity position.
+    // Consumed by the globe's IconLayer (see docs/skills/deck-gl-icon-layer).
+    // Undefined → fall back to the ScatterplotLayer dot.
+    iconUrl?:      string;
+    // Photo/logo URL forwarded into EntityRef on click so overlays can render
+    // immediately on cold load without a separate fetch.
+    photoUrl?:     string | null;
+    // Pre-tag (computed in AppShell when building entity batches): for a
+    // PERSON entity, the company id co-located at the same headquarters
+    // (within ~50 km). Used by the click handler in app.machine to route to
+    // the headquarters dual overlay (?overlay=hq) instead of the single
+    // gold overlay. Undefined for COMPANY/COUNTRY entities or persons with
+    // no detected colocated company.
+    coLocatedCompanyId?: number;
   }>;
 }
 

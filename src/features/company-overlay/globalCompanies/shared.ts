@@ -76,10 +76,15 @@ export const SUB_ROW_H     = 36;
 export const PANEL_TOP     = COMPANY_ROW_H + SUB_ROW_H; // 104
 
 /* ── Glassmorphism style ────────────────────────────────────────────── */
+// Day 4+ (visual): dropped the `backdrop-filter: blur(20px)` — when stacked
+// over the dark deck.gl globe it read as a soft shadow behind the panels,
+// which the design didn't want. Compensated by lifting the background from
+// rgba(4,6,9,0.84) → rgba(4,6,9,0.94) so card contents stay legible without
+// relying on the blur layer to flatten what's behind. `glass` remains the
+// single source of truth — every card across FirstPanel, SecondPanel,
+// OperationsPanel, CompanyCommoditiesCard, etc. updates at once.
 export const glass: React.CSSProperties = {
-  background: 'rgba(4,6,9,0.84)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
+  background: 'rgba(4,6,9,0.94)',
   border: '1px solid rgba(255,255,255,0.07)',
   borderRadius: 8,
 };

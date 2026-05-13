@@ -3,6 +3,7 @@ import type { PersonMapDto } from '@/types/_ext/personMapDto'
 
 export const personMapService = {
   getTop15(): Promise<PersonMapDto[]> {
-    return apiClient.get<PersonMapDto[]>('/api/persons/top15')
+    // Served as a static asset from public/data/ — backend not required.
+    return apiClient.get<PersonMapDto[]>('/data/persons_top_15.json')
   },
 }

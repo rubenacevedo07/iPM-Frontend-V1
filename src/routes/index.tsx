@@ -12,13 +12,21 @@ function LandingPage() {
   //   2. Trigger dynamic import() for every lazy chunk so the JS is parsed
   //      and sitting in module cache by the time the user activates
   //      network view / opens an overlay.
+  //
+  // Day 4+ (perf): `@/app/AppShell` is now itself lazy (workstationRoute uses
+  // lazyRouteComponent). Warm it FIRST in the list — it's the largest chunk
+  // (~190 kB gz with deck.gl + three.js + EngineManager + framer-motion) and
+  // the one on the critical path of the very next user action (Skip / video
+  // end → /workstation). Without this prefetch the user would stare at a
+  // blank Suspense fallback for the full chunk download time.
+  //
   // GeoJSON is already covered by <link rel="preload"> in index.html.
   useEffect(() => {
     void fetch('/api/Companies').catch(() => {})
+    void import('@/app/AppShell')
     void import('@/features/graph-view/GraphViewPanel')
     void import('@/features/wall-street/WallStreetPage')
     void import('@/app/CompanyOverlayHost')
-    void import('@/app/PersonOverlayHost')
     void import('@/app/GoldOverlayHost')
     void import('@/features/gold-overlay/PowerMapsPanel')
   }, [])
@@ -35,7 +43,7 @@ function LandingPage() {
       onClick={goToApp}
     >
       <video
-        src="/MainVideo.mp4"
+        src="public/videos/iPM_1.mp4"
         autoPlay
         muted
         playsInline

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPM · Commodities Overlay</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#090b10;--bgCard:#111620;--bgHover:#161d2c;
+  --border:rgba(255,255,255,.07);--borderLt:rgba(255,255,255,.12);
+  --teal:#00e5ff;--green:#00d4aa;--gold:#f5a623;--red:#e53935;
+  --purple:#a855f7;--blue:#378ADD;
+  --text:#e8edf5;--text2:#8a9bb5;--text3:#4a5568;
+  --mono:'JetBrains Mono',monospace;--raj:'Rajdhani',sans-serif;--sans:'DM Sans',sans-serif;
+  --topH:48px;--tickH:36px;--botH:30px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
+
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topH);z-index:600;background:rgba(9,11,16,.96);border-bottom:1px solid var(--border);display:flex;align-items:center}
+.tb-burger{width:46px;height:var(--topH);display:flex;align-items:center;justify-content:center;border-right:1px solid var(--border);cursor:pointer}
+.bl{display:flex;flex-direction:column;gap:4px}.bl span{display:block;width:17px;height:1.5px;background:var(--text2);border-radius:2px}
+.tb-logo{padding:0 14px;font-family:var(--raj);font-size:17px;font-weight:700;color:var(--green);letter-spacing:1.5px;flex-shrink:0;border-right:1px solid var(--border)}
+.tb-title{flex:1;display:flex;align-items:center;gap:10px;padding:0 16px;border-right:1px solid var(--border)}
+.tb-title-text{font-family:var(--raj);font-size:18px;font-weight:700;letter-spacing:.5px}
+.tb-title-sub{font-family:var(--mono);font-size:8px;color:var(--text3)}
+.tb-user{width:46px;height:var(--topH);display:flex;align-items:center;justify-content:center;border-left:1px solid var(--border)}
+.avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--blue));display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;font-weight:700}
+
+.ticker{position:fixed;top:var(--topH);left:0;right:0;height:var(--tickH);z-index:500;background:rgba(7,9,14,.97);border-bottom:1px solid var(--border);display:flex;align-items:center;overflow:hidden}
+.ticker-scroll{flex:1;overflow:hidden}
+.ticker-track{display:flex;align-items:center;animation:scrollTicker 60s linear infinite;width:max-content}
+@keyframes scrollTicker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tick-item{display:inline-flex;align-items:center;gap:6px;padding:0 12px;height:var(--tickH);border-right:1px solid var(--border);cursor:pointer;flex-shrink:0}
+.t-n{font-family:var(--mono);font-size:9px;color:var(--text2)}
+.t-b{font-family:var(--mono);font-size:7px;padding:1px 5px;border-radius:2px}
+.t-il{font-family:var(--mono);font-size:7px;color:var(--text3)}
+.t-iv{font-family:var(--mono);font-size:11px;font-weight:700}
+.t-emoji{font-size:14px}
+
+.botbar{position:fixed;bottom:0;left:0;right:0;height:var(--botH);z-index:600;background:rgba(9,11,16,.96);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 14px}
+.bot-stat{font-family:var(--mono);font-size:8px;color:var(--text3)}
+.bot-stat span{color:var(--teal)}
+.bot-badge{font-family:var(--mono);font-size:7px;padding:2px 7px;border-radius:3px}
+
+/* MAIN AREA — full width, split layout */
+.main-area{
+  position:fixed;
+  top:calc(var(--topH)+var(--tickH));
+  left:0;right:0;bottom:var(--botH);
+  display:flex;overflow:hidden;
+}
+
+/* ── DISPLAY OPTIONS BAR (left sidebar) ── */
+.display-bar{
+  width:48px;flex-shrink:0;background:rgba(9,11,16,.98);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;
+  padding:10px 0;gap:4px;z-index:10;
+}
+.disp-btn{
+  width:36px;height:36px;border-radius:6px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  cursor:pointer;transition:all .15s;border:1px solid transparent;
+}
+.disp-btn:hover{background:var(--bgHover);border-color:var(--border)}
+.disp-btn.active{background:rgba(245,166,35,.1);border-color:rgba(245,166,35,.4)}
+.disp-icon{font-size:14px;line-height:1}
+.disp-lbl{font-family:var(--mono);font-size:5px;color:var(--text3);letter-spacing:.5px;white-space:nowrap}
+.disp-btn.active .disp-lbl{color:var(--gold)}
+
+/* ── DATA PANEL (slides in from left, 50% width) ── */
+.data-panel{
+  width:0;overflow:hidden;
+  background:rgba(9,12,18,.97);border-right:1px solid var(--border);
+  transition:width 0.4s cubic-bezier(0.4,0,0.2,1);
+  display:flex;flex-direction:column;flex-shrink:0;
+}
+.data-panel.open{width:380px}
+.dp-head{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;white-space:nowrap}
+.dp-icon{font-size:22px;flex-shrink:0}
+.dp-title{font-family:var(--raj);font-size:18px;font-weight:700;flex-shrink:0}
+.dp-mode{font-family:var(--mono);font-size:7px;color:var(--text3);margin-left:4px;letter-spacing:1px;flex-shrink:0}
+.dp-close{width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);border-radius:3px;font-size:12px;margin-left:auto;flex-shrink:0}
+.dp-close:hover{background:var(--bgHover);color:var(--text)}
+
+/* Commodity list */
+.commodity-list{overflow-y:auto;flex:1}
+.commodity-list::-webkit-scrollbar{width:2px}
+.commodity-list::-webkit-scrollbar-thumb{background:var(--border)}
+.citem{
+  padding:10px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .1s;
+}
+.citem:hover{background:var(--bgHover)}
+.citem.active{background:rgba(245,166,35,.06);border-left:2px solid var(--gold)}
+.ci-emoji{font-size:18px;flex-shrink:0}
+.ci-info{flex:1;min-width:0}
+.ci-name{font-family:var(--mono);font-size:10px;font-weight:700;white-space:nowrap}
+.ci-sub{font-family:var(--mono);font-size:7px;color:var(--text3);margin-top:1px;white-space:nowrap}
+.ci-price{text-align:right;flex-shrink:0}
+.ci-pval{font-family:var(--mono);font-size:11px;font-weight:700}
+.ci-pchg{font-family:var(--mono);font-size:8px;margin-top:1px}
+
+/* Commodity detail (right of list inside panel) */
+.dp-detail{padding:14px 16px;border-top:1px solid var(--border);flex-shrink:0}
+.dp-detail-title{font-family:var(--mono);font-size:7px;letter-spacing:1px;color:var(--text3);margin-bottom:8px}
+.kv{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.kv:last-child{border-bottom:none}
+.kk{font-family:var(--mono);font-size:8px;color:var(--text3)}
+.kv-v{font-family:var(--mono);font-size:8px;font-weight:600}
+
+/* ── GLOBE AREA ── */
+.globe-area{
+  flex:1;position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* Commodity dots on globe */
+.glob-dot{
+  position:absolute;transform:translate(-50%,-50%);
+  width:10px;height:10px;border-radius:50%;
+  border:1.5px solid;cursor:pointer;
+  animation:dotPulse 2.5s ease-out infinite;
+}
+@keyframes dotPulse{
+  0%{box-shadow:0 0 0 0 currentColor}
+  70%{box-shadow:0 0 0 6px transparent}
+  100%{box-shadow:0 0 0 0 transparent}
+}
+.glob-dot-label{
+  position:absolute;transform:translateX(-50%);
+  bottom:-18px;font-family:var(--mono);font-size:7px;color:var(--text3);
+  white-space:nowrap;opacity:0;transition:opacity .15s;pointer-events:none;
+}
+.glob-dot:hover .glob-dot-label{opacity:1}
+.glob-dot:hover{transform:translate(-50%,-50%) scale(1.6)}
+
+/* Globe nav buttons */
+.globe-nav{
+  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  display:flex;background:rgba(9,11,16,.88);border:1px solid var(--borderLt);
+  border-radius:7px;overflow:hidden;backdrop-filter:blur(12px);z-index:10;
+}
+.gnav-btn{padding:7px 13px;font-family:var(--mono);font-size:7px;letter-spacing:.7px;color:var(--text2);cursor:pointer;border-right:1px solid var(--border);transition:all .12s}
+.gnav-btn:last-child{border-right:none}
+.gnav-btn:hover{background:var(--bgHover);color:var(--text)}
+.gnav-btn.active{color:var(--green);background:rgba(0,212,170,.06)}
+
+/* Sofia at bottom of globe area */
+.canvas-sofia{
+  position:absolute;bottom:48px;left:12px;right:12px;
+  padding:9px 14px;background:rgba(9,11,16,.92);border:1px solid var(--borderLt);
+  border-radius:7px;backdrop-filter:blur(12px);z-index:10;display:flex;gap:10px;
+  transition:all .4s ease;
+}
+.cs-lbl{font-family:var(--mono);font-size:7px;color:var(--gold);letter-spacing:1px;flex-shrink:0;margin-top:1px}
+.cs-txt{font-family:var(--sans);font-size:9px;color:var(--text2);line-height:1.5}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tb-burger"><div class="bl"><span></span><span></span><span></span></div></div>
+  <div class="tb-logo">IPM</div>
+  <div class="tb-title">
+    <span class="tb-title-text">Commodities</span>
+    <span class="tb-title-sub">REAL-TIME · POWER GRAPH INTEGRATION · 12 TRACKED</span>
+  </div><div class="tb-user"><div class="avatar">O7</div></div>
+</div>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-scroll"><div class="ticker-track">
+    <div class="tick-item"><span class="t-emoji">🛢</span><span class="t-n">Crude WTI</span><span class="t-iv" style="color:var(--green)">$81.44</span><span class="t-b" style="background:#00d4aa12;color:var(--green);border:1px solid #00d4aa30">+0.6%</span></div>
+    <div class="tick-item"><span class="t-emoji">⚡</span><span class="t-n">Nat Gas</span><span class="t-iv" style="color:var(--red)">$2.18</span><span class="t-b" style="background:#e5393512;color:#e53935;border:1px solid #e5393530">−1.2%</span></div>
+    <div class="tick-item"><span class="t-emoji">🥇</span><span class="t-n">Gold</span><span class="t-iv" style="color:var(--green)">$2,328</span><span class="t-b" style="background:#00d4aa12;color:var(--green);border:1px solid #00d4aa30">+0.3%</span></div>
+    <div class="tick-item"><span class="t-emoji">⚙</span><span class="t-n">Copper</span><span class="t-iv" style="color:var(--green)">$4.52</span><span class="t-b" style="background:#00d4aa12;color:var(--green);border:1px solid #00d4aa30">+1.1%</span></div>
+    <div class="tick-item"><span class="t-emoji">🌾</span><span class="t-n">Wheat</span><span class="t-iv" style="color:var(--red)">$568</span><span class="t-b" style="background:#e5393512;color:#e53935;border:1px solid #e5393530">−0.4%</span></div>
+    <div class="tick-item"><span class="t-emoji">🔋</span><span class="t-n">Lithium</span><span class="t-iv" style="color:var(--red)">$14,200</span><span class="t-b" style="background:#e5393512;color:#e53935;border:1px solid #e5393530">−3.1%</span></div>
+    <div class="tick-item" style="gap:8px"><span class="t-il">GCRI</span><span class="t-iv" style="color:#e53935">63.5</span></div>
+    <div class="tick-item" style="gap:8px"><span class="t-il">WPI</span><span class="t-iv" style="color:#e53935">45.3</span></div>
+    <div class="tick-item"><span class="t-emoji">🛢</span><span class="t-n">Crude WTI</span><span class="t-iv" style="color:var(--green)">$81.44</span></div>
+    <div class="tick-item"><span class="t-emoji">🥇</span><span class="t-n">Gold</span><span class="t-iv" style="color:var(--green)">$2,328</span></div>
+    <div class="tick-item" style="gap:8px"><span class="t-il">GCRI</span><span class="t-iv" style="color:#e53935">63.5</span></div>
+    <div class="tick-item"><span class="t-emoji">⚙</span><span class="t-n">Copper</span><span class="t-iv" style="color:var(--green)">$4.52</span></div>
+  </div></div>
+</div>
+
+<!-- MAIN -->
+<div class="main-area">
+
+  <!-- DISPLAY OPTIONS BAR -->
+  <div class="display-bar">
+    <div class="disp-btn active" data-opt="prices" onclick="setOpt(this,'prices')">
+      <div class="disp-icon">💹</div>
+      <div class="disp-lbl">PRICES</div>
+    </div>
+    <div class="disp-btn" data-opt="countries" onclick="setOpt(this,'countries')">
+      <div class="disp-icon">🌍</div>
+      <div class="disp-lbl">CTRIES</div>
+    </div>
+    <div class="disp-btn" data-opt="chokepoints" onclick="setOpt(this,'chokepoints')">
+      <div class="disp-icon">⛽</div>
+      <div class="disp-lbl">CHOKES</div>
+    </div>
+    <div class="disp-btn" data-opt="risk" onclick="setOpt(this,'risk')">
+      <div class="disp-icon">⚠</div>
+      <div class="disp-lbl">RISK</div>
+    </div>
+    <div class="disp-btn" data-opt="flow" onclick="setOpt(this,'flow')">
+      <div class="disp-icon">➡</div>
+      <div class="disp-lbl">FLOW</div>
+    </div>
+  </div>
+
+  <!-- DATA PANEL (slides in) -->
+  <div class="data-panel open" id="data-panel">
+
+    <div class="dp-head">
+      <div class="dp-icon" id="dp-icon">💹</div>
+      <div>
+        <div class="dp-title" id="dp-title">Prices</div>
+        <div class="dp-mode" id="dp-mode">REAL-TIME · IPM TRACKED</div>
+      </div>
+      <div class="dp-close" onclick="togglePanel()">×</div>
+    </div>
+
+    <!-- COMMODITY LIST -->
+    <div class="commodity-list">
+      <div class="citem active" onclick="selectCom(this,'crude')">
+        <div class="ci-emoji">🛢</div>
+        <div class="ci-info">
+          <div class="ci-name">Crude Oil · WTI</div>
+          <div class="ci-sub">Saudi · Hormuz · OPEC+ · Trump signal</div>
+        </div>
+        <div class="ci-price">
+          <div class="ci-pval" style="color:var(--green)">$81.44</div>
+          <div class="ci-pchg" style="color:var(--green)">+0.6%</div>
+        </div>
+      </div>
+      <div class="citem" onclick="selectCom(this,'gas')">
+        <div class="ci-emoji">⚡</div>
+        <div class="ci-info">
+          <div class="ci-name">Natural Gas · TTF</div>
+          <div class="ci-sub">Russia · Nord Stream · LNG alternatives</div>
+        </div>
+        <div class="ci-price">
+          <div class="ci-pval" style="color:var(--red)">$2.18</div>
+          <div class="ci-pchg" style="color:var(--red)">−1.2%</div>
+        </div>
+      </div>
+      <div class="citem" onclick="selectCom(this,'gold')">
+        <div class="ci-emoji">🥇</div>
+        <div class="ci-info">
+          <div class="ci-name">Gold · XAU</div>
+          <div class="ci-sub">DSI hedge · GCRI signal · Central banks</div>
+        </div>
+        <div class="ci-price">
+          <div class="ci-pval" style="color:var(--green)">$2,328</div>
+          <div class="ci-pchg" style="color:var(--green)">+0.3%</div>
+        </div>
+      </div>
+      <div class="citem" onclick="selectCom(this,'lithium')">
+        <div class="ci-emoji">🔋</div>
+        <div class="ci-info">
+          <div class="ci-name">Lithium · Carbonate</div>
+          <div class="ci-sub">China control · Tesla / EV · CATL</div>
+        </div>
+        <div class="ci-price">
+          <div class="ci-pval" style="color:var(--red)">$14,200</div>
+          <div class="ci-pchg" style="color:var(--red)">−3.1%</div>
+        </div>
+      </div>
+      <div class="citem" onclick="selectCom(this,'copper')">
+        <div class="ci-emoji">⚙</div>
+        <div class="ci-info">
+          <div class="ci-name">Copper · HG</div>
+          <div class="ci-sub">Chile · China demand · AI infrastructure</div>
+        </div>
+        <div class="ci-price">
+          <div class="ci-pval" style="color:var(--green)">$4.52</div>
+          <div class="ci-pchg" style="color:var(--green)">+1.1%</div>
+        </div>
+      </div>
+      <div class="citem" onclick="selectCom(this,'wheat')">
+        <div class="ci-emoji">🌾</div>
+        <div class="ci-info">
+          <div class="ci-name">Wheat · CBOT</div>
+          <div class="ci-sub">Ukraine war · Black Sea · food security</div>
+        </div>
+        <div class="ci-price">
+          <div class="ci-pval" style="color:var(--red)">$568</div>
+          <div class="ci-pchg" style="color:var(--red)">−0.4%</div>
+        </div>
+      </div>
+      <div class="citem" onclick="selectCom(this,'chip')">
+        <div class="ci-emoji">💾</div>
+        <div class="ci-info">
+          <div class="ci-name">Semiconductors · Index</div>
+          <div class="ci-sub">TSMC · ASML · Taiwan risk</div>
+        </div>
+        <div class="ci-price">
+          <div class="ci-pval" style="color:var(--green)">4,218</div>
+          <div class="ci-pchg" style="color:var(--green)">+2.3%</div>
+        </div>
+      </div>
+      <div class="citem" onclick="selectCom(this,'uranium')">
+        <div class="ci-emoji">☢</div>
+        <div class="ci-info">
+          <div class="ci-name">Uranium · U3O8</div>
+          <div class="ci-sub">Russia supply · nuclear renaissance</div>
+        </div>
+        <div class="ci-price">
+          <div class="ci-pval" style="color:var(--gold)">$91.00</div>
+          <div class="ci-pchg" style="color:var(--gold)">+0.1%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail panel for selected commodity -->
+    <div class="dp-detail">
+      <div class="dp-detail-title" id="dp-detail-name">CRUDE OIL · WTI</div>
+      <div id="dp-detail-content">
+        <div class="kv"><span class="kk">Supply chain</span><span class="kv-v">Saudi Aramco → Hormuz</span></div>
+        <div class="kv"><span class="kk">Chokepoint risk</span><span class="kv-v" style="color:var(--red)">Hormuz 9.2/10</span></div>
+        <div class="kv"><span class="kk">GCRI sensitivity</span><span class="kv-v" style="color:var(--red)">HIGH</span></div>
+        <div class="kv"><span class="kk">Trump signal</span><span class="kv-v" style="color:var(--gold)">Saudi call → supply+</span></div>
+        <div class="kv"><span class="kk">Persons linked</span><span class="kv-v">Trump · MBS · Biden</span></div>
+        <div class="kv"><span class="kk">Active timelines</span><span class="kv-v">3</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOBE AREA — fills remaining space -->
+  <div class="globe-area" id="globe-area">
+    <!-- CSS-Only Globe Sphere -->
+    <div style="position:relative;width:min(560px,65vw);height:min(560px,65vw)">
+      <!-- Globe body -->
+      <div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 38% 35%,#1a2a3a,#0c1520 55%,#060c14);border:1px solid rgba(0,229,255,.15)"></div>
+      <!-- Atmosphere glow -->
+      <div style="position:absolute;inset:-4px;border-radius:50%;border:6px solid rgba(0,212,170,.06);pointer-events:none"></div>
+      <!-- Grid via SVG inside -->
+      <svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 560 560">
+        <defs>
+          <radialGradient id="atm" cx="50%" cy="50%">
+            <stop offset="80%" stop-color="transparent"/>
+            <stop offset="100%" stop-color="rgba(0,229,255,0.05)"/>
+          </radialGradient>
+          <clipPath id="gC4"><circle cx="280" cy="280" r="276"/></clipPath>
+        </defs>
+        <g clip-path="url(#gC4)" stroke="rgba(255,255,255,.06)" stroke-width=".5" fill="none">
+          <ellipse cx="280" cy="280" rx="276" ry="44"/>
+          <ellipse cx="280" cy="280" rx="276" ry="110"/>
+          <ellipse cx="280" cy="280" rx="276" ry="176"/>
+          <ellipse cx="280" cy="280" rx="240" ry="218"/>
+          <line x1="280" y1="4" x2="280" y2="556"/>
+          <line x1="150" y1="28" x2="410" y2="532"/>
+          <line x1="60" y1="140" x2="500" y2="420"/>
+          <line x1="55" y1="340" x2="505" y2="220"/>
+          <line x1="148" y1="516" x2="412" y2="44"/>
+        </g>
+        <!-- Continents -->
+        <g clip-path="url(#gC4)">
+          <path d="M 145 195 Q 195 166 228 180 Q 242 205 228 254 Q 210 282 188 290 Q 163 282 148 260 Q 132 238 145 195 Z" fill="rgba(0,212,170,.1)" stroke="rgba(0,212,170,.3)" stroke-width="1"/>
+          <path d="M 175 300 Q 206 288 224 308 Q 232 338 222 376 Q 208 406 186 414 Q 162 404 157 372 Q 149 336 175 300 Z" fill="rgba(0,212,170,.08)" stroke="rgba(0,212,170,.2)" stroke-width=".8"/>
+          <path d="M 276 182 Q 312 167 334 182 Q 344 200 336 222 Q 322 232 300 228 Q 276 218 274 198 Z" fill="rgba(168,85,247,.12)" stroke="rgba(168,85,247,.35)" stroke-width="1"/>
+          <path d="M 278 238 Q 310 230 326 252 Q 336 278 326 322 Q 314 350 292 358 Q 270 348 262 318 Q 253 282 266 256 Z" fill="rgba(229,57,53,.1)" stroke="rgba(229,57,53,.25)" stroke-width=".8"/>
+          <path d="M 340 180 Q 408 162 440 184 Q 452 206 436 230 Q 410 246 380 240 Q 346 226 340 204 Z" fill="rgba(245,166,35,.12)" stroke="rgba(245,166,35,.35)" stroke-width="1"/>
+          <path d="M 366 200 Q 386 194 396 208 Q 400 222 390 234 Q 378 240 366 232 Q 358 222 362 208 Z" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.4)" stroke-width="1.2" stroke-dasharray="3,3"/>
+          <path d="M 430 188 Q 492 172 520 196 Q 530 218 514 242 Q 490 256 462 250 Q 432 236 428 212 Z" fill="rgba(229,57,53,.1)" stroke="rgba(229,57,53,.25)" stroke-width=".8"/>
+          <path d="M 460 268 Q 496 258 514 276 Q 522 296 508 314 Q 490 324 466 316 Q 448 302 450 282 Z" fill="rgba(0,229,255,.12)" stroke="rgba(0,229,255,.35)" stroke-width="1.2"/>
+          <path d="M 448 326 Q 480 316 498 332 Q 506 348 494 362 Q 478 370 458 362 Q 442 350 444 336 Z" fill="rgba(0,212,170,.08)" stroke="rgba(0,212,170,.2)" stroke-width=".8"/>
+        </g>
+        <circle cx="280" cy="280" r="276" fill="url(#atm)"/>
+      </svg>
+
+      <!-- Commodity dots — positioned by geography -->
+      <!-- Crude Oil — Saudi/Gulf -->
+      <div class="glob-dot" style="left:59%;top:47%;background:#f5a623;border-color:#f5a62380;color:#f5a623" title="Crude Oil">
+        <div class="glob-dot-label">🛢 Crude</div>
+      </div>
+      <!-- Natural Gas — Russia -->
+      <div class="glob-dot" style="left:66%;top:32%;background:#e53935;border-color:#e5393580;color:#e53935">
+        <div class="glob-dot-label">⚡ Nat Gas</div>
+      </div>
+      <!-- Gold — multiple (central) -->
+      <div class="glob-dot" style="left:48%;top:52%;background:#f5a623;border-color:#f5a62380;color:#f5a623;animation-delay:.5s">
+        <div class="glob-dot-label">🥇 Gold</div>
+      </div>
+      <!-- Copper — Chile/South America -->
+      <div class="glob-dot" style="left:28%;top:62%;background:#00d4aa;border-color:#00d4aa80;color:#00d4aa;animation-delay:1s">
+        <div class="glob-dot-label">⚙ Copper</div>
+      </div>
+      <!-- Lithium — China/Chile -->
+      <div class="glob-dot" style="left:72%;top:44%;background:#a855f7;border-color:#a855f780;color:#a855f7;animation-delay:.3s">
+        <div class="glob-dot-label">🔋 Lithium</div>
+      </div>
+      <!-- Wheat — Ukraine/Black Sea -->
+      <div class="glob-dot" style="left:56%;top:40%;background:#00e5ff;border-color:#00e5ff80;color:#00e5ff;animation-delay:.8s">
+        <div class="glob-dot-label">🌾 Wheat</div>
+      </div>
+      <!-- Semiconductors — Taiwan -->
+      <div class="glob-dot" style="left:78%;top:46%;background:#00e5ff;border-color:#00e5ff80;color:#00e5ff;width:14px;height:14px;animation-delay:.2s">
+        <div class="glob-dot-label">💾 Chips · Taiwan</div>
+      </div>
+      <!-- Uranium — Kazakhstan -->
+      <div class="glob-dot" style="left:62%;top:35%;background:#e53935;border-color:#e5393560;color:#e53935;animation-delay:1.2s">
+        <div class="glob-dot-label">☢ Uranium</div>
+      </div>
+
+      <!-- Chokepoint labels -->
+      <div style="position:absolute;left:57%;top:51%;transform:translateX(-50%);font-family:var(--mono);font-size:6px;color:rgba(229,57,53,.7);white-space:nowrap;pointer-events:none">HORMUZ</div>
+      <div style="position:absolute;left:47%;top:55%;transform:translateX(-50%);font-family:var(--mono);font-size:6px;color:rgba(229,57,53,.5);white-space:nowrap;pointer-events:none">SUEZ</div>
+      <div style="position:absolute;left:77%;top:53%;transform:translateX(-50%);font-family:var(--mono);font-size:6px;color:rgba(0,229,255,.6);white-space:nowrap;pointer-events:none">MALACCA</div>
+    </div>
+
+    <!-- Globe nav buttons ON the map -->
+    <div class="globe-nav">
+      <div class="gnav-btn">⚡ EVENTS</div>
+      <div class="gnav-btn active">⏱ TIMELINES</div>
+      <div class="gnav-btn">🗺 POWER MAP</div>
+      <div class="gnav-btn active">⛽ CHOKEPOINTS</div>
+    </div>
+
+    <!-- Sofia conclusions — gold tint for commodities -->
+    <div class="canvas-sofia">
+      <span class="cs-lbl">◈</span>
+      <span class="cs-txt" id="sofia-txt">Crude Oil's Hormuz exposure (9.2/10 risk) creates the single largest single-event tail risk in the commodity graph — $45B/day in global oil transit at stake. The semiconductor chokepoint (TSMC, Taiwan) carries a 67% geopolitical risk probability per open timeline. Wheat (Ukraine/Black Sea) correlates directly to the Putin-Ukraine conflict edge.</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOT BAR -->
+<div class="botbar">
+  <div style="display:flex;gap:14px">
+    <span class="bot-stat">COMMODITIES <span>12 tracked</span></span>
+    <span class="bot-stat">SELECTED <span id="bot-selected" style="color:var(--gold)">CRUDE OIL</span></span>
+    <span class="bot-stat">CHOKEPOINTS <span>5 active</span></span>
+  </div>
+  <div style="display:flex;gap:6px">
+    <span class="bot-badge" style="background:#00d4aa12;color:var(--green);border:1px solid #00d4aa30">● LIVE</span>
+    <span class="bot-badge" style="background:#e5393512;color:var(--red);border:1px solid #e5393530">⚠ HORMUZ RISK 9.2/10</span>
+  </div>
+</div>
+
+<style>
+/* Panel open/close transition */
+.data-panel{transition:width 0.4s cubic-bezier(0.4,0,0.2,1)}
+</style>
+
+<script>
+let panelOpen = true
+
+function togglePanel(){
+  panelOpen = !panelOpen
+  document.getElementById('data-panel').classList.toggle('open', panelOpen)
+}
+
+const optConfig = {
+  prices:     { icon:'💹', title:'Prices',      mode:'REAL-TIME · IPM TRACKED' },
+  countries:  { icon:'🌍', title:'Countries',   mode:'TOP PRODUCERS · CONSUMERS' },
+  chokepoints:{ icon:'⛽', title:'Chokepoints', mode:'STRATEGIC TRANSIT NODES · RISK SCORED' },
+  risk:       { icon:'⚠',  title:'Risk',        mode:'GCRI / EDGE RISK INTEGRATION' },
+  flow:       { icon:'➡',  title:'Flow',        mode:'TRADE ROUTE · REAL-TIME FLOW' },
+}
+
+function setOpt(el, opt){
+  // Toggle panel open
+  if(!panelOpen){
+    panelOpen = true
+    document.getElementById('data-panel').classList.add('open')
+  }
+  document.querySelectorAll('.disp-btn').forEach(b=>b.classList.remove('active'))
+  el.classList.add('active')
+  const cfg = optConfig[opt]
+  document.getElementById('dp-icon').textContent = cfg.icon
+  document.getElementById('dp-title').textContent = cfg.title
+  document.getElementById('dp-mode').textContent = cfg.mode
+}
+
+const comDetails = {
+  crude:   { name:'CRUDE OIL · WTI',   rows:[['Supply chain','Saudi Aramco → Hormuz'],['Chokepoint risk','Hormuz 9.2/10'],['GCRI sensitivity','HIGH'],['Trump signal','Saudi call → supply+'],['Persons linked','Trump · MBS'],['Active timelines','3']] },
+  gas:     { name:'NATURAL GAS · TTF', rows:[['Supply chain','Russia → Nord Stream (cut)'],['Alternative','US LNG → Europe'],['Russia risk','Sanctions impact: 68%'],['Chokepoint','Turkish Straits'],['Persons linked','Putin · Scholz'],['Active timelines','2']] },
+  gold:    { name:'GOLD · XAU/USD',    rows:[['DSI hedge','YES — primary signal'],['Central bank buy','Central banks: +1,037T 2023'],['GCRI correlation','r = +0.82'],['Chokepoint','None direct'],['Persons linked','Fink · Yellen'],['Active timelines','1']] },
+  lithium: { name:'LITHIUM · CARBONATE',rows:[['China control','~65% of processing'],['Key company','CATL · BYD'],['Tesla link','Shanghai Gigafactory'],['Chokepoint','Salar de Atacama'],['Persons linked','Musk · Xi'],['Active timelines','2']] },
+  copper:  { name:'COPPER · HG',       rows:[['Top producer','Chile 28%'],['China demand','AI infra buildout'],['Substitute','Aluminum (partial)'],['Chokepoint','Andean supply chain'],['Persons linked','Boric (Chile)'],['Active timelines','1']] },
+  wheat:   { name:'WHEAT · CBOT',      rows:[['Ukraine impact','−30% Black Sea exports'],['Russia supply','Partial — sanctions'],['Food security','61 at-risk nations'],['Chokepoint','Black Sea / Bosphorus'],['Persons linked','Putin · Zelensky'],['Active timelines','3']] },
+  chip:    { name:'SEMICONDUCTORS',    rows:[['TSMC dominance','90% advanced chips'],['Substitution','72 months (TSMC)'],['Chokepoint','Taiwan Strait'],['Risk factor','China invasion 67%'],['Persons linked','Xi · Trump · Jensen Huang'],['Active timelines','4']] },
+  uranium: { name:'URANIUM · U3O8',    rows:[['Top producer','Kazakhstan 43%'],['Russia control','Rosatom export risk'],['Nuclear renaissance','32 new reactors planned'],['Chokepoint','Kazakhstan supply chain'],['Persons linked','Putin · Macron'],['Active timelines','1']] },
+}
+
+function selectCom(el, key){
+  document.querySelectorAll('.citem').forEach(c=>c.classList.remove('active'))
+  el.classList.add('active')
+  const d = comDetails[key]
+  document.getElementById('dp-detail-name').textContent = d.name
+  document.getElementById('bot-selected').textContent = d.name.split(' · ')[0]
+  const rows = d.rows.map(r=>`<div class="kv"><span class="kk">${r[0]}</span><span class="kv-v">${r[1]}</span></div>`).join('')
+  document.getElementById('dp-detail-content').innerHTML = rows
+}
+
+document.querySelectorAll('.gnav-btn').forEach(b=>{
+  b.addEventListener('click',function(){
+    this.classList.toggle('active')
+  })
+})
+</script>
+</body>
+</html>

@@ -14,6 +14,8 @@ interface EngineManagerContext {
   previousUnsubscribe: Unsubscribe | null;
   container:           HTMLDivElement | null;
   error:               Error | null;
+  /** Which DOM slot currently holds the active (fully visible) engine. Toggles on each successful crossfade. */
+  activeSlot:          'a' | 'b';
 }
 
 type EngineManagerEvent =
@@ -27,7 +29,8 @@ type EngineManagerEvent =
   | { type: 'CMD.SET_COMPANY_SELECTION';  data: EngineCompanySelectionData }
   | { type: 'CMD.SET_POWERMAP';            powermapId: string | null }
   | { type: 'CMD.FLY_TO'; longitude: number; latitude: number; zoom?: number; duration?: number }
-  | { type: 'CMD.SET_ROTATION'; enabled: boolean };
+  | { type: 'CMD.SET_ROTATION'; enabled: boolean }
+  | { type: 'CMD.SET_FOCUS'; target: import('@/app/app.events').EntityRef | null };
 
 function isBridgeReady(event: EngineManagerEvent): boolean {
   return event.type === '_BRIDGE.EVENT' && event.event.type === 'ENGINE.READY';
@@ -65,7 +68,12 @@ export const engineManagerMachine = setup({
       context.previousUnsubscribe?.();
       context.previousBridge?.send({ type: 'CMD.DISPOSE' });
     },
-    clearPrevious: assign({ previousBridge: () => null, previousUnsubscribe: () => null }),
+    clearPrevious: assign({
+      previousBridge:      () => null,
+      previousUnsubscribe: () => null,
+      // Flip the active slot — the incoming engine just became the visible one.
+      activeSlot: ({ context }) => context.activeSlot === 'b' ? 'a' : 'b',
+    }),
     rollbackSwap: assign({
       bridge:              ({ context }) => context.previousBridge,
       unsubscribe:         ({ context }) => context.previousUnsubscribe,
@@ -84,6 +92,7 @@ export const engineManagerMachine = setup({
     clearBridge: assign({
       bridge: () => null, unsubscribe: () => null,
       engineId: () => null, container: () => null, error: () => null,
+      previousBridge: () => null, previousUnsubscribe: () => null,
     }),
     assignError: assign({
       error: ({ event }) => {
@@ -114,6 +123,7 @@ export const engineManagerMachine = setup({
     engineId: null, bridge: null, unsubscribe: null,
     previousBridge: null, previousUnsubscribe: null,
     container: null, error: null,
+    activeSlot: 'b' as const,  // initial ENGINE.REQUEST always uses slotB
   },
   states: {
     idle: {
@@ -140,9 +150,11 @@ export const engineManagerMachine = setup({
         '_BRIDGE.EVENT': { guard: 'isEntityClick', actions: 'forwardEntityClick' },
         'ENGINE.SWAP': {
           target: 'active.crossfading',
-          actions: ['moveCurrentToPrevious', 'suspendPreviousBridge', 'createBridgeAndSubscribe'],
+          // disposePreviousBridge first: if a swap arrives during crossfading the old
+          // previousBridge would be overwritten and leaked. Dispose it before moving current.
+          actions: ['disposePreviousBridge', 'moveCurrentToPrevious', 'suspendPreviousBridge', 'createBridgeAndSubscribe'],
         },
-        'ENGINE.DISPOSE': { target: 'idle', actions: ['disposeBridge', 'clearBridge'] },
+        'ENGINE.DISPOSE': { target: 'idle', actions: ['disposePreviousBridge', 'disposeBridge', 'clearBridge'] },
       },
       states: {
         idle: {
@@ -186,6 +198,11 @@ export const engineManagerMachine = setup({
             'CMD.SET_ROTATION': {
               actions: ({ context, event }) => {
                 context.bridge?.send({ type: 'CMD.SET_ROTATION', enabled: event.enabled });
+              },
+            },
+            'CMD.SET_FOCUS': {
+              actions: ({ context, event }) => {
+                context.bridge?.send({ type: 'CMD.SET_FOCUS', target: event.target });
               },
             },
           },

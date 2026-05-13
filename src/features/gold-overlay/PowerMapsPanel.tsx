@@ -1,22 +1,19 @@
 import { motion } from 'framer-motion'
 import { AppActor } from '@/app/app.machine'
 import { SEARCH_THEMES } from '@/components/TopBar/searchThemes'
-import { POWER_MAP_OVERLAY_CONTENT } from '@/features/powermap-overlay/powerMapContent'
 import './gold-overlay.scss'
 
 export function PowerMapsPanel() {
   const actor = AppActor.useActorRef()
   const query = AppActor.useSelector((s) => s.context.query)
 
+  // Unified dispatch for ALL powermap items (no special-case). URL becomes
+  // `?overlay=powermap&powermapId=X`; PowerMapOverlayHost dispatches the
+  // render based on atlasView + config.networkComponent. Globe layers + flyTo
+  // come from AppShell's URL-driven useEffect, so the user staying on the
+  // current tab (Globe or Network) controls what they see.
   const handleSelect = (theme: typeof SEARCH_THEMES[0]) => {
-    actor.send({ type: 'ATLAS_VIEW.SET', view: theme.id === 'wall-street' ? 'network' : 'globe' })
-    if (POWER_MAP_OVERLAY_CONTENT[theme.id]) {
-      // Theme has an overlay → open as first-class overlay (URL-driven).
-      actor.send({ type: 'OPEN_POWERMAP', id: theme.id })
-    } else {
-      // No overlay content yet → keep current fly-to-only behavior via query.
-      actor.send({ type: 'SEARCH_QUERY', q: theme.label })
-    }
+    actor.send({ type: 'OPEN_POWERMAP', id: theme.id })
   }
 
   return (

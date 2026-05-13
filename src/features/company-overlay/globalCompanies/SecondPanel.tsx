@@ -20,7 +20,7 @@ export default function SecondPanel({ activeTab, providers, clients, companyById
         width: 280, zIndex: 10,
         padding: '14px 12px',
         display: 'flex', flexDirection: 'column', gap: 10,
-        overflowY: 'auto', pointerEvents: 'none',
+        overflowY: 'auto', pointerEvents: 'auto',
       }}
     >
       <div style={{ fontFamily: FONT_SANS, fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.06em', paddingLeft: 2 }}>

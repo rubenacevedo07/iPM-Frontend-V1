@@ -1,9 +1,6 @@
-import type { WallStreetNodeData } from '@/types/wallStreetGraph'
+import type { WallStreetNodeData, WallStreetRawEdge } from '@/types/wallStreetGraph'
 import type { SugiyamaNodeData } from '@/types/_ext/sugiyamaGraph'
-import {
-  POWER_VIEW_HIERARCHY,
-  POWER_VIEW_COLOR_OVERRIDES,
-} from '../data/powerViewSubset'
+import { buildSugiyamaNodeData } from './nodeDecoration'
 
 export interface PositionedSugiyamaNode {
   entityId: string
@@ -12,103 +9,114 @@ export interface PositionedSugiyamaNode {
   nodeData: SugiyamaNodeData
 }
 
-const BORDER_COLOR: Record<string, string> = {
-  institution:   '#a855f7',
-  bank:          '#00e5ff',
-  asset_manager: '#3b82f6',
-  person:        '#ffb547',
-}
+// ─── LAYOUT CONSTANTS ──────────────────────────────────────────
+const VIEWPORT_W = 1200
+const NODE_W     = 160   // approximate — used only for collision nudge
 
-// Sugiyama layer positions:
-//   L1 y=0:   central institutions
-//   L2 y=180: banks sublane x=80..480 | asset managers sublane x=520..780
-//   L3 y=360: persons x-aligned below their primary institution
-//
-// Banks (5): step = (480-80)/4 = 100 → 80, 180, 280, 380, 480
-// Asset mgrs (3): step = (780-520)/2 = 130 → 520, 650, 780
-// Fed Reserve centered above banks midpoint: (80+480)/2 - nodeWidth/2 ≈ 280 - 60 = 222
-// Persons aligned under: Powell→Fed(280), Dimon→JPM(80), Solomon→GS(180), Pick→MS(280→360 offset), Fink→BR(520)
+// Vertical Y positions — strictly top-down, no edge ever goes upward
+const Y_FED  = 40    // Federal Reserve: sovereign top
+const Y_AM   = 180   // Asset managers: ownership layer
+const Y_BANK = 340   // Banks: regulated intermediaries
+const Y_CEO  = 500   // CEOs: operational layer
 
-const FIXED_X: Record<string, number> = {
-  // L1 — institution centered at x=222 (Fed width≈152, center=298 ≈ midpoint of 80..480 minus half)
-  'institution:federal-reserve-system': 222,
+// ─── LAYOUT FUNCTION ───────────────────────────────────────────
+// Cluster Columns: each bank is a vertical column [AM above → bank → CEO below],
+// Federal Reserve floats at the top as super-controller. All edges flow strictly
+// top-down, compatible with the fixed handles (src-bottom → tgt-top).
+export function computeSugiyamaLayout(
+  nodes: WallStreetNodeData[],
+  edges: WallStreetRawEdge[] = [],
+): PositionedSugiyamaNode[] {
+  const positions: Record<string, { x: number; y: number }> = {}
 
-  // L2 banks sublane x=80..480
-  'bank:jpmorgan-chase':                 80,
-  'bank:goldman-sachs':                 180,
-  'bank:morgan-stanley':                280,
-  'bank:bank-of-america':               380,
-  'bank:citigroup':                     480,
+  // 1. Separate nodes by type
+  const institutions = nodes.filter(n => n.entityType === 'institution')
+  const banks        = nodes.filter(n => n.entityType === 'bank')
+  const managers     = nodes.filter(n => n.entityType === 'asset_manager')
+  const persons      = nodes.filter(n => n.entityType === 'person')
 
-  // L2 asset managers sublane x=520..780
-  'asset_manager:blackrock':            520,
-  'asset_manager:vanguard':            650,
-  'asset_manager:state-street':         760,
+  // 2. Sort banks by governance centrality (more regulated → left)
+  const GOV_TYPES = new Set(['Governs', 'Regulates', 'Monitors', 'Sets'])
+  const OWN_TYPES = new Set(['Owns', 'Custodies', 'Finances', 'Influences'])
+  const CEO_TYPE  = 'CeoOf'
 
-  // L3 persons aligned under primary institution
-  'person:jerome-powell':               222,
-  'person:jamie-dimon':                  80,
-  'person:david-solomon':               180,
-  'person:ted-pick':                    280,
-  'person:larry-fink':                  520,
-}
+  const bankGovScore = (bank: WallStreetNodeData): number =>
+    edges.filter(e => e.target === bank.entityId && GOV_TYPES.has(e.data.edgeType)).length
 
-const FIXED_Y: Record<string, number> = {
-  'institution:federal-reserve-system': 0,
-  'bank:jpmorgan-chase':               180,
-  'bank:goldman-sachs':                180,
-  'bank:morgan-stanley':               180,
-  'bank:bank-of-america':              180,
-  'bank:citigroup':                    180,
-  'asset_manager:blackrock':           180,
-  'asset_manager:vanguard':            180,
-  'asset_manager:state-street':        180,
-  'person:jerome-powell':              360,
-  'person:jamie-dimon':                360,
-  'person:david-solomon':              360,
-  'person:ted-pick':                   360,
-  'person:larry-fink':                 360,
-}
+  const sortedBanks = [...banks].sort((a, b) => bankGovScore(b) - bankGovScore(a))
 
-function nodeWidth(label: string): number {
-  return Math.max(label.length * 8 + 32, 120)
-}
+  // 3. Bank column X positions — evenly distributed with side padding
+  const colPad  = 100
+  const usableW = VIEWPORT_W - colPad * 2
+  const colStep = sortedBanks.length > 1 ? usableW / (sortedBanks.length - 1) : 0
 
-function initials(label: string): string {
-  const words = label.trim().split(/\s+/)
-  if (words.length >= 2) return (words[0][0] + words[words.length - 1][0]).toUpperCase()
-  return label.slice(0, 2).toUpperCase()
-}
+  const bankColumnX: Record<string, number> = {}
+  sortedBanks.forEach((bank, i) => {
+    bankColumnX[bank.entityId] = colPad + i * colStep
+  })
 
-function categoryFromId(entityId: string): string {
-  return entityId.split(':')[0] ?? 'default'
-}
+  // 4. Place banks
+  sortedBanks.forEach(bank => {
+    positions[bank.entityId] = { x: bankColumnX[bank.entityId], y: Y_BANK }
+  })
 
-function typeLabel(entityId: string): string {
-  const cat = categoryFromId(entityId)
-  return cat.replace(/_/g, ' ').toUpperCase()
-}
+  // 5. Place CEOs directly below their bank (CeoOf edge: person → bank)
+  persons.forEach(person => {
+    const ceoEdge = edges.find(
+      e => e.source === person.entityId && e.data.edgeType === CEO_TYPE,
+    )
+    if (ceoEdge && bankColumnX[ceoEdge.target] !== undefined) {
+      positions[person.entityId] = { x: bankColumnX[ceoEdge.target], y: Y_CEO }
+    } else {
+      // Powell or person not linked via CeoOf — place below Fed center
+      positions[person.entityId] = { x: VIEWPORT_W / 2, y: Y_CEO }
+    }
+  })
 
-export function computeSugiyamaLayout(nodes: WallStreetNodeData[]): PositionedSugiyamaNode[] {
+  // 6. Place asset managers — x = weighted avg of banks they own/influence
+  managers.forEach((am, fallbackIdx) => {
+    const ownedBankXs = edges
+      .filter(e => e.source === am.entityId && OWN_TYPES.has(e.data.edgeType))
+      .map(e => bankColumnX[e.target])
+      .filter((x): x is number => x !== undefined)
+
+    const x = ownedBankXs.length > 0
+      ? ownedBankXs.reduce((sum, v) => sum + v, 0) / ownedBankXs.length
+      : colPad + fallbackIdx * (usableW / Math.max(managers.length - 1, 1))
+
+    positions[am.entityId] = { x, y: Y_AM }
+  })
+
+  // 7. Federal Reserve at top center
+  institutions.forEach(inst => {
+    positions[inst.entityId] = { x: VIEWPORT_W / 2, y: Y_FED }
+  })
+
+  // 8. Collision nudge for asset managers
+  const amIds = managers.map(m => m.entityId)
+  for (let i = 0; i < amIds.length; i++) {
+    for (let j = i + 1; j < amIds.length; j++) {
+      const a = positions[amIds[i]]
+      const b = positions[amIds[j]]
+      if (!a || !b) continue
+      const dx = Math.abs(b.x - a.x)
+      if (dx < NODE_W + 20) {
+        const push = (NODE_W + 20 - dx) / 2
+        if (a.x <= b.x) { a.x -= push; b.x += push }
+        else            { a.x += push; b.x -= push }
+        a.x = Math.max(colPad / 2, Math.min(VIEWPORT_W - colPad / 2, a.x))
+        b.x = Math.max(colPad / 2, Math.min(VIEWPORT_W - colPad / 2, b.x))
+      }
+    }
+  }
+
   return nodes.map(n => {
-    const meta  = POWER_VIEW_HIERARCHY[n.entityId]
-    const label = meta?.shortLabel ?? n.canonicalName
-    const w     = nodeWidth(label)
-    const color = POWER_VIEW_COLOR_OVERRIDES[n.entityId]
-                  ?? BORDER_COLOR[categoryFromId(n.entityId)]
-                  ?? '#94a3b8'
-
+    const p = positions[n.entityId] ?? { x: 0, y: 0 }
     return {
       entityId: n.entityId,
-      x:        FIXED_X[n.entityId] ?? 0,
-      y:        FIXED_Y[n.entityId] ?? 0,
-      nodeData: {
-        label,
-        typeLabel:   typeLabel(n.entityId),
-        initials:    initials(label),
-        borderColor: color,
-        nodeWidth:   w,
-      },
+      x:        p.x,
+      y:        p.y,
+      nodeData: buildSugiyamaNodeData(n),
     }
   })
 }

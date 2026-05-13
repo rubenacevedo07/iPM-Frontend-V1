@@ -16,10 +16,12 @@ export const DEFAULT_EDGE_STYLE = {
   glow:   'rgba(77,163,255,0.35)',
 }
 
-export function resolveEdgeStyle(variant?: EdgeVariant, fallbackColor?: string) {
-  if (variant) return EDGE_VARIANTS[variant]
-  return {
-    stroke: fallbackColor ?? DEFAULT_EDGE_STYLE.stroke,
-    glow:   DEFAULT_EDGE_STYLE.glow,
+export function resolveEdgeStyle(variant?: EdgeVariant, catalogColor?: string) {
+  if (catalogColor) {
+    return {
+      stroke: catalogColor,
+      glow:   catalogColor + '70',
+    }
   }
+  return variant ? EDGE_VARIANTS[variant] : DEFAULT_EDGE_STYLE
 }

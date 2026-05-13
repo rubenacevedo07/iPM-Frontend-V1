@@ -9,6 +9,13 @@ export type EntityRef = {
   slug:   string
   name:   string
   isGold?: boolean
+  // Pre-tagged in AppShell when building globe entities: for a PERSON entity,
+  // the company id co-located at the same headquarters. Routes the click to
+  // the headquarters dual overlay (?overlay=hq) instead of single gold.
+  coLocatedCompanyId?: number
+  // Photo/logo URL carried from the entity batch so overlays can render
+  // immediately on cold load without waiting for a separate fetch.
+  photoUrl?: string | null
 }
 
 export type AppEvent =
@@ -26,9 +33,6 @@ export type AppEvent =
   | { type: 'SEARCH_QUERY'; q: string }
   | { type: 'FOCUS_ENTITY'; entity: EntityRef }
   | { type: 'BLUR_ENTITY' }
-  // Wall Street navigation: dispatched by AtlasTabs Wall Street button.
-  // Forwards to navigationActor which router.navigates to /wall-street.
-  | { type: 'WALL_STREET.OPEN';    view?: 'power' | 'command' | 'passive' | 'advanced' }
   // AtlasView engine events
   | { type: 'ATLAS_VIEW.SET';      view: AtlasView }
   | { type: 'ATLAS.ENTITY_CLICK';  entity: EntityRef }

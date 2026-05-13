@@ -118,6 +118,7 @@ export interface PersonIntelligence {
   archetypeCode: string | null
   compositeScore: number | null
   globalRank: number | null
+  influenceDomain: string | null
   ideology: IdeologyProfile | null
   wealth: PersonWealth | null
   powerScores: PowerDimension[]

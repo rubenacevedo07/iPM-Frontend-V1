@@ -9,4 +9,11 @@ export interface PersonMapDto {
   countryLat: number | null
   countryLng: number | null
   compositeScore: number
+  title:           string | null
+  globalRank:      number | null
+  archetypeCode:   string | null
+  influenceDomain: string | null
+  citizenship:     string | null
+  born:            string | null
+  netWorthUsd:     number | null
 }

@@ -40,9 +40,23 @@ interface SlotOpacity { a: number; b: number }
 function deriveOpacity(
   snapshot: ReturnType<ActorRefFrom<typeof engineManagerMachine>['getSnapshot']>
 ): SlotOpacity {
-  if (snapshot.matches({ active: { crossfading: 'settling' } })) return { a: 0, b: 1 };
-  if (snapshot.matches({ active: { crossfading: 'waiting' } })) return { a: 1, b: 0 };
-  if (snapshot.matches({ active: 'idle' }))                     return { a: 0, b: 1 };
+  // activeSlot = the slot currently holding the visible (outgoing) engine.
+  // The incoming engine always occupies the OTHER slot.
+  const active = snapshot.context.activeSlot ?? 'b';
+  const activeIsB = active === 'b';
+
+  if (snapshot.matches({ active: { crossfading: 'waiting' } })) {
+    // Outgoing (active) slot stays visible while incoming slot loads.
+    return activeIsB ? { a: 0, b: 1 } : { a: 1, b: 0 };
+  }
+  if (snapshot.matches({ active: { crossfading: 'settling' } })) {
+    // Incoming slot fades in, outgoing slot fades out.
+    return activeIsB ? { a: 1, b: 0 } : { a: 0, b: 1 };
+  }
+  if (snapshot.matches({ active: 'idle' })) {
+    // After clearPrevious fires, activeSlot has already toggled to the new slot.
+    return activeIsB ? { a: 0, b: 1 } : { a: 1, b: 0 };
+  }
   return { a: 0, b: 0 };
 }
 

@@ -1,3 +1,5 @@
+import type { ComponentType } from 'react'
+
 export interface PowerMapEntity {
   id: string
   name: string
@@ -50,6 +52,12 @@ export interface PowerMapConfig {
   countryStroke?: [number,number,number,number]
   entities?: PowerMapEntity[]
   edges?: PowerMapEdge[]
+
+  // Optional component to mount inside the workstation network panel when
+  // atlasView === 'network' AND this powermap is active. If omitted, the
+  // network view falls back to the default <PowerMapOverlay> didactic panel.
+  // Lazy loader so the component's chunk only ships when needed.
+  networkComponent?: () => Promise<{ default: ComponentType }>
 }
 
 const HORMUZ_ENTITIES: PowerMapEntity[] = [
@@ -80,6 +88,8 @@ export const POWER_MAP_CONFIGS: Record<string, PowerMapConfig> = {
     highlightCountries: ['United States of America'],
     countryFill:   [0, 229, 255, 30],
     countryStroke: [0, 229, 255, 110],
+    networkComponent: () =>
+      import('@/features/wall-street/WallStreetPage').then(m => ({ default: m.WallStreetPage })),
   },
   'city-of-london': {
     accentRgb: [52, 211, 153],

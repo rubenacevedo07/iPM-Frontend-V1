@@ -3,7 +3,7 @@
 // Rule 5: new Deck({...}) only. No <DeckGL />, no reconciler, no R3F.
 
 import { Deck, _GlobeView as DeckGlobeView } from '@deck.gl/core';
-import { ArcLayer, GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
+import { ArcLayer, GeoJsonLayer, IconLayer, ScatterplotLayer } from '@deck.gl/layers';
 import {
   POWER_MAP_CONFIGS,
   HORMUZ_COUNTRY_TIERS,
@@ -25,6 +25,51 @@ import type {
   BridgeEvent,
   Unsubscribe,
 } from './contracts/bridge';
+import { pixelSpread, type Declutterd } from './pixelSpread';
+
+// Day 4+: declutter algorithm has gone through THREE shapes; this is the
+// third (and current). The history is preserved here because each step is a
+// real tradeoff worth keeping documented.
+//
+//   v1  entitySpread.ts (geographic, deleted)
+//       Stored `displayLat/displayLng` (cluster-offset, real HQ lost) on the
+//       entity model. Arcs needed `_resolveArcsToDisplay()` to rebind to
+//       the spread coords. Spread was 200/340/480 km rings — too aggressive
+//       at high zoom (cluster members across an ocean). Stable in time, bad
+//       at adapting to zoom.
+//
+//   v2  screenDeclutter.ts (screen-space, deleted)
+//       viewport.project every entity every frame, bbox-overlap to find
+//       collision groups, unproject the offset back to lat/lng for the
+//       Scatterplot layers. Adaptive at any zoom. BUT: on _GlobeView the
+//       projection changes per frame during rotation, so collision groups
+//       formed and dissolved continuously and the deterministic-by-id sort
+//       reassigned grid slots → icons visibly "danced". Plus
+//       viewport.unproject near the limb returned garbage lat/lng. Killed.
+//
+//   v3  pixelSpread.ts (hybrid, this file imports it)
+//       Synthesis: union-find clustering by GEOGRAPHIC distance (stable in
+//       time, doesn't change with camera), but layout INSIDE each cluster
+//       is in screen PIXELS — multi-ring 32/56/80 px, applied via
+//       IconLayer.getPixelOffset. No viewport.project / unproject anywhere
+//       in the render loop. Computation runs ONCE per CMD.SET_ENTITIES
+//       and the result is cached on the bridge as `_entities`.
+//
+// Consequences for the layers downstream:
+//   - IconLayer:   getPosition = REAL lat/lng, getPixelOffset = d.pixelOffset.
+//                  pickable: true now (was false in v2) so the click hits
+//                  the LOGO the user sees, not the underlying ring stack.
+//   - Scatterplot: getPosition = REAL lat/lng. Rings stay at the HQ (clusters
+//                  of N entities show N overlapping rings at the cluster
+//                  centre + N icons spread 32-80 px around them — the
+//                  "data-true ring at HQ + visually-offset icon" pattern).
+//   - ArcLayer:    a.source / a.target = REAL endpoints from the mapper.
+//                  No rebind step.
+//
+// The "ring stays at HQ, icon moves" split is intentional: the ring tells
+// you where the entity REALLY is, the icon tells you which entity it is
+// (without overlap). Same pattern as Google Maps cluster pills.
+type DeclutterdEntity = Declutterd<EngineEntityData['entities'][number]>;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -86,19 +131,29 @@ export class GlobeBridge implements IEngineBridge {
   private _idleResumeTimer: ReturnType<typeof setTimeout> | null = null;
   private _userInteracting = false;
 
-  private static readonly ROTATION_DEG_PER_SEC = 3;
+  private static readonly ROTATION_DEG_PER_SEC = 1;
   private static readonly IDLE_RESUME_MS = 800;
 
-  // Phase 8+: ArcLayer styling. Colors updated to PINK (suppliers) and PURPLE (clients).
+  // Day 4+ (visual): arc palette updated to GREEN (suppliers) and WHITE
+  // (clients). Suppliers feed in → green reads as "incoming flow / stable
+  // input"; clients are outbound revenue → cool white reads as "neutral
+  // commercial relationship". Connection + partner kinds keep their accent
+  // colors (cyan/amber) — they're used for power-map edges, not company
+  // network. To swap supplier↔client palette, exchange the two RGB tuples
+  // below; layer code reads through the same accessors regardless.
   // Width clamps are pixels at any zoom (widthUnits: 'pixels' on the layer).
-  private static readonly ARC_COLOR_SUPPLIER:   [number, number, number] = [232, 80,  122];
-  private static readonly ARC_COLOR_CLIENT:     [number, number, number] = [160, 100, 255];
+  private static readonly ARC_COLOR_SUPPLIER:   [number, number, number] = [110, 220, 140]; // green
+  private static readonly ARC_COLOR_CLIENT:     [number, number, number] = [240, 244, 250]; // off-white
   private static readonly ARC_COLOR_CONNECTION: [number, number, number] = [0,   229, 255];
   private static readonly ARC_COLOR_PARTNER:    [number, number, number] = [245, 166, 35];
   private static readonly ARC_WIDTH_MIN = 1;
   private static readonly ARC_WIDTH_MAX = 4;
 
   private _focusedId: string | null = null;
+  // True while a fly-to initiated by an entity click (not CMD.FLY_TO) is in
+  // flight. Prevents CMD.SET_ROTATION false (which arrives ~50ms after the
+  // click via URL change) from cancelling the cinematic via _flyToCancelled.
+  private _flyToEntityClick = false;
   // Phase 7: hover state tracked by onHover, consumed by _buildLayers for visual feedback.
   // Also drives ENGINE.ENTITY_HOVER dispatch (null on hover-out).
   private _hoveredId: string | null = null;
@@ -112,9 +167,13 @@ export class GlobeBridge implements IEngineBridge {
   // or cleared by init() or any other method. See Phase 3 post-mortem.
   private _pendingEvents: BridgeEvent[] = [];
 
-  // Phase 4.1: entity data received via CMD.SET_ENTITIES.
-  // Fed into globe-rings ScatterplotLayer. Mutated in send(), rendered via _redraw().
-  private _entities: EngineEntityData['entities'] = [];
+  // Phase 4.1 / Day 4+ v3: entity data received via CMD.SET_ENTITIES, with
+  // a per-cluster pixelOffset baked in by pixelSpread() at receipt time.
+  // The longitude/latitude on each element are the REAL HQ — pixelOffset is
+  // a separate field consumed by IconLayer.getPixelOffset. Stable in time:
+  // these values don't change when the camera moves; they only refresh when
+  // a new CMD.SET_ENTITIES arrives (typically once at mount).
+  private _entities: DeclutterdEntity[] = [];
 
   // Phase 8: network arcs received via CMD.SET_ARCS.
   // Fed into globe-arcs ArcLayer. _arcsRevision is a monotonic counter used in
@@ -129,6 +188,15 @@ export class GlobeBridge implements IEngineBridge {
   private _pmEdges:    PowerMapEdge[]    = [];
   private _rotationEnabled = true;
   private _flyToTimer: ReturnType<typeof setTimeout> | null = null;
+  // Rule 7 hardening: CMD.SET_ROTATION { enabled: false } flips this to true.
+  // The fly-to tick reads it each frame and aborts if set. `_executeFlyTo`
+  // resets it to false on entry so a NEW fly-to dispatched AFTER a
+  // SET_ROTATION false (e.g. powermap order: SET_POWERMAP → SET_ROTATION →
+  // FLY_TO) can run to completion. Entity-click fly-tos started from
+  // `onClick` lose this race intentionally (the rotation-stop chain
+  // dispatches SET_ROTATION false ~50ms after the click) — the globe
+  // freezes immediately on entity selection instead of panning for 1.8s.
+  private _flyToCancelled = false;
 
   // Arrival pulse — single expanding gold ring when fly-to completes.
   private _arrivalCoords: [number, number] | null = null;
@@ -184,6 +252,7 @@ export class GlobeBridge implements IEngineBridge {
         views: new DeckGlobeView({ id: 'globe' }),
         viewState: { ...INITIAL_VIEW },
         controller: true,
+        pickingRadius: 8,
         layers: this._buildLayers(),
 
         // TODO Phase 4: replace `any` with typed imports from @deck.gl/core
@@ -218,8 +287,51 @@ export class GlobeBridge implements IEngineBridge {
           }
         },
 
+        // Cursor: pointer when hovering a pickable entity, grabbing while
+        // panning, grab otherwise. deck.gl computes `isHovering` from the
+        // pick buffer — true whenever the mouse is over a layer with
+        // pickable:true (currently `globe-rings` + `globe-pm-rings`).
+        getCursor: ({ isDragging, isHovering }: { isDragging: boolean; isHovering: boolean }) =>
+          isDragging ? 'grabbing' : isHovering ? 'pointer' : 'grab',
+
+        // Hover tooltip: small glass chip with the entity name. deck.gl
+        // positions it automatically near the cursor. Only for our three
+        // pickable entity layers (rings, icons, pm-rings). Plain text to
+        // avoid XSS — deck.gl renders `text` as innerText (escaped).
+        // Returning null disables the tooltip.
+        getTooltip: (info: any) => {
+          const id = info.layer?.id;
+          if (id !== 'globe-rings' && id !== 'globe-pm-rings' && id !== 'globe-company-icons') return null;
+          const name = info.object?.name ?? info.object?.label;
+          if (!name) return null;
+          return {
+            text: String(name),
+            style: {
+              background: 'rgba(4, 8, 16, 0.92)',
+              color: '#e8edf5',
+              border: '1px solid rgba(0, 229, 255, 0.4)',
+              borderRadius: '6px',
+              padding: '6px 10px',
+              font: '500 12px/1.2 system-ui, -apple-system, sans-serif',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)',
+              pointerEvents: 'none',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+            },
+          };
+        },
+
         onClick: (info: any) => {
-          if (info.layer?.id === 'globe-rings' && info.object) {
+          // Two layers carry entity hits now (v3): globe-rings (real HQ,
+          // works for every entity type) and globe-company-icons (offset
+          // logo, companies only). Either one fires the same downstream
+          // chain — _flyTo uses the entity's REAL longitude/latitude, the
+          // emitted ENGINE.ENTITY_CLICK carries the full entity object, and
+          // the click-ripple anchors on real coords too (see _startClickAnim).
+          const id = info.layer?.id;
+          const isEntityHit =
+            (id === 'globe-rings' || id === 'globe-company-icons') && info.object;
+          if (isEntityHit) {
             this._flyTo(info.object);
             this._emitOrBuffer({ type: 'ENGINE.ENTITY_CLICK', entity: info.object });
             this._startClickAnim(info.object);
@@ -227,18 +339,70 @@ export class GlobeBridge implements IEngineBridge {
         },
 
         onHover: (info: any) => {
-          // Phase 7: hover emission wired. Only globe-rings is pickable.
-          // Dispatch EntityRef on hover-in (info.object is the entity), null on hover-out.
-          // Dedup: only emit when _hoveredId changes (avoids flood for same-object hovers).
+          // v3: three pickable entity layers — rings, company icons, pm-rings.
+          // Dispatch EntityRef on hover-in (info.object), null on hover-out.
+          // Dedup: only emit when _hoveredId changes (avoids flood for same-
+          // object hovers as the cursor pixel-skitters inside one icon).
+          const layerId = info.layer?.id;
+          const isEntityLayer =
+            layerId === 'globe-rings' ||
+            layerId === 'globe-pm-rings' ||
+            layerId === 'globe-company-icons';
           const hoveredNodeId =
-            (info.layer?.id === 'globe-rings' || info.layer?.id === 'globe-pm-rings') && info.object
+            isEntityLayer && info.object
               ? (info.object.nodeId ?? info.object.id ?? null)
               : null;
           if (hoveredNodeId === this._hoveredId) return;
-          this._hoveredId = hoveredNodeId;
+
+          const wasHoveringPin = this._hoveredId !== null;
+          this._hoveredId      = hoveredNodeId;
+
+          // ─── Pin pause: freeze rotation while the cursor is on a pickable ──
+          //
+          // Rationale: auto-rotation runs at 1 deg/sec. At zoom 2 that means
+          // ~22 km of equatorial pin drift per 200 ms — roughly the *entire*
+          // dynamic picking radius (~24 screen-px ≈ 30-120 km depending on
+          // zoom). So the empirical sequence was:
+          //   1. cursor enters a pin → hover fires → cursor becomes "pointer"
+          //   2. user takes ~200 ms to mouse-down
+          //   3. globe rotated meanwhile, pin moved ~22 km
+          //   4. click hits empty space, `info.object` is undefined, `onClick`
+          //      bails silently → "the cursor turned into a hand but nothing
+          //      happens".
+          //
+          // Fix: when hover transitions empty→pin, set `_userInteracting=true`
+          // (same flag onViewStateChange uses for drag/wheel). The rotation RAF
+          // tick keeps running but skips the setProps step, so the pin is
+          // visually stationary. When hover transitions pin→empty, arm the
+          // standard idle resume timer (800 ms) just like a drag would — gives
+          // the user a moment to re-enter a neighbour without flashing into
+          // motion.
+          //
+          // Why not _stopRAFRotation()? Because the rotation RAF is the
+          // single-source-of-truth loop owned by CMD.SET_ROTATION (see Rule 7
+          // in the rotation handler). Stopping it here would conflict with the
+          // lifecycle invariant. Toggling `_userInteracting` is the cheap pause
+          // that doesn't fight Rule 7.
+          if (hoveredNodeId !== null && !wasHoveringPin) {
+            if (this._idleResumeTimer !== null) {
+              clearTimeout(this._idleResumeTimer);
+              this._idleResumeTimer = null;
+            }
+            this._userInteracting = true;
+          } else if (hoveredNodeId === null && wasHoveringPin) {
+            // Only re-arm idle resume if rotation is currently allowed by
+            // Rule 7 (an open overlay keeps `_rotationEnabled=false` and the
+            // RAF dead — no need to arm a resume that will be a no-op).
+            if (this._rotationEnabled) this._armIdleResume();
+          }
+
           this._emitOrBuffer({
             type: 'ENGINE.ENTITY_HOVER',
-            entity: info.object && info.layer?.id === 'globe-rings' ? info.object : null,
+            entity:
+              info.object &&
+              (info.layer?.id === 'globe-rings' || info.layer?.id === 'globe-company-icons')
+                ? info.object
+                : null,
           });
           this._redraw();
         },
@@ -357,7 +521,15 @@ export class GlobeBridge implements IEngineBridge {
         this.setFocus({ target: command.target });
         break;
       case 'CMD.SET_ENTITIES':
-        this._entities = command.data.entities;
+        // Day 4+ v3: bake the cluster-aware pixel offset INTO the entity
+        // array. pixelSpread() does geographic union-find at 50 km, then
+        // assigns each cluster member a pixelOffset on a 32/56/80 px
+        // multi-ring layout — sorted by id so the same input is always laid
+        // out the same way. Result is reused for the lifetime of this entity
+        // batch; the camera doesn't influence it. _buildIdleArcs() still
+        // reads `.longitude/.latitude` (REAL coords on every element), which
+        // pixelSpread preserves untouched.
+        this._entities = pixelSpread(command.data.entities);
         this._idleArcs = this._buildIdleArcs();
         this._redraw();
         break;
@@ -367,6 +539,12 @@ export class GlobeBridge implements IEngineBridge {
         // initial mount when no overlay is open.
         const incoming = command.data.arcs;
         if (this._arcs.length === 0 && incoming.length === 0) break;
+        // Day 4+: arcs stored verbatim — endpoints stay on REAL HQ
+        // longitude/latitude (the mapper's output). The previous
+        // _resolveArcsToDisplay() rebound endpoints to spread-cluster
+        // positions so the arc visually attached to the offset dot; with the
+        // pixel-offset architecture, both the icon AND the underlying ring
+        // sit on the real HQ, so no rebinding is needed.
         this._arcs = incoming;
         this._arcsRevision++;
         this._redraw();
@@ -405,14 +583,21 @@ export class GlobeBridge implements IEngineBridge {
           this._startRAFRotation(); // (re)start the loop — no-op if already running
           this._startIdlePulse();
         } else {
-          // Hard-stop auto-rotation. In-flight fly-to is intentionally left
-          // alone so the cinematic completes.
+          // Hard-stop rotation. Rule 7 invariant: rotation MUST freeze when an
+          // entity is selected or atlasView leaves 'globe'.
+          // Exception: if _flyToEntityClick is true, the cinematic was started by
+          // an entity click and SET_ROTATION false arrived ~50ms later via URL
+          // change. Allow the cinematic to complete so the globe actually flies
+          // to the selected entity. The fly-to callback resets _flyToEntityClick.
           this._stopRAFRotation();
           if (this._idleResumeTimer !== null) {
             clearTimeout(this._idleResumeTimer);
             this._idleResumeTimer = null;
           }
           this._userInteracting = true; // belt-and-braces
+          if (!this._flyToEntityClick) {
+            this._flyToCancelled = true; // freeze in-flight cinematic (powermap/CMD.FLY_TO)
+          }
           this._stopIdlePulse();
         }
         break;
@@ -469,11 +654,88 @@ export class GlobeBridge implements IEngineBridge {
     return canvas;
   }
 
-  private _buildLayers() {
+  // Returns the camera-facing entities. Single-stage filter now — pixelSpread
+  // already baked the pixelOffset into every element of this._entities at
+  // SET_ENTITIES time, so we just keep the ones whose REAL HQ lat/lng falls
+  // on the visible hemisphere. The threshold (-0.1 ≈ 96°) lets entities a
+  // little past the limb still render — useful for arcs that anchor outside
+  // the strict 90° hemisphere but whose visible arc body is still inside.
+  private _computeVisibleEntities(): DeclutterdEntity[] {
+    const vs = this._viewState ?? INITIAL_VIEW;
+    const camLat = (vs.latitude  ?? 0) * Math.PI / 180;
+    const camLng = (vs.longitude ?? 0) * Math.PI / 180;
+    const cx = Math.cos(camLat) * Math.cos(camLng);
+    const cy = Math.cos(camLat) * Math.sin(camLng);
+    const cz = Math.sin(camLat);
+    const THRESHOLD = -0.1;
+    return this._entities.filter((d) => {
+      const lat = d.latitude  * Math.PI / 180;
+      const lng = d.longitude * Math.PI / 180;
+      return (cx * Math.cos(lat) * Math.cos(lng) +
+              cy * Math.cos(lat) * Math.sin(lng) +
+              cz * Math.sin(lat)) > THRESHOLD;
+    });
+  }
+
+  // Returns the 9 non-animated layers (base, countries, arcs, rings, dots,
+  // powermap layers).
+  //
+  // No cache. The previous version had one keyed on (focused, hovered,
+  // powermap, arcsRev, visibleCount, round(zoom), round(lat)) but it became
+  // a liability twice in a row:
+  //
+  //   1. Under v2 (screen-space decluttering), the cache key didn't include
+  //      longitude, but the visibleEntities array changed every frame during
+  //      1 deg/sec rotation. Stale `data` arrays → spread froze in place.
+  //   2. Under v3 (this version), visibleEntities still changes every frame
+  //      because the hemisphere filter is camera-dependent — entities cross
+  //      the limb continuously during rotation. The cache would need a
+  //      per-frame key, which is just no cache.
+  //
+  // Cost of rebuilding: ~9 small layer objects per redraw, well inside the
+  // 16 ms frame budget at the iPM scale (≤50 entities). If we ever need
+  // caching, the right unit is the visibleEntities array reference, not a
+  // coarse viewState round-down — and even that only helps when the camera
+  // is stationary, which is most of the user's actual interaction time
+  // (paused on an open overlay).
+  private _buildStaticLayers(visibleEntities: DeclutterdEntity[]): any[] {
+    return this._buildStaticLayersImpl(visibleEntities);
+  }
+
+  private _buildStaticLayersImpl(visibleEntities: DeclutterdEntity[]) {
     // Idle skin — dark navy continents with visible borders.
     const IDLE_FILL:   [number,number,number,number] = [18, 54, 105, 255];
     const IDLE_STROKE: [number,number,number,number] = [55, 120, 190, 140];
     const pmCfg = this._activePowerMapId ? POWER_MAP_CONFIGS[this._activePowerMapId] : undefined;
+
+    // Dynamic picking radius — keeps the hit circle at ~24 screen-px regardless
+    // of zoom. Prevents the focused entity's disc from blocking adjacent picks
+    // post fly-to (zoom 2.8 → 120km ≈ 90px without this, leaving only ~32px
+    // margin for neighbours). Clamped [30k, 120k] m so it degrades gracefully
+    // at very high or very low zoom.
+    const SCREEN_TARGET_PX = 24;
+    const EARTH_C          = 40_075_000;
+    const _zoom            = this._viewState?.zoom     ?? INITIAL_VIEW.zoom;
+    const _lat             = this._viewState?.latitude ?? INITIAL_VIEW.latitude;
+    const metersPerPx      = (EARTH_C * Math.cos(_lat * Math.PI / 180)) / Math.pow(2, _zoom + 8);
+    const dynamicRadius    = Math.max(30_000, Math.min(120_000, SCREEN_TARGET_PX * metersPerPx));
+
+    // Put the focused entity FIRST in the data array so that when its disc
+    // overlaps a neighbour's disc in the picking buffer, the neighbour (drawn
+    // later) wins the hit test — enabling re-selection of nearby entities.
+    //
+    // Why: globe-rings has parameters: { depthTest: false }. With depthTest
+    // disabled, both the visual and pick framebuffers use plain overwrite
+    // semantics — the LAST fragment written at a pixel wins. If focused were
+    // last, focused would dominate every overlap and the user could never
+    // click a neighbour close to it. The selected-halo (300 km, non-pickable)
+    // remains the visual cue for the focused entity regardless of draw order.
+    const orderedVisible = this._focusedId
+      ? [
+          ...visibleEntities.filter((d: any) => d.nodeId === this._focusedId),
+          ...visibleEntities.filter((d: any) => d.nodeId !== this._focusedId),
+        ]
+      : visibleEntities;
 
     const getCountryFill = (f: any): [number,number,number,number] => {
       const name: string = f.properties?.name ?? f.properties?.NAME ?? '';
@@ -500,10 +762,10 @@ export class GlobeBridge implements IEngineBridge {
     // not verbatim port). V1-authored; EntityType here uses V1's UPPERCASE EntityRef
     // convention (app.events.ts EntityRef), not v3 @/types/overlays.EntityType lowercase.
     const dotColor = (type: string, isGold: boolean = false): [number, number, number, number] => {
-      switch (type) {
-        case 'PERSON':  return [0, 229, 255, 220]; // cyan — reserved for Phase 7.1
-        case 'COMPANY': return isGold ? [212, 175, 55, 220] : [0, 212, 170, 220]; // gold : teal
-        case 'COUNTRY': return [245, 166, 35, 220]; // amber — unused in Phase 7
+      switch (type.toUpperCase()) {
+        case 'PERSON':  return [255, 210, 0, 220];                                  // gold
+        case 'COMPANY': return isGold ? [0, 255, 248, 240] : [0, 229, 255, 220]; // bright cyan : cyan
+        case 'COUNTRY': return [245, 166, 35, 220];
         default:        return [138, 155, 181, 200];
       }
     };
@@ -561,6 +823,9 @@ export class GlobeBridge implements IEngineBridge {
           a.intensity * (GlobeBridge.ARC_WIDTH_MAX - GlobeBridge.ARC_WIDTH_MIN),
         getHeight: 0.2,
         updateTriggers: {
+          // _idleArcs.length included so the layer re-evaluates when entity set changes
+          // (idle arcs are precomputed per entity batch; full idle arc rendering is Phase 8+).
+          data:              [this._arcsRevision, this._idleArcs.length],
           getSourcePosition: [this._arcsRevision],
           getTargetPosition: [this._arcsRevision],
           getSourceColor:    [this._arcsRevision],
@@ -568,10 +833,16 @@ export class GlobeBridge implements IEngineBridge {
           getWidth:          [this._arcsRevision],
         },
       }),
-      // Phase 8+: globe-selected-halo — cyan ring around focused entity at 300k radius
+      // Phase 8+: globe-selected-halo — cyan ring around focused entity at 300k radius.
+      // v3: anchored to the REAL HQ lat/lng. The halo is a 300 km circle —
+      // big enough that the pixelOffset of the icon (≤80 px ≈ 30-120 km at
+      // typical zoom) sits comfortably inside the halo's footprint. No need
+      // to chase the icon's offset slot.
       new ScatterplotLayer({
         id: 'globe-selected-halo',
-        data: this._focusedId ? this._entities.filter(e => e.nodeId === this._focusedId) : [],
+        data: this._focusedId
+          ? visibleEntities.filter((d: any) => d.nodeId === this._focusedId)
+          : [],
         pickable: false,
         radiusUnits: 'meters',
         getPosition:  (d: any) => [d.longitude, d.latitude],
@@ -582,21 +853,28 @@ export class GlobeBridge implements IEngineBridge {
         stroked: true,
         lineWidthUnits: 'pixels',
         updateTriggers: {
-          data: [this._focusedId],
+          data: [this._focusedId, visibleEntities.length],
         },
       }),
       // Phase 7: globe-rings — pickable entity dots, ring stroke, hover/focus-aware radius.
+      // v3: anchored to the REAL HQ lat/lng (NOT the icon's offset slot).
+      // For clustered entities the N rings overlap visually at the cluster
+      // centroid, while the N icons spread 32-80 px around. Picking on the
+      // ring stack is supplemented by IconLayer picking (icons are now
+      // pickable: true) so the user clicks the LOGO they see — the icon
+      // wins because it's drawn after the rings.
       new ScatterplotLayer({
         id: 'globe-rings',
-        data: this._entities,
+        data: orderedVisible,
         pickable: true,
+        parameters: { depthTest: false } as any,
         radiusUnits: 'meters',
-        getPosition:  (d: any) => [d.longitude, d.latitude],
-        getRadius:    (d: any) => {
-          if (d.nodeId === this._focusedId) return 120_000;
-          if (d.nodeId === this._hoveredId) return 100_000;
-          return 80_000;
-        },
+        getPosition:  (d: DeclutterdEntity) => [d.longitude, d.latitude],
+        // Dynamic radius keeps the hit circle ~24 screen-px at all zoom levels.
+        // Focused entity is last in orderedVisible so neighbours win the pick
+        // when their discs overlap. Visual selection feedback via globe-selected-
+        // halo (300 km ring, non-pickable) + stroke width + fill alpha below.
+        getRadius:    dynamicRadius,
         getFillColor: (d: any) => {
           if (d.nodeId === this._focusedId) return [0, 229, 255, 80];
           if (d.nodeId === this._hoveredId) return [255, 255, 255, 180];
@@ -612,29 +890,33 @@ export class GlobeBridge implements IEngineBridge {
         stroked: true,
         lineWidthUnits: 'pixels',
         updateTriggers: {
-          getFillColor: [this._focusedId, this._hoveredId, this._entities.length],
-          getRadius:    [this._focusedId, this._hoveredId, this._entities.length],
-          getLineColor: [this._entities.length],
+          getFillColor: [this._focusedId, this._hoveredId, visibleEntities.length],
+          getLineColor: [visibleEntities.length],
           getLineWidth: [this._focusedId],
-          getPosition:  [this._entities.length],
+          getPosition:  [visibleEntities],
+          getRadius:    [_zoom, _lat],
         },
       }),
       // Phase 7: globe-dots — decorative inner fill, non-pickable. Reads through the
       // ring's translucent fill to give the "ring + dot" visual pattern from v3.
+      // v3: anchored to the REAL HQ lat/lng (sits inside the ring at the real
+      // HQ, NOT under the offset icon). For non-icon entities (PERSON, COUNTRY)
+      // this is the only visual indicator — they don't get the IconLayer offset
+      // treatment because they don't have a logo, so dot at real HQ is correct.
       new ScatterplotLayer({
         id: 'globe-dots',
-        data: this._entities,
+        data: visibleEntities.filter((d: any) => !d.iconUrl),
         pickable: false,
         radiusUnits: 'meters',
-        getPosition:  (d: any) => [d.longitude, d.latitude],
+        getPosition:  (d: DeclutterdEntity) => [d.longitude, d.latitude],
         getRadius:    30_000,
         getFillColor: (d: any) => {
           const c = dotColor(d.type, d.isGold);
           return [c[0], c[1], c[2], 200];
         },
         updateTriggers: {
-          getFillColor: [this._entities.length],
-          getPosition:  [this._entities.length],
+          getFillColor: [visibleEntities.length],
+          getPosition:  [visibleEntities],
         },
       }),
       // PowerMap entity halo — soft glow behind ring, non-pickable
@@ -708,37 +990,21 @@ export class GlobeBridge implements IEngineBridge {
         parameters: { depthTest: false } as any,
         updateTriggers: { data: [this._activePowerMapId] },
       }),
+    ];
+  }
 
-      // Click ripple — 3 concentric rings expanding from the clicked entity position.
-      // Driven by _clickAnimRAF; each ring staggered 200ms. Radius 80k→450k meters,
-      // opacity fades to 0. Uses geo coordinates so rings follow globe rotation.
-      // Idle connection arcs — subtle pulsing lines between top-30 entities; only in idle (rotating, no overlay/powermap).
-      ...(this._rotationEnabled && !this._activePowerMapId && this._arcs.length === 0 && this._idleArcs.length > 0
-        ? [new ArcLayer({
-            id: 'globe-idle-arcs',
-            data: this._idleArcs,
-            pickable: false,
-            greatCircle: true,
-            widthUnits: 'pixels' as const,
-            getSourcePosition: (d: any) => d.src,
-            getTargetPosition: (d: any) => d.dst,
-            getSourceColor: (d: any) => {
-              const pulse = (Math.sin(this._idleAnimTime * 0.7 + d.phase) + 1) / 2;
-              return [0, 229, 255, Math.round(8 + pulse * 32)] as [number,number,number,number];
-            },
-            getTargetColor: (d: any) => {
-              const pulse = (Math.sin(this._idleAnimTime * 0.7 + d.phase) + 1) / 2;
-              return [0, 180, 220, Math.round(4 + pulse * 16)] as [number,number,number,number];
-            },
-            getWidth: 0.5,
-            parameters: { depthTest: false } as any,
-            updateTriggers: {
-              getSourceColor: [this._idleAnimTime],
-              getTargetColor: [this._idleAnimTime],
-            },
-          })]
-        : []),
-
+  // Builds the animated layers (arrival pulse, click ripple, company icons).
+  // Historically kept separate from the static layers because the static
+  // cache was not invalidated by animation state. The cache is gone now,
+  // but the split still pays off — the animation RAFs (click ripple, fly-to
+  // arrival pulse) call _buildLayers() at ~60 Hz, and that's the LAST place
+  // we want to do anything beyond simple array literal construction. Static
+  // and animated halves both rebuild every call; the names are documentation
+  // of which fields drive each half (static: focus/hover/powermap/arcs;
+  // animated: arrival pulse + click ripple + the icon layer's offsets,
+  // which are read straight from the precomputed pixelOffset field).
+  private _buildAnimatedLayers(visibleEntities: DeclutterdEntity[]): any[] {
+    return [
       // Arrival pulse — single gold ring expanding from fly-to destination.
       ...(this._arrivalCoords
         ? (() => {
@@ -786,6 +1052,61 @@ export class GlobeBridge implements IEngineBridge {
             });
           }).filter(Boolean) as ScatterplotLayer<any>[]
         : []),
+      // Company logos — rendered last so depth buffer never clips them, AND
+      // so picking prefers the icon over the ring underneath (deck.gl picks
+      // the topmost layer on overlap; draw order = pick priority when
+      // depthTest is off).
+      // billboard: true keeps sprites camera-facing on _GlobeView.
+      // depthTest: false prevents the globe sphere from z-clipping the sprite.
+      //
+      // v3: anchor at REAL HQ lat/lng + screen-pixel offset via the prop
+      // pixelSpread() baked into each entity. Picking moved here (was false
+      // pre-v3) so a click on a clustered logo hits the icon directly
+      // instead of the random ring underneath the cluster centre.
+      new IconLayer({
+        id: 'globe-company-icons',
+        data: visibleEntities.filter(
+          (d: any) => d.type === 'COMPANY' && d.iconUrl,
+        ),
+        pickable: true,
+        billboard: true,
+        parameters: { depthTest: false } as any,
+        getPosition:   (d: any) => [d.longitude, d.latitude],
+        getPixelOffset:(d: any) => d.pixelOffset,
+        getIcon: (d: any) => ({
+          url:     d.iconUrl,
+          width:   64,
+          height:  64,
+          anchorX: 32,
+          anchorY: 32,
+          mask:    false,
+        }),
+        getSize:   28,
+        sizeUnits: 'pixels',
+        updateTriggers: {
+          getPosition:    [visibleEntities],
+          getPixelOffset: [visibleEntities],
+          getIcon:        [visibleEntities.length],
+        },
+      }),
+    ];
+  }
+
+  // v3 layer build pipeline. Camera-dependent on the hemisphere filter only;
+  // the pixelOffset on each entity was baked in by pixelSpread() at
+  // SET_ENTITIES time and is reused as-is. No viewport.project / unproject
+  // anywhere in the render loop.
+  //
+  // Cost: O(n) hemisphere filter + O(layers) array literal construction.
+  // Runs on every _redraw() — that's hover/click/focus changes, the rAF
+  // rotation tick (60 Hz while idle, gated by Rule 7), animation frames
+  // during fly-to + click ripple + arrival pulse. At iPM scale (~50
+  // entities, 9 layers) each redraw is well under a millisecond.
+  private _buildLayers(): any[] {
+    const visible = this._computeVisibleEntities();
+    return [
+      ...this._buildStaticLayers(visible),
+      ...this._buildAnimatedLayers(visible),
     ];
   }
 
@@ -835,13 +1156,23 @@ export class GlobeBridge implements IEngineBridge {
     return result;
   }
 
+  // v3: no arc rebind step. EngineArc.source / EngineArc.target stay on the
+  // real HQ longitude/latitude emitted by the service-layer mapper, end to
+  // end. The arc visually arrives at the underlying ring (which is also at
+  // real HQ) inside a cluster's overlapping ring stack, while the icon sits
+  // a few pixels off — a small acceptable mismatch in exchange for keeping
+  // a single canonical coordinate on every record. Reverse migration: see
+  // git history for _resolveArcsToDisplay (rebound arc endpoints to the
+  // entitySpread offset coords) and v2's screenDeclutter (would have needed
+  // per-frame unproject of the offset → not architecturally clean).
+
   private _startIdlePulse(): void {
     if (this._idleInterval !== null) return;
     this._idleInterval = setInterval(() => {
       this._idleAnimTime += 0.067;
-      if (this._rotationEnabled && !this._activePowerMapId && this._arcs.length === 0 && this._idleArcs.length > 0) {
-        this._redraw();
-      }
+      // _redraw() omitted here: idle arcs are precomputed in _idleArcs but not yet
+      // wired into any rendered layer — calling _redraw() would push unchanged
+      // layers to deck.gl at 15fps for no visual effect.
     }, 67);
   }
 
@@ -979,7 +1310,10 @@ export class GlobeBridge implements IEngineBridge {
   private _flyTo(target: { nodeId: string }): void {
     const entity = this._entities.find(e => e.nodeId === target.nodeId);
     if (!entity) return;
+    this._focusedId = target.nodeId;
+    this._flyToEntityClick = true;
     this._executeFlyTo(entity.longitude, entity.latitude, 2.8, 1800, () => {
+      this._flyToEntityClick = false;
       this._startArrivalPulse(entity.longitude, entity.latitude);
     });
   }
@@ -995,6 +1329,13 @@ export class GlobeBridge implements IEngineBridge {
     if (this._flyToTimer !== null) { clearTimeout(this._flyToTimer); this._flyToTimer = null; }
     if (this._idleResumeTimer !== null) { clearTimeout(this._idleResumeTimer); this._idleResumeTimer = null; }
     this._userInteracting = true;
+    // Fresh fly-to: reset the cancel flag. A subsequent SET_ROTATION false
+    // will flip it back to true mid-flight, freezing this animation at the
+    // current frame (Rule 7). For powermap dispatches AppShell orders the
+    // effects SET_ROTATION → FLY_TO so this reset wins; for entity-click
+    // fly-tos started from `onClick`, the SET_ROTATION false arrives
+    // ~50 ms later and aborts the cinematic.
+    this._flyToCancelled = false;
 
     const s0 = this._viewState?.longitude ?? 0;
     const s1 = this._viewState?.latitude  ?? 0;
@@ -1003,6 +1344,12 @@ export class GlobeBridge implements IEngineBridge {
     const ease = (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
     const tick = (now: number) => {
+      // Rule 7: bail without scheduling another frame if rotation was disabled
+      // mid-flight (SET_ROTATION false → _flyToCancelled true). The camera
+      // freezes at its current interpolation; `_userInteracting` stays true
+      // because the rotation handler set it, so no other motion can resume.
+      if (this._flyToCancelled) return;
+
       const t = Math.min((now - t0) / duration, 1);
       const e = ease(t);
       const next = {

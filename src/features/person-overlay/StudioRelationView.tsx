@@ -1,17 +1,13 @@
+import { useMemo } from 'react'
 import type { ActorRefFrom } from 'xstate'
 import { useQuery } from '@tanstack/react-query'
-import type { EntityRef } from '@/domain/types'
+import type { EntityRef, PersonIntelligence } from '@/domain/types'
 import type { entityInspectorMachine } from '@/machines/entity-inspector.machine'
+import type { PersonMapDto } from '@/types/_ext/personMapDto'
 import { qk, fetchers } from '@/domain/queries'
 import { CompactProfilePanel } from './CompactProfilePanel'
 import { toConnections, toSignals } from './adapters'
-import {
-  elonMuskFallback,
-  donaldTrumpFallback,
-  elonMuskCompanies,
-  trumpCompanies,
-  elonTrumpRelation,
-} from './personFallbackData'
+import { elonTrumpRelation } from './personFallbackData'
 import './person-overlay.scss'
 
 const MUSK_NODE_ID  = 'person:7'
@@ -26,12 +22,29 @@ function hexToRgb(hex: string): string {
   ].join(',')
 }
 
+function nodeTypeColor(nodeType: string): string {
+  const map: Record<string, string> = {
+    person: '#8B5CF6', company: '#00e5ff', country: '#d4a847',
+    commodity: '#00e676', sector: '#3b8bd4',
+  }
+  return map[nodeType.toLowerCase()] ?? '#888'
+}
+
+function seedToIntel(seed: PersonMapDto): PersonIntelligence {
+  return {
+    ...seed,
+    wealth: seed.netWorthUsd != null ? { netWorthUsd: seed.netWorthUsd } : undefined,
+  } as any
+}
+
 interface StudioRelationViewProps {
   entityA:      EntityRef
   entityB:      EntityRef
+  seedA:        PersonMapDto | null
+  seedB:        PersonMapDto | null
   /** Optional: when present, the "Back" button sends RELATION.CLOSE to the
-   * machine. When absent (e.g. mounted as a top-level page from PersonViewPanel),
-   * the back button falls through to onClose. */
+   * machine. When absent (e.g. mounted as a top-level page), the back button
+   * falls through to onClose. */
   inspectorRef?: ActorRefFrom<typeof entityInspectorMachine>
   onClose:      () => void
 }
@@ -39,22 +52,11 @@ interface StudioRelationViewProps {
 export function StudioRelationView({
   entityA,
   entityB,
+  seedA,
+  seedB,
   inspectorRef,
   onClose,
 }: StudioRelationViewProps) {
-
-  // ── Person intelligence (left + right panels) ────────────────────────────
-  const { data: personA, isLoading: loadingA } = useQuery({
-    queryKey: qk.person(entityA.id),
-    queryFn:  () => fetchers.person(entityA.id),
-    enabled:  !!entityA.id && entityA.type === 'PERSON',
-  })
-
-  const { data: personB, isLoading: loadingB } = useQuery({
-    queryKey: qk.person(entityB.id),
-    queryFn:  () => fetchers.person(entityB.id),
-    enabled:  !!entityB.id && entityB.type === 'PERSON',
-  })
 
   // ── Connections (graph neighbors) ─────────────────────────────────────────
   const { data: neighborsA } = useQuery({
@@ -97,14 +99,12 @@ export function StudioRelationView({
     else onClose()
   }
 
-  // Person fallbacks (Musk/Trump fixtures only when API misses)
-  const dataA = personA ?? (entityA.id === 7   ? elonMuskFallback    : null)
-  const dataB = personB ?? (entityB.id === 173 ? donaldTrumpFallback : null)
+  // Person data — from seed (top15 JSON), no API call needed
+  const dataA: PersonIntelligence | null = seedA ? seedToIntel(seedA) : null
+  const dataB: PersonIntelligence | null = seedB ? seedToIntel(seedB) : null
 
-  // Relation: real `RelationAnalysis` shape (description / powerDynamic / keyLevers /
-  // riskFactors / strength / riskScore) does NOT include timelines / shared / cascade —
-  // those view-only sections fall back to the demo fixture for the Musk↔Trump pair
-  // and are hidden otherwise. Backend support for timelines/shared/cascade pending.
+  // Relation: real RelationAnalysis for the center panel; elonTrumpRelation for
+  // timelines/cascade sections (Musk↔Trump only, no backend endpoint yet).
   const useFallbackRelation = isMuskTrumpPair && (!relationApi || relationError)
   const rel = useFallbackRelation ? elonTrumpRelation : null
   const apiAnalysis    = relationApi?.description  ?? rel?.analysis     ?? null
@@ -127,15 +127,35 @@ export function StudioRelationView({
   const initialsA = entityA.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
   const initialsB = entityB.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
-  // Connections: live data via adapter; fallback to fixtures for Musk/Trump only
+  // Connections: live data via adapter
   const liveConnA = toConnections(neighborsA, entityA.nodeId)
   const liveConnB = toConnections(neighborsB, entityB.nodeId)
-  const leftConnections  = liveConnA.length > 0 ? liveConnA : (entityA.id === 7   ? [] : [])
-  const rightConnections = liveConnB.length > 0 ? liveConnB : (entityB.id === 173 ? [] : [])
 
   // Signals: live data via adapter; empty array if endpoint unavailable
   const leftSignals  = toSignals(newsA)
   const rightSignals = toSignals(newsB)
+
+  // Companies: from seed companyName field
+  const companiesA = seedA?.companyName
+    ? [{ icon: seedA.companyName.slice(0, 2).toUpperCase(), color: '#00e5ff', name: seedA.companyName, role: '—', cap: '—' }]
+    : []
+  const companiesB = seedB?.companyName
+    ? [{ icon: seedB.companyName.slice(0, 2).toUpperCase(), color: '#00e5ff', name: seedB.companyName, role: '—', cap: '—' }]
+    : []
+
+  // Shared connections: intersection of both neighbor graphs (live, works for any pair)
+  const sharedConnections = useMemo(() => {
+    const nodesA = new Set(neighborsA?.nodes?.map(n => n.nodeId) ?? [])
+    return (neighborsB?.nodes ?? [])
+      .filter(n => nodesA.has(n.nodeId) && !!n.name)
+      .slice(0, 5)
+      .map(n => ({
+        initials: (n.name ?? '').split(' ').map((w: string) => w[0]).filter(Boolean).join('').slice(0, 2).toUpperCase(),
+        name:     n.name ?? '',
+        type:     n.type ?? '',
+        color:    nodeTypeColor(n.type ?? ''),
+      }))
+  }, [neighborsA, neighborsB])
 
   return (
     <div className="sr__root">
@@ -148,9 +168,9 @@ export function StudioRelationView({
         person={dataA}
         side="left"
         entityName={entityA.name}
-        isLoading={loadingA}
-        companies={entityA.id === 7 ? elonMuskCompanies : []}
-        connections={leftConnections}
+        isLoading={false}
+        companies={companiesA}
+        connections={liveConnA}
         signals={leftSignals}
         activeConnectionNodeId={entityB.nodeId}
       />
@@ -188,7 +208,7 @@ export function StudioRelationView({
             <div className="sr__arc-ent sr__arc-ent--left">
               <div className="sr__arc-avatar">
                 {photoA
-                  ? <img src={photoA} alt={entityA.name} />
+                  ? <img src={photoA.startsWith('/') || photoA.startsWith('http') ? photoA : `/persons/${photoA}`} alt={entityA.name} />
                   : initialsA}
               </div>
             </div>
@@ -197,7 +217,7 @@ export function StudioRelationView({
             <div className="sr__arc-ent sr__arc-ent--right">
               <div className="sr__arc-avatar">
                 {photoB
-                  ? <img src={photoB} alt={entityB.name} />
+                  ? <img src={photoB.startsWith('/') || photoB.startsWith('http') ? photoB : `/persons/${photoB}`} alt={entityB.name} />
                   : initialsB}
               </div>
             </div>
@@ -298,14 +318,14 @@ export function StudioRelationView({
             </div>
           )}
 
-          {/* Empty-state when no analysis available (non-Musk-Trump pair, endpoint missing) */}
+          {/* Empty-state when no analysis available */}
           {!apiAnalysis && !apiPowerDyn && apiLevers.length === 0 && apiRisks.length === 0 && (
             <div className="sr__analysis-desc" style={{ color: '#7a8ba0' }}>
               Relation analysis pending — backend `/relations/analyze` not yet available for this pair.
             </div>
           )}
 
-          {/* Affected Timelines (fallback-only — no API endpoint yet) */}
+          {/* Affected Timelines (fallback-only — Musk↔Trump fixture) */}
           {rel && (
             <div>
               <div className="sr__section-label">Affected Timelines</div>
@@ -327,11 +347,11 @@ export function StudioRelationView({
             </div>
           )}
 
-          {/* Shared Connections (fallback-only — derive from neighbors intersection later) */}
-          {rel && (
+          {/* Shared Connections — live intersection of both neighbor graphs */}
+          {sharedConnections.length > 0 && (
             <div>
               <div className="sr__section-label">Shared Connections</div>
-              {rel.shared.map((s, i) => (
+              {sharedConnections.map((s, i) => (
                 <div key={i} className="sr__shared-row">
                   <div
                     className="sr__shared-avatar"
@@ -351,7 +371,7 @@ export function StudioRelationView({
             </div>
           )}
 
-          {/* Cascade Exposure (fallback-only) */}
+          {/* Cascade Exposure (fallback-only — Musk↔Trump fixture) */}
           {rel && (
             <div>
               <div className="sr__section-label">Cascade Exposure</div>
@@ -384,9 +404,9 @@ export function StudioRelationView({
         person={dataB}
         side="right"
         entityName={entityB.name}
-        isLoading={loadingB}
-        companies={entityB.id === 173 ? trumpCompanies : []}
-        connections={rightConnections}
+        isLoading={false}
+        companies={companiesB}
+        connections={liveConnB}
         signals={rightSignals}
         activeConnectionNodeId={entityA.nodeId}
       />

@@ -125,11 +125,11 @@ export function toLayoutInput(
     : {
         NodeId: envelope.centralNodeId,
         Label:  centerFallback?.name ?? envelope.centralNodeId,
-        Type:   nodeTypeToLayoutType((centerFallback?.type ?? 'PERSON') as NodeType),
+        Type:   nodeTypeToLayoutType((centerFallback?.type ?? 'person') as NodeType),
         DbId:   dbIdFromNodeId(envelope.centralNodeId),
         Accent: 'primary',
         Avatar: centerFallback?.name
-          ? resolveAvatar(centerFallback.name, centerFallback.type ?? 'PERSON', null)
+          ? resolveAvatar(centerFallback.name, centerFallback.type ?? 'person', null)
           : undefined,
       }
 

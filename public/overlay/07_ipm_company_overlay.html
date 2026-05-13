@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPM · Company Overlay · BlackRock</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#090b10;--bgCard:#111620;--bgHover:#161d2c;
+  --border:rgba(255,255,255,.07);--borderLt:rgba(255,255,255,.12);
+  --teal:#00e5ff;--green:#00d4aa;--gold:#f5a623;--red:#e53935;
+  --purple:#a855f7;--blue:#378ADD;
+  --text:#e8edf5;--text2:#8a9bb5;--text3:#4a5568;
+  --mono:'JetBrains Mono',monospace;--raj:'Rajdhani',sans-serif;--sans:'DM Sans',sans-serif;
+  --topH:48px;--tickH:36px;--botH:30px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
+
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topH);z-index:600;background:rgba(9,11,16,.96);border-bottom:1px solid var(--border);display:flex;align-items:center}
+.tb-burger{width:46px;height:var(--topH);display:flex;align-items:center;justify-content:center;border-right:1px solid var(--border);cursor:pointer}
+.bl{display:flex;flex-direction:column;gap:4px}.bl span{display:block;width:17px;height:1.5px;background:var(--text2);border-radius:2px}
+.tb-logo{padding:0 14px;font-family:var(--raj);font-size:17px;font-weight:700;color:var(--green);letter-spacing:1.5px;flex-shrink:0;border-right:1px solid var(--border)}
+.tb-head-entity{flex:1;display:flex;align-items:center;gap:10px;padding:0 14px;border-right:1px solid var(--border)}
+.co-logo{width:30px;height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;border:1.5px solid;flex-shrink:0}
+.tb-entity-name{font-family:var(--raj);font-size:16px;font-weight:700}
+.tb-entity-tag{font-family:var(--mono);font-size:8px;color:var(--text3);margin-left:4px}
+.tb-entity-live{font-family:var(--mono);font-size:10px;font-weight:700;margin-left:auto;flex-shrink:0}
+.tb-entity-chg{font-family:var(--mono);font-size:9px;margin-left:6px}
+.tb-options{display:flex;align-items:center;flex-shrink:0}
+.tb-opt-btn{height:var(--topH);padding:0 12px;display:flex;align-items:center;gap:4px;border-left:1px solid var(--border);cursor:pointer;font-family:var(--mono);font-size:8px;color:var(--text3);transition:all .12s;white-space:nowrap}
+.tb-opt-btn:hover{background:var(--bgHover);color:var(--text)}
+.tb-user{width:46px;height:var(--topH);display:flex;align-items:center;justify-content:center;border-left:1px solid var(--border)}
+.avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--blue));display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;font-weight:700}
+
+.ticker{position:fixed;top:var(--topH);left:0;right:0;height:var(--tickH);z-index:500;background:rgba(7,9,14,.97);border-bottom:1px solid var(--border);display:flex;align-items:center;overflow:hidden}
+.ticker-scroll{flex:1;overflow:hidden}
+.ticker-track{display:flex;align-items:center;animation:scrollTicker 60s linear infinite;width:max-content}
+@keyframes scrollTicker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tick-item{display:inline-flex;align-items:center;gap:6px;padding:0 12px;height:var(--tickH);border-right:1px solid var(--border);cursor:pointer;flex-shrink:0}
+.t-p{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;font-weight:700;border:2px solid;flex-shrink:0}
+.t-c{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;font-weight:700;border:1px solid;flex-shrink:0}
+.t-n{font-family:var(--mono);font-size:9px;color:var(--text2)}
+.t-b{font-family:var(--mono);font-size:7px;padding:1px 5px;border-radius:2px}
+.t-il{font-family:var(--mono);font-size:7px;color:var(--text3)}
+.t-iv{font-family:var(--mono);font-size:11px;font-weight:700}
+
+/* MAIN 3-COL */
+.main-area{position:fixed;top:calc(var(--topH)+var(--tickH));left:0;right:0;bottom:var(--botH);display:grid;grid-template-columns:260px 1fr 290px;overflow:hidden}
+
+/* LEFT COL */
+.left-col{background:rgba(10,12,18,.98);border-right:1px solid var(--borderLt);display:flex;flex-direction:column;overflow:hidden}
+.lc-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.lc-tab{padding:8px 9px;font-family:var(--mono);font-size:7px;letter-spacing:.4px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .12s;flex-shrink:0}
+.lc-tab:hover{color:var(--text2)}
+.lc-tab.active{color:var(--purple);border-bottom-color:var(--purple)}
+.lc-body{flex:1;overflow-y:auto;padding:12px 14px}
+.lc-body::-webkit-scrollbar{width:2px}
+.lc-body::-webkit-scrollbar-thumb{background:var(--border)}
+.sec{margin-bottom:14px}
+.sec-title{font-family:var(--mono);font-size:7px;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:7px}
+.kv{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.kv:last-child{border-bottom:none}
+.kk{font-family:var(--mono);font-size:8px;color:var(--text3)}
+.kv-v{font-family:var(--mono);font-size:8px;font-weight:600}
+.pb-row{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.pb-lbl{font-family:var(--mono);font-size:7px;width:22px;flex-shrink:0}
+.pb-track{flex:1;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.pb-fill{height:100%;border-radius:2px}
+.pb-val{font-family:var(--mono);font-size:8px;font-weight:700;width:20px;text-align:right}
+.lc-sofia{padding:10px 14px;border-top:1px solid var(--border);background:rgba(168,85,247,.04);flex-shrink:0}
+.lc-sofia-lbl{font-family:var(--mono);font-size:7px;color:var(--purple);letter-spacing:1px;margin-bottom:4px}
+.lc-sofia-txt{font-family:var(--sans);font-size:9px;color:var(--text2);line-height:1.5}
+
+/* CENTER COL */
+.center-col{position:relative;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
+
+/* Canvas view tabs (6 modes) */
+.canvas-options{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:0;background:rgba(9,11,16,.9);border:1px solid var(--borderLt);border-radius:7px;overflow:hidden;backdrop-filter:blur(12px);z-index:20}
+.ctab{padding:6px 12px;font-family:var(--mono);font-size:7px;letter-spacing:.6px;color:var(--text2);cursor:pointer;border-right:1px solid var(--border);transition:all .12s;white-space:nowrap}
+.ctab:last-child{border-right:none}
+.ctab:hover{background:var(--bgHover);color:var(--text)}
+.ctab.active{color:var(--purple);background:rgba(168,85,247,.07)}
+
+/* Canvas areas */
+.cv{position:absolute;inset:0;transition:opacity .3s ease}
+
+/* Sofia pinned bottom */
+.canvas-sofia{position:absolute;bottom:48px;left:12px;right:12px;padding:9px 14px;background:rgba(9,11,16,.92);border:1px solid var(--borderLt);border-radius:7px;backdrop-filter:blur(12px);z-index:10;display:flex;gap:10px}
+.cs-lbl{font-family:var(--mono);font-size:7px;color:var(--purple);letter-spacing:1px;flex-shrink:0;margin-top:1px}
+.cs-txt{font-family:var(--sans);font-size:9px;color:var(--text2);line-height:1.5}
+
+/* Globe nav */
+.globe-nav{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;background:rgba(9,11,16,.88);border:1px solid var(--borderLt);border-radius:7px;overflow:hidden;backdrop-filter:blur(12px);z-index:10}
+.gnav-btn{padding:7px 12px;font-family:var(--mono);font-size:7px;letter-spacing:.7px;color:var(--text2);cursor:pointer;border-right:1px solid var(--border);transition:all .12s}
+.gnav-btn:last-child{border-right:none}
+.gnav-btn:hover{background:var(--bgHover);color:var(--text)}
+.gnav-btn.active{color:var(--green);background:rgba(0,212,170,.06)}
+
+/* SUPPLY CHAIN canvas */
+.supply-chain{padding:56px 20px 100px;overflow-y:auto;height:100%}
+.supply-chain::-webkit-scrollbar{width:2px}
+.sc-tier{margin-bottom:18px}
+.sc-tier-label{font-family:var(--mono);font-size:7px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:8px}
+.sc-nodes{display:flex;flex-wrap:wrap;gap:8px}
+.sc-node{padding:7px 12px;border-radius:5px;border:1px solid;cursor:pointer;transition:all .15s}
+.sc-node:hover{opacity:.8}
+.sc-node-name{font-family:var(--mono);font-size:8px;font-weight:700}
+.sc-node-detail{font-family:var(--mono);font-size:7px;color:var(--text3);margin-top:2px}
+
+/* POWER MAPS canvas */
+.power-maps{padding:56px 20px 100px;overflow-y:auto;height:100%;display:flex;flex-direction:column;gap:10px}
+.pm-card{background:var(--bgCard);border:1px solid var(--border);border-radius:7px;padding:12px;cursor:pointer;transition:all .15s}
+.pm-card:hover{border-color:var(--borderLt)}
+.pm-name{font-family:var(--raj);font-size:13px;font-weight:700;margin-bottom:4px}
+.pm-detail{font-family:var(--mono);font-size:8px;color:var(--text3)}
+
+/* RIGHT COL */
+.right-col{background:rgba(10,12,18,.98);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;direction:rtl}
+.right-inner{direction:ltr;flex:1;overflow-y:auto;padding:0}
+.right-inner::-webkit-scrollbar{width:2px}
+.right-inner::-webkit-scrollbar-thumb{background:var(--border)}
+
+.r-section{padding:12px 14px;border-bottom:1px solid var(--border)}
+.r-title{font-family:var(--mono);font-size:7px;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px}
+
+/* Timeline item */
+.tl-item{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.tl-item:last-child{border-bottom:none}
+.tl-head{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.tl-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.tl-title{font-family:var(--sans);font-size:10px;color:var(--text);line-height:1.3}
+.tl-meta{font-family:var(--mono);font-size:7px;color:var(--text3)}
+.tl-branches{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+.tl-branch{font-family:var(--mono);font-size:7px;padding:2px 6px;border-radius:2px;white-space:nowrap}
+
+/* PCC tabs */
+.pcc-tabs{display:flex;border-bottom:1px solid var(--border)}
+.pcc-tab{flex:1;padding:7px 4px;text-align:center;font-family:var(--mono);font-size:7px;color:var(--text3);cursor:pointer;transition:all .12s;border-bottom:2px solid transparent}
+.pcc-tab:hover{color:var(--text2)}
+.pcc-tab.active{color:var(--purple);border-bottom-color:var(--purple)}
+
+/* Entity mini row */
+.ent-mini{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer}
+.ent-mini:last-child{border-bottom:none}
+.ent-mini:hover{background:rgba(255,255,255,.02)}
+.em-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;font-weight:700;border:1.5px solid;flex-shrink:0}
+.em-logo{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;font-weight:700;border:1px solid;flex-shrink:0}
+.em-info{flex:1;min-width:0}
+.em-name{font-family:var(--mono);font-size:8px;color:var(--text)}
+.em-detail{font-family:var(--mono);font-size:7px;color:var(--text3)}
+.em-score{font-family:var(--mono);font-size:9px;font-weight:700;flex-shrink:0}
+
+/* Stock bottom strip */
+.stock-strip{padding:8px 14px;border-top:1px solid var(--border);background:rgba(9,11,16,.96);flex-shrink:0;direction:ltr}
+.ss-head{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.ss-head::-webkit-scrollbar{height:0}
+.ss-chip{flex-shrink:0;padding:4px 10px;background:var(--bgCard);border:1px solid var(--border);border-radius:5px;display:flex;align-items:center;gap:6px;cursor:pointer}
+.ss-chip.active{border-color:rgba(168,85,247,.4)}
+.ss-chip-name{font-family:var(--mono);font-size:8px}
+.ss-chip-val{font-family:var(--mono);font-size:8px;font-weight:700}
+.ss-sparkline{display:flex;align-items:flex-end;gap:1px;height:16px}
+.ss-spark-bar{width:4px;border-radius:1px 1px 0 0}
+
+.botbar{position:fixed;bottom:0;left:0;right:0;height:var(--botH);z-index:600;background:rgba(9,11,16,.96);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 14px}
+.bot-stat{font-family:var(--mono);font-size:8px;color:var(--text3)}
+.bot-stat span{color:var(--teal)}
+.bot-badge{font-family:var(--mono);font-size:7px;padding:2px 7px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR — company header replaces search -->
+<div class="topbar">
+  <div class="tb-burger"><div class="bl"><span></span><span></span><span></span></div></div>
+  <div class="tb-logo">IPM</div>
+  <div class="tb-head-entity">
+    <div class="co-logo" style="background:#1a1020;color:var(--purple);border-color:#a855f760">BR</div>
+    <span class="tb-entity-name">BlackRock</span>
+    <span class="tb-entity-tag">NYSE: BLK · ASSET MANAGER · Id=90</span>
+    <span class="tb-entity-live" style="color:var(--green)">$949.44</span>
+    <span class="tb-entity-chg" style="color:var(--green)">+0.82%</span>
+  </div>
+  <div class="tb-options">
+    <div class="tb-opt-btn"><span>📊</span>COMPARE</div>
+    <div class="tb-opt-btn"><span>↔</span>VS</div>
+    <div class="tb-opt-btn"><span>⚡</span>INTEL</div>
+    <div class="tb-opt-btn"><span>◈</span>DOSSIER</div>
+  </div>
+  <div class="tb-user"><div class="avatar">O7</div></div>
+</div>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-scroll"><div class="ticker-track">
+    <div class="tick-item" style="background:rgba(168,85,247,.04);border-bottom:2px solid var(--purple)">
+      <div class="t-c" style="background:#1a1020;color:var(--purple);border-color:#a855f780">BR</div>
+      <span class="t-n" style="color:var(--text)">BlackRock</span>
+      <span class="t-b" style="background:#a855f712;color:var(--purple);border:1px solid #a855f730">SELECTED</span>
+    </div>
+    <div class="tick-item"><div class="t-p" style="background:#101520;color:var(--green);border-color:#00d4aa60">LF</div><span class="t-n">Larry Fink</span></div>
+    <div class="tick-item"><div class="t-p" style="background:#101520;color:var(--gold);border-color:#f5a62360">SB</div><span class="t-n">Bessent</span></div>
+    <div class="tick-item"><div class="t-c" style="background:#1a1a2a;color:var(--blue);border-color:#378ADD30">JP</div><span class="t-n">JPMorgan</span></div>
+    <div class="tick-item"><div class="t-c" style="background:#151020;color:var(--gold);border-color:#f5a62330">VG</div><span class="t-n">Vanguard</span></div>
+    <div class="tick-item" style="gap:8px"><span class="t-il">GCRI</span><span class="t-iv" style="color:#e53935">63.5</span></div>
+    <div class="tick-item" style="gap:8px"><span class="t-il">DSI</span><span class="t-iv" style="color:var(--gold)">59.5</span></div>
+    <div class="tick-item"><div class="t-c" style="background:#1a1020;color:var(--purple);border-color:#a855f730">BR</div><span class="t-n">BlackRock</span></div>
+    <div class="tick-item"><div class="t-p" style="background:#101520;color:var(--green);border-color:#00d4aa60">LF</div><span class="t-n">Larry Fink</span></div>
+    <div class="tick-item" style="gap:8px"><span class="t-il">GCRI</span><span class="t-iv" style="color:#e53935">63.5</span></div>
+  </div></div>
+</div>
+
+<!-- MAIN -->
+<div class="main-area">
+
+  <!-- LEFT COL -->
+  <div class="left-col">
+    <div class="lc-tabs">
+      <div class="lc-tab active">KEY DATA</div>
+      <div class="lc-tab">RISK</div>
+      <div class="lc-tab">OWNERSHIP</div>
+      <div class="lc-tab">FACTORIES</div>
+    </div>
+    <div class="lc-body">
+
+      <div class="sec">
+        <div class="sec-title">Company Overview</div>
+        <div class="kv"><span class="kk">Market Cap</span><span class="kv-v" style="color:var(--purple)">$147B</span></div>
+        <div class="kv"><span class="kk">AUM</span><span class="kv-v" style="color:var(--purple)">$10.0T</span></div>
+        <div class="kv"><span class="kk">Aladdin AUM</span><span class="kv-v" style="color:var(--red)">$21.6T</span></div>
+        <div class="kv"><span class="kk">Employees</span><span class="kv-v">21,000</span></div>
+        <div class="kv"><span class="kk">Founded</span><span class="kv-v">1988</span></div>
+        <div class="kv"><span class="kk">HQ</span><span class="kv-v">🇺🇸 New York</span></div>
+        <div class="kv"><span class="kk">Sector</span><span class="kv-v">ASSET MGMT</span></div>
+        <div class="kv"><span class="kk">CEO</span><span class="kv-v">Larry Fink</span></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Power Scores</div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="color:var(--purple)">FPI</span>
+          <div class="pb-track"><div class="pb-fill" style="width:94%;background:var(--purple)"></div></div>
+          <span class="pb-val" style="color:var(--purple)">94</span>
+        </div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="color:var(--teal)">IPI</span>
+          <div class="pb-track"><div class="pb-fill" style="width:82%;background:var(--teal)"></div></div>
+          <span class="pb-val" style="color:var(--teal)">82</span>
+        </div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="color:var(--gold)">SPI</span>
+          <div class="pb-track"><div class="pb-fill" style="width:76%;background:var(--gold)"></div></div>
+          <span class="pb-val" style="color:var(--gold)">76</span>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Aladdin Risk OS ⚠ CHOKEPOINT</div>
+        <div style="padding:10px 12px;background:rgba(229,57,53,.06);border:1px solid rgba(229,57,53,.25);border-radius:6px">
+          <div class="kv" style="padding:2px 0"><span class="kk">IsChokepoint</span><span class="kv-v" style="color:var(--red)">TRUE</span></div>
+          <div class="kv" style="padding:2px 0"><span class="kk">SoftDependencyScore</span><span class="kv-v" style="color:var(--red)">98/100</span></div>
+          <div class="kv" style="padding:2px 0"><span class="kk">SubstitutionLatency</span><span class="kv-v" style="color:var(--red)">120 months</span></div>
+          <div class="kv" style="padding:2px 0"><span class="kk">SystemicImportance</span><span class="kv-v" style="color:var(--red)">CRITICAL</span></div>
+          <div class="kv" style="padding:2px 0"><span class="kk">Institutions using</span><span class="kv-v">200+</span></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Risk Dimensions</div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="font-size:6px;width:50px;color:var(--text3)">Regulatory</span>
+          <div class="pb-track"><div class="pb-fill" style="width:72%;background:var(--red)"></div></div>
+          <span class="pb-val" style="color:var(--red)">72</span>
+        </div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="font-size:6px;width:50px;color:var(--text3)">Systemic</span>
+          <div class="pb-track"><div class="pb-fill" style="width:94%;background:var(--red)"></div></div>
+          <span class="pb-val" style="color:var(--red)">94</span>
+        </div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="font-size:6px;width:50px;color:var(--text3)">Geo-political</span>
+          <div class="pb-track"><div class="pb-fill" style="width:58%;background:var(--gold)"></div></div>
+          <span class="pb-val" style="color:var(--gold)">58</span>
+        </div>
+      </div>
+
+    </div>
+    <div class="lc-sofia">
+      <div class="lc-sofia-lbl">◈ SOFIA</div>
+      <div class="lc-sofia-txt">BlackRock's Aladdin OS (SoftDependencyScore 98) represents the highest single-model systemic risk in the graph. A 1% model error propagates across $21.6T simultaneously — a failure mode with no precedent in financial history.</div>
+    </div>
+  </div>
+
+  <!-- CENTER COL -->
+  <div class="center-col">
+
+    <!-- Canvas view options — 6 modes -->
+    <div class="canvas-options">
+      <div class="ctab active" data-mode="map" onclick="setMode('map')">MAP</div>
+      <div class="ctab" data-mode="supply" onclick="setMode('supply')">SUPPLY CHAIN</div>
+      <div class="ctab" data-mode="relations" onclick="setMode('relations')">RELATIONS</div>
+      <div class="ctab" data-mode="events" onclick="setMode('events')">EVENTS</div>
+      <div class="ctab" data-mode="powermaps" onclick="setMode('powermaps')">POWER MAPS</div>
+      <div class="ctab" data-mode="infra" onclick="setMode('infra')">INFRA</div>
+    </div>
+
+    <!-- MAP mode -->
+    <div id="cv-map" class="cv" style="opacity:1;display:flex;align-items:center;justify-content:center">
+      <svg width="660" height="580" viewBox="0 0 660 580">
+        <defs>
+          <radialGradient id="gG3" cx="36%" cy="32%">
+            <stop offset="0%" stop-color="#1a1030"/>
+            <stop offset="55%" stop-color="#0c0f1e"/>
+            <stop offset="100%" stop-color="#060814"/>
+          </radialGradient>
+          <clipPath id="gC3"><circle cx="330" cy="290" r="260"/></clipPath>
+        </defs>
+        <circle cx="330" cy="290" r="267" fill="none" stroke="rgba(168,85,247,.12)" stroke-width="7"/>
+        <circle cx="330" cy="290" r="260" fill="url(#gG3)" stroke="rgba(168,85,247,.22)" stroke-width="1.5"/>
+        <g clip-path="url(#gC3)" stroke="rgba(255,255,255,.05)" stroke-width=".5" fill="none">
+          <ellipse cx="330" cy="290" rx="260" ry="42"/>
+          <ellipse cx="330" cy="290" rx="260" ry="104"/>
+          <line x1="330" y1="30" x2="330" y2="550"/>
+          <line x1="180" y1="62" x2="480" y2="518"/>
+        </g>
+        <g clip-path="url(#gC3)">
+          <path d="M 180 200 Q 228 172 264 188 Q 279 215 264 264 Q 246 296 222 304 Q 196 296 180 272 Q 162 248 180 200 Z" fill="rgba(168,85,247,.12)" stroke="rgba(168,85,247,.4)" stroke-width="1.2"/>
+          <path d="M 316 184 Q 348 168 370 184 Q 381 202 372 224 Q 358 235 336 230 Q 313 222 311 202 Z" fill="rgba(168,85,247,.12)" stroke="rgba(168,85,247,.35)" stroke-width="1"/>
+          <path d="M 425 174 Q 490 160 520 182 Q 531 204 515 232 Q 490 248 459 242 Q 426 228 420 204 Z" fill="rgba(245,166,35,.1)" stroke="rgba(245,166,35,.3)" stroke-width=".8"/>
+        </g>
+        <!-- Arcs from BlackRock -->
+        <path d="M 224 240 Q 275 192 330 212" fill="none" stroke="rgba(168,85,247,.6)" stroke-width="1.5" stroke-dasharray="5,4"><animate attributeName="stroke-dashoffset" values="0;-18" dur="2s" repeatCount="indefinite"/></path>
+        <path d="M 222 242 Q 190 220 185 232" fill="none" stroke="rgba(55,138,221,.5)" stroke-width="1.2" stroke-dasharray="4,4"><animate attributeName="stroke-dashoffset" values="0;-16" dur="1.8s" repeatCount="indefinite"/></path>
+        <path d="M 226 238 Q 310 178 432 218" fill="none" stroke="rgba(245,166,35,.4)" stroke-width="1" stroke-dasharray="4,5"><animate attributeName="stroke-dashoffset" values="0;-18" dur="2.8s" repeatCount="indefinite"/></path>
+        <!-- BlackRock marker — highlighted -->
+        <circle cx="225" cy="240" r="18" fill="rgba(168,85,247,.12)" stroke="rgba(168,85,247,.6)" stroke-width="2"/>
+        <text x="225" y="244" text-anchor="middle" font-family="monospace" font-size="9" font-weight="700" fill="#a855f7">BR</text>
+        <!-- Vanguard -->
+        <rect x="198" y="220" width="20" height="20" rx="3" fill="rgba(245,166,35,.1)" stroke="rgba(245,166,35,.4)" stroke-width="1"/>
+        <text x="208" y="234" text-anchor="middle" font-family="monospace" font-size="7" font-weight="700" fill="#f5a623">VG</text>
+        <!-- State Street -->
+        <rect x="246" y="224" width="20" height="20" rx="3" fill="rgba(55,138,221,.1)" stroke="rgba(55,138,221,.35)" stroke-width="1"/>
+        <text x="256" y="238" text-anchor="middle" font-family="monospace" font-size="7" font-weight="700" fill="#378ADD">SS</text>
+        <!-- Larry Fink -->
+        <circle cx="215" cy="232" r="10" fill="rgba(0,212,170,.1)" stroke="rgba(0,212,170,.4)" stroke-width="1"/>
+        <text x="215" y="236" text-anchor="middle" font-family="monospace" font-size="6" font-weight="700" fill="#00d4aa">LF</text>
+      </svg>
+      <!-- Annotations -->
+      <div style="position:absolute;top:16%;left:18%;padding:5px 10px;border-radius:5px;border:1px solid rgba(168,85,247,.3);background:rgba(168,85,247,.06);font-family:var(--mono);font-size:8px;color:var(--purple);backdrop-filter:blur(8px)">⚡ Aladdin: $21.6T</div>
+      <div style="position:absolute;top:64%;left:16%;padding:5px 10px;border-radius:5px;border:1px solid rgba(55,138,221,.25);background:rgba(55,138,221,.05);font-family:var(--mono);font-size:8px;color:var(--blue);backdrop-filter:blur(8px)">→ US Treasury: 82 strength</div>
+      <div style="position:absolute;top:20%;right:14%;padding:5px 10px;border-radius:5px;border:1px solid rgba(245,166,35,.25);background:rgba(245,166,35,.05);font-family:var(--mono);font-size:8px;color:var(--gold);backdrop-filter:blur(8px)">🌐 EMEA AUM: $3.2T</div>
+    </div>
+
+    <!-- SUPPLY CHAIN mode -->
+    <div id="cv-supply" class="cv supply-chain" style="opacity:0;pointer-events:none;display:block">
+      <div class="sc-tier">
+        <div class="sc-tier-label">OWNS / CONTROLS</div>
+        <div class="sc-nodes">
+          <div class="sc-node" style="background:rgba(168,85,247,.06);border-color:rgba(168,85,247,.3)">
+            <div class="sc-node-name" style="color:var(--purple)">Aladdin OS</div>
+            <div class="sc-node-detail">IsChokepoint · 200+ institutions</div>
+          </div>
+          <div class="sc-node" style="background:rgba(0,212,170,.05);border-color:rgba(0,212,170,.25)">
+            <div class="sc-node-name" style="color:var(--green)">iShares ETFs</div>
+            <div class="sc-node-detail">$3.6T ETF platform</div>
+          </div>
+        </div>
+      </div>
+      <div class="sc-tier">
+        <div class="sc-tier-label">SUPPLIES RISK DATA TO</div>
+        <div class="sc-nodes">
+          <div class="sc-node" style="background:rgba(245,166,35,.05);border-color:rgba(245,166,35,.25)">
+            <div class="sc-node-name" style="color:var(--gold)">Vanguard</div>
+            <div class="sc-node-detail">Aladdin client · EdgeStrength 72</div>
+          </div>
+          <div class="sc-node" style="background:rgba(55,138,221,.05);border-color:rgba(55,138,221,.25)">
+            <div class="sc-node-name" style="color:var(--blue)">State Street</div>
+            <div class="sc-node-detail">Aladdin client · EdgeStrength 68</div>
+          </div>
+          <div class="sc-node" style="background:rgba(229,57,53,.05);border-color:rgba(229,57,53,.25)">
+            <div class="sc-node-name" style="color:var(--red)">CalPERS</div>
+            <div class="sc-node-detail">Pension AUM client</div>
+          </div>
+          <div class="sc-node" style="background:rgba(255,255,255,.04);border-color:var(--border)">
+            <div class="sc-node-name" style="color:var(--text2)">200+ others</div>
+            <div class="sc-node-detail">Aladdin risk model dependency</div>
+          </div>
+        </div>
+      </div>
+      <div class="sc-tier">
+        <div class="sc-tier-label">FINANCES / INFLUENCES</div>
+        <div class="sc-nodes">
+          <div class="sc-node" style="background:rgba(55,138,221,.05);border-color:rgba(55,138,221,.25)">
+            <div class="sc-node-name" style="color:var(--blue)">US Treasury</div>
+            <div class="sc-node-detail">EdgeStrength 82 · Gilt auctions</div>
+          </div>
+          <div class="sc-node" style="background:rgba(0,212,170,.05);border-color:rgba(0,212,170,.25)">
+            <div class="sc-node-name" style="color:var(--green)">EU Defense Bonds</div>
+            <div class="sc-node-detail">£28B recent shift</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVENTS mode -->
+    <div id="cv-events" class="cv" style="opacity:0;pointer-events:none;padding:56px 20px 100px;overflow-y:auto;height:100%;display:block">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--bgCard);border:1px solid var(--border);border-radius:7px;padding:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-family:var(--mono);font-size:7px;padding:2px 7px;border-radius:2px;background:#a855f712;color:var(--purple);border:1px solid #a855f730">STRATEGY</span>
+            <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">2d ago</span>
+          </div>
+          <div style="font-family:var(--sans);font-size:11px;color:var(--text);line-height:1.4;margin-bottom:5px">BlackRock shifts £28B from UK gilts to EU defense bonds — DSI hedge positioning confirmed</div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text3)">EdgeRiskScore impact: US Treasury edge −0.3 | EU Defense edge +NEW</div>
+        </div>
+        <div style="background:var(--bgCard);border:1px solid var(--border);border-radius:7px;padding:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-family:var(--mono);font-size:7px;padding:2px 7px;border-radius:2px;background:#e5393512;color:#e53935;border:1px solid #e5393530">REGULATORY</span>
+            <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">1w ago</span>
+          </div>
+          <div style="font-family:var(--sans);font-size:11px;color:var(--text);line-height:1.4;margin-bottom:5px">SEC opens systemic risk review of Aladdin — first formal investigation into single-model financial dependency</div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text3)">Aladdin chokepoint risk elevated. CorporateRiskScore +12 pending.</div>
+        </div>
+        <div style="background:var(--bgCard);border:1px solid var(--border);border-radius:7px;padding:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-family:var(--mono);font-size:7px;padding:2px 7px;border-radius:2px;background:#00e5ff12;color:var(--teal);border:1px solid #00e5ff30">PRODUCT</span>
+            <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">2w ago</span>
+          </div>
+          <div style="font-family:var(--sans);font-size:11px;color:var(--text);line-height:1.4;margin-bottom:5px">BlackRock crosses $10T AUM milestone — Larry Fink letter emphasizes long-term infrastructure investment</div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text3)">FPI score updated: 92 → 94. IPI impact +2.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POWER MAPS mode -->
+    <div id="cv-powermaps" class="cv power-maps" style="opacity:0;pointer-events:none;display:block">
+      <div class="pm-card">
+        <div class="pm-name">Financial Power Map</div>
+        <div class="pm-detail">BlackRock · JPMorgan · Goldman · Fed Reserve · Treasury · Bessent · Dimon · Fink</div>
+      </div>
+      <div class="pm-card">
+        <div class="pm-name">Aladdin Dependency Graph</div>
+        <div class="pm-detail">Aladdin → 200+ institutions → systemic risk propagation chain</div>
+      </div>
+      <div class="pm-card" style="border-color:var(--border);opacity:.5">
+        <div class="pm-name" style="color:var(--text3)">ETF Market Power Map</div>
+        <div class="pm-detail">iShares · Vanguard · State Street → ETF market control</div>
+      </div>
+    </div>
+
+    <!-- RELATIONS + INFRA modes (simplified placeholders) -->
+    <div id="cv-relations" class="cv" style="opacity:0;pointer-events:none;display:flex;align-items:center;justify-content:center;background:rgba(9,11,16,.9)">
+      <div style="text-align:center;font-family:var(--mono);font-size:9px;color:var(--text3)">Relations graph — 14 active edges<br><br>
+        <span style="color:var(--purple)">Owns →</span> Aladdin · iShares<br>
+        <span style="color:var(--blue)">Finances →</span> US Treasury · EU Defense<br>
+        <span style="color:var(--green)">Controls →</span> Larry Fink<br>
+        <span style="color:var(--gold)">Supplies →</span> Vanguard · State Street · 200+ via Aladdin
+      </div>
+    </div>
+    <div id="cv-infra" class="cv" style="opacity:0;pointer-events:none;display:flex;align-items:center;justify-content:center;background:rgba(9,11,16,.9)">
+      <div style="text-align:center;font-family:var(--mono);font-size:9px;color:var(--text3)">Infrastructure nodes<br><br>
+        HQ: 🇺🇸 New York · 50 Madison Ave<br>
+        London: 🇬🇧 Drapers Gardens<br>
+        Hong Kong: 🇭🇰 Citibank Tower<br>
+        Data: Aladdin Platform (proprietary cloud)
+      </div>
+    </div>
+
+    <!-- Globe nav -->
+    <div class="globe-nav" id="globe-nav">
+      <div class="gnav-btn active">⚡ EVENTS</div>
+      <div class="gnav-btn">⏱ TIMELINES</div>
+      <div class="gnav-btn">🗺 POWER MAP</div>
+      <div class="gnav-btn">⛽ CHOKEPOINTS</div>
+    </div>
+
+    <!-- Sofia conclusions -->
+    <div class="canvas-sofia">
+      <span class="cs-lbl">◈</span>
+      <span class="cs-txt" id="sofia-txt">BlackRock's Aladdin OS is the single highest-risk chokepoint in the IPM graph (SoftDependencyScore 98). The £28B gilt-to-EU-defense shift is the clearest institutional hedge signal against DSI erosion currently visible. SEC's Aladdin investigation is the primary downside risk this quarter.</span>
+    </div>
+  </div>
+
+  <!-- RIGHT COL — RTL scrollbar -->
+  <div class="right-col">
+    <div class="pcc-tabs" style="direction:ltr;flex-shrink:0">
+      <div class="pcc-tab active" onclick="setPCC(this,'persons')">PERSONS</div>
+      <div class="pcc-tab" onclick="setPCC(this,'clients')">CLIENTS</div>
+      <div class="pcc-tab" onclick="setPCC(this,'commodities')">COMMODITIES</div>
+    </div>
+    <div class="right-inner">
+
+      <!-- Timelines -->
+      <div class="r-section">
+        <div class="r-title">Open Timelines (2)</div>
+        <div class="tl-item">
+          <div class="tl-head">
+            <div class="tl-dot" style="background:var(--red)"></div>
+            <span style="font-family:var(--mono);font-size:8px;color:var(--text2)">Aladdin SEC Investigation</span>
+          </div>
+          <div class="tl-branches">
+            <span class="tl-branch" style="background:#e5393512;color:#e53935;border:1px solid #e5393530">A: 44% Fine + consent order</span>
+            <span class="tl-branch" style="background:#00d4aa12;color:var(--green);border:1px solid #00d4aa30">B: 56% Dismissed</span>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-head">
+            <div class="tl-dot" style="background:var(--gold)"></div>
+            <span style="font-family:var(--mono);font-size:8px;color:var(--text2)">EU Defense Bond Pivot</span>
+          </div>
+          <div class="tl-branches">
+            <span class="tl-branch" style="background:#a855f712;color:var(--purple);border:1px solid #a855f730">A: 71% Scale up</span>
+            <span class="tl-branch" style="background:#f5a62312;color:var(--gold);border:1px solid #f5a62330">B: 29% Pause</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PCC Section — Persons -->
+      <div class="r-section" id="pcc-persons">
+        <div class="r-title">Key Persons</div>
+        <div class="ent-mini">
+          <div class="em-av" style="background:#101520;color:var(--green);border-color:#00d4aa60">LF</div>
+          <div class="em-info"><div class="em-name">Larry Fink</div><div class="em-detail">CEO · Controls → BlackRock</div></div>
+          <div class="em-score" style="color:var(--green)">72</div>
+        </div>
+        <div class="ent-mini">
+          <div class="em-av" style="background:#101520;color:var(--gold);border-color:#f5a62360">SB</div>
+          <div class="em-info"><div class="em-name">Scott Bessent</div><div class="em-detail">Bridge node · Treasury</div></div>
+          <div class="em-score" style="color:var(--gold)">58</div>
+        </div>
+      </div>
+
+      <!-- Sector + Key Info -->
+      <div class="r-section">
+        <div class="r-title">Sector Position</div>
+        <div class="kv" style="padding:4px 0"><span class="kk">Sector share (ETF)</span><span class="kv-v" style="color:var(--purple)">32%</span></div>
+        <div class="kv" style="padding:4px 0"><span class="kk">Global AUM rank</span><span class="kv-v">#1</span></div>
+        <div class="kv" style="padding:4px 0"><span class="kk">Largest competitor</span><span class="kv-v">Vanguard $8.1T</span></div>
+        <div class="kv" style="padding:4px 0"><span class="kk">Revenue FY23</span><span class="kv-v">$17.9B</span></div>
+      </div>
+
+    </div>
+
+    <!-- Bottom strip — stock product chips -->
+    <div class="stock-strip">
+      <div class="ss-head">
+        <div class="ss-chip active">
+          <span class="ss-chip-name" style="font-family:var(--mono);font-size:8px">BLK</span>
+          <span class="ss-chip-val" style="color:var(--green)">$949.44</span>
+          <div class="ss-sparkline">
+            <div class="ss-spark-bar" style="height:8px;background:var(--purple);opacity:.4"></div>
+            <div class="ss-spark-bar" style="height:6px;background:var(--purple);opacity:.4"></div>
+            <div class="ss-spark-bar" style="height:10px;background:var(--purple);opacity:.6"></div>
+            <div class="ss-spark-bar" style="height:12px;background:var(--purple);opacity:.7"></div>
+            <div class="ss-spark-bar" style="height:14px;background:var(--purple);opacity:.85"></div>
+            <div class="ss-spark-bar" style="height:16px;background:var(--purple)"></div>
+          </div>
+        </div>
+        <div class="ss-chip">
+          <span class="ss-chip-name" style="font-family:var(--mono);font-size:8px">IEMG</span>
+          <span class="ss-chip-val" style="color:var(--text2)">$52.18</span>
+        </div>
+        <div class="ss-chip">
+          <span class="ss-chip-name" style="font-family:var(--mono);font-size:8px">IVV</span>
+          <span class="ss-chip-val" style="color:var(--green)">$518.72</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOT BAR -->
+<div class="botbar">
+  <div style="display:flex;gap:14px">
+    <span class="bot-stat">VIEWING <span style="color:var(--purple)">BLACKROCK</span></span>
+    <span class="bot-stat">AUM <span style="color:var(--purple)">$10T</span></span>
+    <span class="bot-stat">ALADDIN RISK <span style="color:var(--red)">$21.6T</span></span>
+  </div>
+  <div style="display:flex;gap:6px">
+    <span class="bot-badge" style="background:#00d4aa12;color:var(--green);border:1px solid #00d4aa30">● LIVE</span>
+    <span class="bot-badge" style="background:#e5393512;color:var(--red);border:1px solid #e5393530">⚠ CHOKEPOINT</span>
+    <span class="bot-badge" style="background:#a855f712;color:var(--purple);border:1px solid #a855f730">FPI 94 · #1 ASSET MGR</span>
+  </div>
+</div>
+
+<script>
+const cvModes = ['map','supply','relations','events','powermaps','infra']
+let curCv = 'map'
+
+function setMode(m){
+  document.getElementById('cv-'+curCv).style.opacity='0'
+  document.getElementById('cv-'+curCv).style.pointerEvents='none'
+  document.querySelectorAll('.ctab').forEach(t=>t.classList.remove('active'))
+  curCv=m
+  document.getElementById('cv-'+m).style.opacity='1'
+  document.getElementById('cv-'+m).style.pointerEvents='all'
+  document.querySelector(`[data-mode="${m}"]`).classList.add('active')
+  // Hide globe nav for non-map modes
+  const showNav = m==='map'
+  document.getElementById('globe-nav').style.opacity = showNav?'1':'0'
+}
+
+function setPCC(el,panel){
+  document.querySelectorAll('.pcc-tab').forEach(t=>t.classList.remove('active'))
+  el.classList.add('active')
+}
+
+document.querySelectorAll('.gnav-btn').forEach(b=>{
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.gnav-btn').forEach(x=>x.classList.remove('active'))
+    this.classList.add('active')
+  })
+})
+
+document.querySelectorAll('.lc-tab').forEach(t=>{
+  t.addEventListener('click',function(){
+    document.querySelectorAll('.lc-tab').forEach(x=>x.classList.remove('active'))
+    this.classList.add('active')
+  })
+})
+</script>
+</body>
+</html>

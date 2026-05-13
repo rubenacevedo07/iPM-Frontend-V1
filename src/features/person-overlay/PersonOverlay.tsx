@@ -9,6 +9,7 @@ import { PersonSoloView } from './PersonSoloView'
 import { StudioRelationView } from './StudioRelationView'
 import { getScene } from './sceneMap'
 import { elonMuskFallback, fallbackNeighbors } from './personFallbackData'
+import { usePersonsMap } from '@/hooks/usePersonsMap'
 import type { EntityRef, EntityType } from '@/domain/types'
 
 interface PersonOverlayProps {
@@ -41,6 +42,7 @@ export function PersonOverlay({ entity }: PersonOverlayProps) {
   const [state, send] = useMachine(personOverlayMachine, {
     input: { entity },
   })
+  const { persons } = usePersonsMap()
 
   const inspectorRef = state.context.inspectorRef
   const tabsRef      = state.context.tabsRef
@@ -117,10 +119,14 @@ export function PersonOverlay({ entity }: PersonOverlayProps) {
     const entityB = relationTarget
 
     if (entityB && inspectorRef) {
+      const seedA = persons.find(p => p.nodeId === entity.nodeId) ?? null
+      const seedB = persons.find(p => p.nodeId === entityB.nodeId) ?? null
       return (
         <StudioRelationView
           entityA={entity}
           entityB={entityB}
+          seedA={seedA}
+          seedB={seedB}
           inspectorRef={inspectorRef}
           onClose={handleClose}
         />

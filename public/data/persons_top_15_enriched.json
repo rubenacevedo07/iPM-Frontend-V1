@@ -1,0 +1,648 @@
+[
+  {
+    "id": 172,
+    "fullName": "Vladimir Putin",
+    "title": "President of the Russian Federation",
+    "netWorthUsd": null,
+    "globalRank": null,
+    "archetypeCode": "STATESMAN",
+    "influenceDomain": "Politics / Security",
+    "citizenship": "RU",
+    "born": "1952-10-07",
+    "signals": [
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2026-05-09",
+        "headline": "Putin signals Ukraine war 'coming to an end,' offers direct talks with Zelenskyy after Victory Day",
+        "severity": "critical"
+      },
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2025-03-18",
+        "headline": "Putin and Trump agree limited energy and infrastructure ceasefire in Ukraine after 90-min call",
+        "severity": "critical"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-12-05",
+        "headline": "ICC arrest warrant for Putin will stand even if Ukraine peace deal reached, prosecutors confirm",
+        "severity": "high"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Xi Jinping",
+        "role": "President of China · No-limits strategic partner; primary sanctions shield",
+        "edgeType": "Allied",
+        "strength": "Critical"
+      },
+      {
+        "name": "Donald Trump",
+        "role": "President USA · Ceasefire negotiating counterpart; partial sanctions relief leverage",
+        "edgeType": "Partners",
+        "strength": "High"
+      },
+      {
+        "name": "Kim Jong Un",
+        "role": "Supreme Leader DPRK · Arms and troop supply partner for Ukraine war",
+        "edgeType": "Allied",
+        "strength": "High"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "People's Republic of China",
+        "role": "Largest buyer of Russian crude and gas under sanctions; diplomatic buffer at UNSC",
+        "edgeType": "Major Client",
+        "strength": "Critical"
+      },
+      {
+        "name": "Republic of India",
+        "role": "Top buyer of discounted Russian crude oil; non-aligned sanctions absorber",
+        "edgeType": "Major Client",
+        "strength": "High"
+      },
+      {
+        "name": "International Criminal Court",
+        "role": "Issued 2023 arrest warrant for war crimes; Putin countered with in-absentia prison sentences on ICC staff",
+        "edgeType": "Sanctioned by",
+        "strength": "High"
+      }
+    ],
+    "_unverified": ["netWorthUsd"]
+  },
+  {
+    "id": 171,
+    "fullName": "Xi Jinping",
+    "title": "General Secretary CCP; President of China; Chairman CMC",
+    "netWorthUsd": null,
+    "globalRank": null,
+    "archetypeCode": "STATESMAN",
+    "influenceDomain": "Politics / Geopolitics",
+    "citizenship": "CN",
+    "born": "1953-06-15",
+    "signals": [
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-05-12",
+        "headline": "US and China reach tariff truce; Washington cuts levies to 30%, Beijing to 10% after 145% escalation",
+        "severity": "critical"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-11-05",
+        "headline": "Trump and Xi sign 28-point trade deal in Seoul covering rare earths, fentanyl and semiconductors",
+        "severity": "critical"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-04-09",
+        "headline": "China raises retaliatory tariffs to 125% as US-China trade war reaches record escalation",
+        "severity": "high"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Vladimir Putin",
+        "role": "President of Russia · No-limits strategic partner; energy and security coordination",
+        "edgeType": "Allied",
+        "strength": "Critical"
+      },
+      {
+        "name": "Donald Trump",
+        "role": "President USA · Primary strategic rival; trade war and chip-control counterpart",
+        "edgeType": "Rivals",
+        "strength": "Critical"
+      },
+      {
+        "name": "Li Qiang",
+        "role": "Premier of China · Chief economic executor of Xi's policy agenda",
+        "edgeType": "Subordinate",
+        "strength": "High"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "Huawei Technologies",
+        "role": "State-backed AI and chip champion insulated from US sanctions; domestic GPU alternative to Nvidia",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "European Union",
+        "role": "Largest export market; under growing trade and EV tariff friction",
+        "edgeType": "Major Client",
+        "strength": "Critical"
+      },
+      {
+        "name": "Global South / Belt and Road",
+        "role": "Infrastructure debtors and diplomatic bloc providing UN voting cover",
+        "edgeType": "Major Client",
+        "strength": "High"
+      }
+    ],
+    "_unverified": ["netWorthUsd"]
+  },
+  {
+    "id": 176,
+    "fullName": "Mohammed bin Salman Al Saud",
+    "title": "Crown Prince and Prime Minister of Saudi Arabia; Chairman, PIF",
+    "netWorthUsd": null,
+    "globalRank": null,
+    "archetypeCode": "STATESMAN",
+    "influenceDomain": "Energy / Finance / Geopolitics",
+    "citizenship": "SA",
+    "born": "1985-08-31",
+    "signals": [
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2025-11-18",
+        "headline": "MBS visits White House; Saudi Arabia designated US major non-NATO ally and F-35 deal advanced",
+        "severity": "critical"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-05-14",
+        "headline": "Trump's Riyadh Gulf tour yields $300bn in Saudi-US defense and AI agreements",
+        "severity": "critical"
+      },
+      {
+        "source": "THE ECONOMIST",
+        "publishedAt": "2026-02-15",
+        "headline": "PIF assets surpass $1.15 trillion as NEOM megaproject faces delays and cost overruns",
+        "severity": "high"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Donald Trump",
+        "role": "President USA · Primary Western patron; $300B+ defense and AI partnership anchor",
+        "edgeType": "Allied",
+        "strength": "Critical"
+      },
+      {
+        "name": "Xi Jinping",
+        "role": "President China · Multipolar hedge; China brokered 2023 Saudi-Iran normalization deal",
+        "edgeType": "Partners",
+        "strength": "High"
+      },
+      {
+        "name": "King Salman bin Abdulaziz",
+        "role": "Father and reigning monarch of Saudi Arabia · Ultimate legitimacy source",
+        "edgeType": "Patron",
+        "strength": "Critical"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "Saudi Aramco",
+        "role": "World's largest oil company by profit; fiscal and investment engine for Vision 2030",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "Public Investment Fund (PIF)",
+        "role": "$1.15T sovereign wealth fund under direct MBS chairmanship; vehicle for global power projection",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "US Department of Defense",
+        "role": "Primary arms supplier; Patriot interceptor replenishment and F-35 transfer pipeline",
+        "edgeType": "Major Client",
+        "strength": "Critical"
+      }
+    ],
+    "_unverified": ["netWorthUsd"]
+  },
+  {
+    "id": 173,
+    "fullName": "Donald Trump",
+    "title": "President of the United States",
+    "netWorthUsd": 5100000000,
+    "globalRank": null,
+    "archetypeCode": "POLITICIAN",
+    "influenceDomain": "Politics",
+    "citizenship": "US",
+    "born": "1946-06-14",
+    "_unverified": ["netWorthUsd"],
+    "signals": [
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-04-02",
+        "headline": "Trump expands tariff regime reshaping global trade alignments",
+        "severity": "critical"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-05-13",
+        "headline": "Trump Gulf diplomacy reshapes defense and investment flows",
+        "severity": "critical"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-01-20",
+        "headline": "Trump returns to White House with immediate executive actions",
+        "severity": "critical"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Elon Musk",
+        "role": "Technology-industrial influence ally",
+        "edgeType": "Allied",
+        "strength": "Critical"
+      },
+      {
+        "name": "Mohammed bin Salman",
+        "role": "Strategic Gulf counterpart",
+        "edgeType": "Partners",
+        "strength": "Critical"
+      },
+      {
+        "name": "Xi Jinping",
+        "role": "Primary geopolitical rival counterpart",
+        "edgeType": "Rivals",
+        "strength": "Critical"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "US Department of Defense",
+        "role": "Defense-industrial executive authority nexus",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "Saudi Arabia",
+        "role": "Investment and defense strategic counterpart",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "US Energy Sector",
+        "role": "Domestic industrial policy constituency",
+        "edgeType": "Lobbies",
+        "strength": "High"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "fullName": "Elon Musk",
+    "title": "CEO Tesla, SpaceX; Founder xAI (acquired by SpaceX Feb 2026)",
+    "netWorthUsd": 839000000000,
+    "globalRank": 1,
+    "archetypeCode": "BUILDER",
+    "influenceDomain": "Tech / Space / AI",
+    "citizenship": "US/CA/ZA",
+    "born": "1971-06-28",
+    "signals": [
+      {
+        "source": "REUTERS",
+        "publishedAt": "2026-01-29",
+        "headline": "SpaceX acquires xAI in all-stock deal valuing combined entity at ~$1.25 trillion, largest merger in history",
+        "severity": "critical"
+      },
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2025-05-29",
+        "headline": "Musk departs DOGE after 130-day special government employee tenure amid declining Tesla sales",
+        "severity": "high"
+      },
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2026-04-22",
+        "headline": "Tesla starts Cybercab robotaxi production; boosts combined AI and robotics capex plan to $25 billion",
+        "severity": "high"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Donald Trump",
+        "role": "President USA · DOGE principal Jan–May 2025; political ally turned independent operator",
+        "edgeType": "Allied",
+        "strength": "High"
+      },
+      {
+        "name": "Gwynne Shotwell",
+        "role": "President and COO SpaceX · Day-to-day operational executor of Musk's space empire",
+        "edgeType": "Subordinate",
+        "strength": "Critical"
+      },
+      {
+        "name": "Jensen Huang",
+        "role": "CEO Nvidia · Key AI-chip supplier for xAI Colossus datacenter buildout",
+        "edgeType": "Partners",
+        "strength": "High"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "US Department of Defense / NASA",
+        "role": "Largest SpaceX customers; launch, Starshield and Starlink constellation contracts",
+        "edgeType": "Major Client",
+        "strength": "Critical"
+      },
+      {
+        "name": "TSMC",
+        "role": "Exclusive fab partner for Tesla FSD and xAI Grok chips",
+        "edgeType": "Supplies",
+        "strength": "High"
+      },
+      {
+        "name": "Tesla (TSLA public shareholders)",
+        "role": "Core listed company; $158B compensation package approved 2025; Cybercab commercial launch underway",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      }
+    ]
+  },
+  {
+    "id": 75,
+    "fullName": "Larry Fink",
+    "title": "Co-Founder, Chairman and CEO, BlackRock",
+    "netWorthUsd": 1300000000,
+    "globalRank": 2841,
+    "archetypeCode": "CAPITAL_ALLOCATOR",
+    "influenceDomain": "Finance / Asset Management",
+    "citizenship": "US",
+    "born": "1952-11-02",
+    "signals": [
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-07-01",
+        "headline": "BlackRock completes $3B+ HPS Investment Partners acquisition, entering private credit at institutional scale",
+        "severity": "critical"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-10-15",
+        "headline": "BlackRock-led consortium agrees ~$40bn acquisition of Aligned Data Centers for AI infrastructure",
+        "severity": "high"
+      },
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2026-05-06",
+        "headline": "Fink declares compute futures a new financial asset class as AI infrastructure demand outstrips supply",
+        "severity": "medium"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Rob Kapito",
+        "role": "BlackRock President and co-founder; operational and strategic partner since 1988",
+        "edgeType": "Partners",
+        "strength": "Critical"
+      },
+      {
+        "name": "Jamie Dimon",
+        "role": "CEO JPMorgan Chase · Peer and rival in systemic financial influence",
+        "edgeType": "Rivals",
+        "strength": "High"
+      },
+      {
+        "name": "Donald Trump",
+        "role": "President USA · Political pressure source on ESG; regulatory interlocutor",
+        "edgeType": "Pressures",
+        "strength": "High"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "Global Institutional Investors (Pensions, Sovereign Wealth Funds)",
+        "role": "BlackRock manages $14T AUM on behalf of institutional clients worldwide",
+        "edgeType": "Major Client",
+        "strength": "Critical"
+      },
+      {
+        "name": "iShares ETF Platform",
+        "role": "World's largest ETF franchise; ~$3T+ AUM; Bitcoin ETF (IBIT) generating $200M+ annual fees",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "Preqin (acquired 2025)",
+        "role": "Private markets data platform; enables BlackRock's public-private convergence strategy",
+        "edgeType": "Strategic Partner",
+        "strength": "High"
+      }
+    ]
+  },
+  {
+    "id": 67,
+    "fullName": "Bill Gates",
+    "title": "Co-chair Gates Foundation; Microsoft co-founder",
+    "netWorthUsd": 108000000000,
+    "globalRank": 13,
+    "archetypeCode": "FOUNDER",
+    "influenceDomain": "Tech / Philanthropy",
+    "citizenship": "US",
+    "born": "1955-10-28",
+    "_unverified": ["globalRank"],
+    "signals": [
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-05-08",
+        "headline": "Gates accelerates philanthropy deployment timeline",
+        "severity": "high"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2024-09-24",
+        "headline": "Gates comments on AI deployment and governance risks",
+        "severity": "medium"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-01-16",
+        "headline": "Global health financing influence expands amid donor pressure",
+        "severity": "medium"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Warren Buffett",
+        "role": "Long-term philanthropic capital ally",
+        "edgeType": "Allied",
+        "strength": "Critical"
+      },
+      {
+        "name": "Satya Nadella",
+        "role": "Microsoft institutional influence channel",
+        "edgeType": "Allied",
+        "strength": "High"
+      },
+      {
+        "name": "Melinda French Gates",
+        "role": "Legacy governance and philanthropic counterpart",
+        "edgeType": "Partners",
+        "strength": "Medium"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "World Health Organization",
+        "role": "Global health implementation partner",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "Gavi",
+        "role": "Vaccination ecosystem partner",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "Microsoft",
+        "role": "Residual strategic influence ecosystem",
+        "edgeType": "Strategic Partner",
+        "strength": "Medium"
+      }
+    ]
+  },
+  {
+    "id": 1,
+    "fullName": "Jensen Huang",
+    "title": "Co-Founder, President and CEO, Nvidia",
+    "netWorthUsd": 154000000000,
+    "globalRank": 8,
+    "archetypeCode": "FOUNDER",
+    "influenceDomain": "Tech / AI / Semiconductors",
+    "citizenship": "US",
+    "born": "1963-02-17",
+    "signals": [
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2026-02-06",
+        "headline": "Nvidia authorized to sell H200 AI chips to China but shipments blocked at border by Chinese customs",
+        "severity": "critical"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2026-05-12",
+        "headline": "Huang excluded from Trump's China delegation as Nvidia faces Blackwell export ban threat",
+        "severity": "high"
+      },
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2025-04-22",
+        "headline": "Nvidia takes $4.5B charge on H20 export restrictions; Q1 FY2026 China revenue collapses",
+        "severity": "critical"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Lisa Su",
+        "role": "CEO AMD · Primary GPU competitor racing to capture AI workloads Nvidia cannot ship to China",
+        "edgeType": "Rivals",
+        "strength": "High"
+      },
+      {
+        "name": "Elon Musk",
+        "role": "CEO Tesla/SpaceX/xAI · Major Nvidia GPU customer for Colossus AI datacenter",
+        "edgeType": "Partners",
+        "strength": "High"
+      },
+      {
+        "name": "Mark Zuckerberg",
+        "role": "CEO Meta · Among the largest Nvidia H100/H200 buyers globally for LLaMA training",
+        "edgeType": "Partners",
+        "strength": "High"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "TSMC",
+        "role": "Exclusive foundry for all Nvidia GPU architectures including Blackwell; critical supply chain dependency",
+        "edgeType": "Supplies",
+        "strength": "Critical"
+      },
+      {
+        "name": "Microsoft Azure",
+        "role": "Largest hyperscale Nvidia datacenter GPU customer globally",
+        "edgeType": "Major Client",
+        "strength": "Critical"
+      },
+      {
+        "name": "US Department of Commerce (BIS)",
+        "role": "Regulates all Nvidia advanced chip exports; H20 ban triggered $4.5B Q1 2026 charge",
+        "edgeType": "Regulator",
+        "strength": "Critical"
+      }
+    ],
+    "_unverified": ["citizenship"]
+  },
+  {
+    "id": 61,
+    "fullName": "Sam Altman",
+    "title": "CEO OpenAI",
+    "netWorthUsd": 1700000000,
+    "globalRank": null,
+    "archetypeCode": "FOUNDER",
+    "influenceDomain": "AI",
+    "citizenship": "US",
+    "born": "1985-04-22",
+    "_unverified": ["netWorthUsd"],
+    "signals": [
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-02-10",
+        "headline": "OpenAI advances global sovereign AI partnerships",
+        "severity": "critical"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2024-10-02",
+        "headline": "OpenAI closes major funding round at sharply higher valuation",
+        "severity": "critical"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-03-25",
+        "headline": "OpenAI infrastructure expansion intensifies compute race",
+        "severity": "high"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Satya Nadella",
+        "role": "Microsoft CEO · capital + infrastructure ally",
+        "edgeType": "Partners",
+        "strength": "Critical"
+      },
+      {
+        "name": "Elon Musk",
+        "role": "AI governance and strategic rival",
+        "edgeType": "Rivals",
+        "strength": "Critical"
+      },
+      {
+        "name": "Greg Brockman",
+        "role": "OpenAI co-founder and executive operator",
+        "edgeType": "Partners",
+        "strength": "High"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "Microsoft",
+        "role": "Strategic infrastructure and capital partner",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "Oracle",
+        "role": "AI infrastructure partner",
+        "edgeType": "Strategic Partner",
+        "strength": "High"
+      },
+      {
+        "name": "US Government Agencies",
+        "role": "Emerging enterprise/public sector AI customers",
+        "edgeType": "Major Client",
+        "strength": "Medium"
+      }
+    ]
+  }
+]

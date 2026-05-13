@@ -8,7 +8,7 @@ export const companyService = {
       if (!response.ok) throw new Error(`${response.status}`)
       return response.json()
     } catch {
-      const res = await fetch('/top30.json')
+      const res = await fetch('/top3.json')
       return res.json()
     }
   },

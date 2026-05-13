@@ -29,7 +29,7 @@ export function TopBar() {
   }
 
   let crumbCur = 'GLOBAL ATLAS'
-  if (search.overlay === 'person' || search.overlay === 'gold') {
+  if (search.overlay === 'gold') {
     crumbCur = search.id === 7 ? 'ELON MUSK' : `PERSON #${search.id}`
   } else if (search.overlay === 'company' && typeof search.id === 'number') {
     const c = companies.find(c => c.id === search.id)

@@ -10,6 +10,7 @@ export const elonMuskFallback: PersonIntelligence = {
   photoUrl: 'Musk.jpeg',
   nodeId: 'person:7',
   archetypeCode: 'TECHNOLOGICAL',
+  influenceDomain: 'Technology',
   compositeScore: 91,
   globalRank: 4,
   ideology: {
@@ -68,6 +69,7 @@ export const donaldTrumpFallback: PersonIntelligence = {
   photoUrl: 'Trump.jpg',
   nodeId: 'person:173',
   archetypeCode: 'POLITICAL',
+  influenceDomain: 'Politics',
   compositeScore: 76,
   globalRank: 1,
   ideology: {

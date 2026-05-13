@@ -36,7 +36,7 @@ const COMPANY_FILES = [
   'adani.png',        'adyen.png',        'airbus.jpeg',      'alibaba.jpeg',
   'allianz.jpeg',     'alphabet.png',     'amazon.jpeg',      'ambev.png',
   'amd.png',          'americamovil.png', 'amex.png',         'ancap.png',
-  'anthropic.png',    'anz.png',          'apple.png',        'appliedmaterials.png',
+  'anthropic.png',    'anz.png',          'apple.webp',       'apple.png',        'appliedmaterials.png',
   'arcelormittal.png','asml.jpeg',        'astrazeneca.jpeg', 'bac.png',
   'baidu.png',        'bancodobrasil.png','bancolombia.png',  'banorte.png',
   'barclays.png',     'basf.png',         'bayer.png',        'berkshirehathaway.png',

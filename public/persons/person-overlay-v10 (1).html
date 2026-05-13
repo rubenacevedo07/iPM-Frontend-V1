@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPM · PersonOverlay · Interactive Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;background:#060910;color:#e8edf5;font-family:'DM Sans',sans-serif}
+
+/* ═══════════════════════════════════════════════════
+   IPM DESIGN SYSTEM TOKENS
+   ═══════════════════════════════════════════════════ */
+:root {
+  --bg-deep: #040810;
+  --bg-base: #060910;
+  --bg-panel: rgba(8,11,17,0.96);
+  --bg-card: rgba(255,255,255,0.02);
+  --border-subtle: rgba(255,255,255,0.04);
+  --border-medium: rgba(255,255,255,0.08);
+  --border-cyan: rgba(0,229,255,0.08);
+
+  --text-primary: #e8edf5;
+  --text-secondary: #d0d8e4;
+  --text-muted: #8a9bb5;
+  --text-dim: #6b7a90;
+  --text-label: #5a6b80;
+
+  --cyan: #00e5ff;
+  --green: #00d4aa;
+  --gold: #f5a623;
+  --red: #e53935;
+  --purple: #a855f7;
+
+  --font-heading: 'Rajdhani', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ═══ OVERLAY SHELL ═══ */
+.ov{position:absolute;inset:0;z-index:50;font-family:var(--font-body)}
+
+/* ═══ SOLO VIEW: 2-col grid ═══ */
+.ov--solo{display:grid;grid-template-columns:280px 1fr;grid-template-rows:1fr 32px}
+
+/* ═══ STUDIO RELATION: 3-col grid ═══ */
+.ov--relation{display:grid;grid-template-columns:260px 1fr 260px;grid-template-rows:1fr 32px}
+
+/* Panel */
+.ov__panel{background:var(--bg-panel);overflow-y:auto;display:flex;flex-direction:column;gap:0;scrollbar-width:none}
+.ov__panel::-webkit-scrollbar{display:none}
+.ov__panel--left{border-right:1px solid var(--border-cyan)}
+.ov__panel--right{border-left:1px solid rgba(255,255,255,0.07)}
+
+/* Labels */
+.ov__label{font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:0.12em;color:var(--text-label);margin-bottom:8px;text-transform:uppercase}
+
+/* Badges */
+.badge{font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 8px;border-radius:3px;letter-spacing:0.04em;white-space:nowrap;display:inline-flex;align-items:center}
+.badge--teal{color:var(--cyan);background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.2)}
+.badge--gold{color:var(--gold);background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.2)}
+.badge--red{color:var(--red);background:rgba(229,57,53,0.06);border:1px solid rgba(229,57,53,0.2)}
+.badge--purple{color:var(--purple);background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.2)}
+.badge--green{color:var(--green);background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2)}
+
+/* Photo */
+.photo-wrap{position:relative;width:100%;background:var(--bg-base)}
+.photo-wrap img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;filter:brightness(0.92) contrast(1.05)}
+.photo-fade{position:absolute;bottom:0;left:0;right:0;height:90px;background:linear-gradient(transparent,rgba(8,11,17,0.99))}
+
+.divider{height:1px;background:linear-gradient(90deg,transparent 5%,rgba(0,229,255,0.1) 50%,transparent 95%);flex-shrink:0}
+
+/* Identity */
+.pe-name{font-family:var(--font-heading);font-size:26px;font-weight:700;color:#fff;letter-spacing:-0.02em;line-height:1.1}
+.pe-title{font-family:var(--font-body);font-size:11px;color:var(--text-muted);margin-top:4px}
+.pe-badges{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+
+/* Company row */
+.co-row{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;border-radius:4px;transition:background 0.15s}
+.co-row:hover{background:rgba(255,255,255,0.03)}
+.co-icon{width:24px;height:24px;border-radius:5px;flex-shrink:0;background:rgba(255,255,255,0.03);border:1px solid var(--border-medium);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:10px;font-weight:700}
+.co-name{font-family:var(--font-body);font-size:13px;font-weight:500;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.co-edge{font-family:var(--font-mono);font-size:9px;color:var(--text-label);margin-left:auto;padding-left:6px;flex-shrink:0}
+.co-cap{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--cyan);flex-shrink:0}
+
+/* Person row */
+.pr{display:flex;align-items:center;gap:8px;padding:7px 4px;cursor:pointer;border-radius:5px;transition:background 0.15s}
+.pr:hover{background:rgba(0,229,255,0.03)}
+.pr+.pr{border-top:1px solid var(--border-subtle)}
+.pr-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9px;font-weight:700}
+.pr-name{font-family:var(--font-body);font-size:13px;font-weight:500;color:#e0e6ef}
+.pr-role{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:1px}
+.pr-score{font-family:var(--font-mono);font-size:13px;font-weight:700;flex-shrink:0}
+
+/* Signal */
+.sig{display:flex;gap:9px;padding:8px 0}
+.sig+.sig{border-top:1px solid var(--border-subtle)}
+.sig-bar{width:3px;flex-shrink:0;border-radius:2px;align-self:stretch}
+.sig-src{font-family:var(--font-mono);font-size:9px;font-weight:700}
+.sig-age{font-family:var(--font-mono);font-size:9px;color:var(--text-label);margin-left:6px}
+.sig-hl{font-family:var(--font-body);font-size:11px;color:var(--text-muted);line-height:1.5;margin-top:3px}
+
+/* KV Grid */
+.kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.kv-cell{background:var(--bg-card);border-radius:5px;padding:9px 10px;border:1px solid var(--border-subtle)}
+.kv-key{font-family:var(--font-mono);font-size:9px;color:var(--text-label);letter-spacing:0.06em;margin-bottom:3px;text-transform:uppercase}
+.kv-val{font-family:var(--font-mono);font-size:13px;color:#e0e6ef;font-weight:600}
+
+/* Risk card */
+.risk-card{border-radius:5px;padding:10px 12px}
+.risk-card--critical{background:rgba(229,57,53,0.04);border:1px solid rgba(229,57,53,0.15)}
+.risk-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.risk-name{font-family:var(--font-mono);font-size:11px;font-weight:700;color:#e0e6ef}
+.risk-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+.risk-label{font-family:var(--font-mono);font-size:9px;color:var(--text-label);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:2px}
+.risk-value{font-family:var(--font-mono);font-size:14px;font-weight:700}
+
+/* Data Grid rows */
+.grid-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid rgba(255,255,255,0.05)}
+.grid-row-2{display:grid;grid-template-columns:1fr 1fr}
+.grid-cell{padding:14px 16px}
+.grid-cell+.grid-cell{border-left:1px solid rgba(255,255,255,0.05)}
+
+/* Tabs */
+.tab{padding:5px 12px;border-radius:5px;font-family:var(--font-mono);font-size:9px;font-weight:600;letter-spacing:0.06em;cursor:pointer;white-space:nowrap;transition:all 0.18s;border:1px solid transparent;background:transparent;color:var(--text-label)}
+.tab:hover{color:rgba(255,255,255,0.65)}
+.tab--active{color:var(--cyan);background:rgba(0,229,255,0.06);border-color:rgba(0,229,255,0.2);font-weight:700}
+
+/* Sector */
+.sector{font-family:var(--font-mono);font-size:9px;padding:3px 8px;border-radius:3px}
+.sector--primary{color:var(--cyan);background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.2)}
+.sector-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border-subtle)}
+.sector-name{font-family:var(--font-body);font-size:12px;color:rgba(255,255,255,0.78)}
+
+/* Facility */
+.facility{display:flex;gap:8px;margin-bottom:5px;align-items:flex-start;padding:7px 8px;border-radius:4px;background:var(--bg-card);border:1px solid var(--border-subtle)}
+.facility-name{font-family:var(--font-mono);font-size:10px;color:var(--text-secondary)}
+.facility-meta{font-family:var(--font-mono);font-size:9px;color:var(--text-label);margin-top:1px}
+
+/* Bottom bar */
+.bottom-bar{height:32px;background:rgba(4,6,12,0.98);border-top:1px solid rgba(0,229,255,0.06);display:flex;align-items:center;padding:0 16px;gap:10px;font-family:var(--font-mono);font-size:10px;grid-column:1/-1}
+.bar-sep{width:1px;height:12px;background:var(--border-medium)}
+.bar-label{color:var(--text-label);font-size:9px}
+.bar-value{font-weight:700;font-size:11px}
+.bar-value--teal{color:var(--cyan)}
+.bar-value--gold{color:var(--gold)}
+.live{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:600;color:var(--green)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
+
+/* Close btn */
+.close-btn{width:28px;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(255,255,255,0.04);border:1px solid var(--border-medium);color:var(--text-label);font-family:var(--font-mono);font-size:14px;transition:all 0.15s;position:absolute;top:10px;right:10px;z-index:60}
+.close-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* ═══ EGO NETWORK VISUAL ═══ */
+.visual-zone{
+  flex:1;position:relative;min-height:0;overflow:hidden;
+  background:
+    radial-gradient(ellipse 60% 50% at 40% 45%, rgba(0,229,255,0.015) 0%, transparent 100%),
+    radial-gradient(ellipse 70% 60% at 60% 55%, rgba(10,20,38,0.8) 0%, #040810 100%);
+}
+
+/* View switcher */
+.vs-wrap{position:absolute;top:10px;right:10px;z-index:20;display:flex;gap:2px;background:rgba(4,8,18,0.9);border:1px solid rgba(0,229,255,0.1);border-radius:6px;padding:3px;backdrop-filter:blur(12px)}
+.vs-btn{padding:4px 10px;font-size:9px;font-weight:700;font-family:var(--font-mono);letter-spacing:0.06em;cursor:pointer;border-radius:4px;transition:all 0.18s;border:1px solid transparent;background:transparent;color:#3a4a60}
+.vs-btn:hover{color:var(--text-muted)}
+.vs-btn--active{color:var(--cyan);background:rgba(0,229,255,0.08);border-color:rgba(0,229,255,0.2)}
+
+/* Node info panel */
+.ni{
+  position:absolute;bottom:14px;left:14px;z-index:30;
+  width:230px;background:rgba(6,10,20,0.95);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(0,229,255,0.15);border-radius:8px;
+  overflow:hidden;box-shadow:0 4px 30px rgba(0,0,0,0.5),0 0 30px rgba(0,229,255,0.06);
+  animation:ni-in 0.3s ease;
+}
+@keyframes ni-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.ni-header{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:10px}
+.ni-avatar{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700;flex-shrink:0}
+.ni-name{font-family:var(--font-heading);font-size:15px;font-weight:700;color:#fff;line-height:1.15}
+.ni-meta{font-family:var(--font-mono);font-size:9px;color:var(--text-label);margin-top:1px;display:flex;gap:6px;align-items:center}
+.ni-close{margin-left:auto;width:18px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-label);font-size:11px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);transition:all 0.15s;flex-shrink:0}
+.ni-close:hover{color:var(--cyan);border-color:rgba(0,229,255,0.3)}
+.ni-section{padding:10px 14px;border-bottom:1px solid var(--border-subtle)}
+.ni-section:last-child{border-bottom:none}
+
+/* Ideology scores */
+.score-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.score-label{font-family:var(--font-mono);font-size:9px;color:var(--text-label);width:68px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em}
+.score-track{flex:1;height:6px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden;position:relative}
+.score-center{position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(255,255,255,0.1)}
+.score-fill{position:absolute;top:0;height:100%;border-radius:3px}
+.score-val{font-family:var(--font-mono);font-size:11px;font-weight:700;width:36px;text-align:right;flex-shrink:0}
+.score-sub{font-family:var(--font-mono);font-size:9px;color:var(--text-label);margin-top:-4px;margin-bottom:6px;margin-left:74px}
+
+/* Edge rows in node info */
+.ni-edge{display:flex;align-items:center;gap:6px;padding:4px 0}
+.ni-edge+.ni-edge{border-top:1px solid rgba(255,255,255,0.03)}
+.ni-edge-dot{width:4px;height:18px;border-radius:2px;flex-shrink:0}
+.ni-edge-type{font-family:var(--font-mono);font-size:9px;color:var(--text-label);width:68px;flex-shrink:0;text-transform:uppercase}
+.ni-edge-target{font-family:var(--font-body);font-size:11px;color:var(--text-secondary);font-weight:500;flex:1}
+.ni-edge-strength{font-family:var(--font-mono);font-size:9px;font-weight:700;padding:2px 6px;border-radius:2px;flex-shrink:0}
+
+/* Node info actions */
+.ni-actions{padding:10px 14px;display:flex;flex-direction:column;gap:5px}
+.ni-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 0;border-radius:4px;font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;border:none}
+.ni-btn--primary{color:var(--bg-deep);background:var(--cyan)}
+.ni-btn--primary:hover{background:#33ecff}
+.ni-btn--secondary{color:var(--cyan);background:transparent;border:1px solid rgba(0,229,255,0.2)}
+.ni-btn--secondary:hover{background:rgba(0,229,255,0.06)}
+
+/* Right area */
+.pe-right{display:flex;flex-direction:column;overflow:hidden}
+.pe-nav{display:flex;justify-content:center;gap:4px;padding:8px 16px;flex-shrink:0;background:rgba(4,6,12,0.96);border-top:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05)}
+.pe-data{flex:1;min-height:0;overflow-y:auto;background:rgba(5,8,14,0.98);scrollbar-width:none}
+.pe-data::-webkit-scrollbar{display:none}
+
+/* SVG graph node hover */
+.graph-node{cursor:pointer;transition:opacity 0.15s}
+.graph-node:hover{opacity:0.85}
+
+/* ═══ STUDIO RELATION CENTER ═══ */
+.sr-center{display:flex;flex-direction:column;overflow:hidden;background:rgba(4,7,12,0.5);border-left:1px solid rgba(255,255,255,0.07);border-right:1px solid rgba(255,255,255,0.07)}
+.sr-header{flex-shrink:0;padding:20px 24px 16px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.07);background:rgba(6,9,14,0.8)}
+.sr-kicker{font-family:var(--font-mono);font-size:9px;letter-spacing:0.2em;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px}
+.sr-label{font-family:var(--font-heading);font-size:24px;font-weight:700;color:var(--text-primary);letter-spacing:-0.01em;margin-bottom:4px}
+.sr-type{font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em}
+.sr-arc{position:relative;height:64px;margin:14px 0 4px}
+.sr-arc-ent{position:absolute;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:8px}
+.sr-arc-ent--left{left:16px}
+.sr-arc-ent--right{right:16px}
+.sr-arc-avatar{width:38px;height:38px;border-radius:50%;overflow:hidden;border:2px solid rgba(0,229,255,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--cyan);background:radial-gradient(circle at 40% 35%,#1a2a45,#0a1628)}
+.sr-arc-avatar img{width:100%;height:100%;object-fit:cover}
+
+.sr-content{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:18px;scrollbar-width:none}
+.sr-content::-webkit-scrollbar{display:none}
+
+/* Strength meter */
+.str-meter{padding:14px 16px;border-radius:6px;background:var(--bg-card);border:1px solid rgba(255,255,255,0.07)}
+.str-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.str-label{font-family:var(--font-mono);font-size:10px;color:#7a8ba0;letter-spacing:0.08em;text-transform:uppercase}
+.str-val{font-family:var(--font-mono);font-size:20px;font-weight:700}
+.str-track{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
+.str-fill{height:100%;border-radius:3px;transition:width 0.6s}
+
+/* Details grid */
+.details-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+
+/* Power dynamic */
+.power-dyn{font-family:var(--font-body);font-size:12px;color:#c4cdd8;line-height:1.55;padding:12px 14px;border-radius:5px;background:rgba(168,85,247,0.03);border-left:3px solid rgba(168,85,247,0.4)}
+
+/* Analysis desc */
+.analysis-desc{font-family:var(--font-body);font-size:12px;color:#9aacbf;line-height:1.6;padding:14px;border-radius:5px;background:rgba(0,229,255,0.02);border:1px solid rgba(0,229,255,0.08)}
+
+/* Levers */
+.lever-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:5px}
+.lever{display:flex;align-items:flex-start;gap:8px;font-family:var(--font-body);font-size:11px;color:#9aacbf;line-height:1.45}
+.lever-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:5px}
+
+/* Timeline card */
+.tl-card{padding:12px;border-radius:5px;background:var(--bg-card);border:1px solid rgba(255,255,255,0.07);margin-bottom:6px}
+.tl-q{font-family:var(--font-body);font-size:12px;color:var(--text-primary);line-height:1.45;margin-bottom:8px}
+.tl-bar{display:flex;align-items:center;gap:10px}
+.tl-track{flex:1;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden}
+.tl-fill{height:100%;border-radius:2px}
+.tl-pct{font-family:var(--font-mono);font-size:11px;font-weight:700;width:36px;text-align:right}
+
+/* Shared connections */
+.shared-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.shared-avatar{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9px;font-weight:700;background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.2);color:var(--cyan)}
+.shared-name{font-family:var(--font-body);font-size:12px;color:var(--text-primary);font-weight:500}
+.shared-type{font-family:var(--font-mono);font-size:9px;color:#7a8ba0;margin-top:1px}
+
+/* Back button */
+.back-btn{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;font-weight:600;color:var(--text-dim);cursor:pointer;padding:4px 0;transition:color 0.15s;background:none;border:none}
+.back-btn:hover{color:var(--cyan)}
+
+/* Entity panel for relation */
+.ent-panel{background:var(--bg-panel);overflow-y:auto;display:flex;flex-direction:column;gap:0;scrollbar-width:none}
+.ent-panel::-webkit-scrollbar{display:none}
+
+/* ═══ CINEMATIC TRANSITION ═══ */
+.cinematic{
+  position:fixed;inset:0;z-index:200;
+  animation:cin-in 0.3s ease, cin-out 0.3s ease 0.5s forwards;
+}
+.cin-bg{
+  position:absolute;inset:-20px;
+  background-size:cover;background-position:center;
+  filter:brightness(0.35) contrast(1.2) saturate(1.1);
+  animation:ken-burns 0.8s ease forwards;
+}
+.cin-gradient{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg, rgba(4,8,16,0.7) 0%, rgba(4,8,16,0.2) 40%, rgba(4,8,16,0.85) 100%);
+}
+.cin-label{
+  position:absolute;bottom:15%;left:5%;
+  font-family:var(--font-heading);font-size:48px;font-weight:700;color:#fff;
+  letter-spacing:-0.02em;text-shadow:0 2px 20px rgba(0,0,0,0.5);
+  opacity:0;animation:fade-up 0.4s ease 0.15s forwards;
+}
+.cin-sub{
+  position:absolute;bottom:10%;left:5%;
+  font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.15em;
+  color:var(--cyan);text-transform:uppercase;
+  opacity:0;animation:fade-up 0.35s ease 0.25s forwards;
+}
+.cin-scan{
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,0.012) 2px,rgba(0,229,255,0.012) 4px);
+  pointer-events:none;
+}
+@keyframes cin-in{from{opacity:0}to{opacity:1}}
+@keyframes cin-out{from{opacity:1}to{opacity:0}}
+@keyframes ken-burns{from{transform:scale(1)}to{transform:scale(1.08)}}
+@keyframes fade-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* Highlighted connection row */
+.pr--active{background:rgba(0,229,255,0.04);border-radius:5px;padding:7px 9px !important;border:1px solid rgba(0,229,255,0.15)}
+
+/* Fade transitions between views */
+.view-enter{animation:view-in 0.4s ease}
+@keyframes view-in{from{opacity:0}to{opacity:1}}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// IPM DATA MODEL
+// ═══════════════════════════════════════════════════
+
+const DATA = {
+  person: {
+    id: 'person_001', dbId: 101, slug: 'elon-musk', name: 'Elon Musk',
+    title: 'CEO of Tesla, SpaceX, xAI', compositeScore: 91, globalRank: 4,
+    archetype: 'Hybrid', domain: 'Tech / Space', citizenship: 'USA / ZA', born: 1971,
+    netWorth: '$340B',
+    photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Elon_Musk_Royal_Society_%28crop2%29.jpg/220px-Elon_Musk_Royal_Society_%28crop2%29.jpg',
+    badges: [{ label: 'HYBRID', color: 'teal' }, { label: 'TECHNOLOGICAL', color: 'purple' }, { label: 'PEP', color: 'gold' }],
+    companies: [
+      { icon: 'T', color: '#e53935', name: 'Tesla', role: 'CEO', cap: '$1.5T' },
+      { icon: '🚀', color: '#a855f7', name: 'SpaceX', role: 'CEO', cap: '$350B' },
+      { icon: 'X', color: '#00e5ff', name: 'xAI', role: 'Founder', cap: '$50B' },
+      { icon: 'N', color: '#00d4aa', name: 'Neuralink', role: 'Founder', cap: '$9B' },
+      { icon: 'B', color: '#f5a623', name: 'Boring Co.', role: 'Founder', cap: '$7.6B' },
+    ],
+    signals: [
+      { src: 'REUTERS', color: '#e53935', age: '2h', text: 'DOGE advisory role under congressional review. Shutdown risk elevated.' },
+      { src: 'BLOOMBERG', color: '#00e5ff', age: '6h', text: 'Tesla Shanghai output hits record. Q2 deliveries above consensus.' },
+      { src: 'FT', color: '#f5a623', age: '1d', text: 'SpaceX Starship test flight 7 scheduled. FAA license pending.' },
+    ],
+  },
+  trump: {
+    id: 'person_173', dbId: 173, slug: 'donald-trump', name: 'Donald Trump',
+    title: 'President of the United States', compositeScore: 76, globalRank: 1,
+    archetype: 'Political', domain: 'Government', netWorth: '$5.4B',
+    photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Donald_Trump_official_portrait.jpg/220px-Donald_Trump_official_portrait.jpg',
+    badges: [{ label: 'POLITICAL', color: 'teal' }, { label: 'PEP', color: 'gold' }],
+    companies: [
+      { icon: 'T', color: '#f5a623', name: 'Trump Organization', role: '', cap: '$5B' },
+      { icon: 'DJT', color: '#e53935', name: 'Truth Social', role: '', cap: '$6.8B' },
+    ],
+    signals: [
+      { src: 'AP', color: '#e53935', age: '4h', text: 'Tariff negotiations with China stall. Markets react.' },
+      { src: 'WSJ', color: '#f5a623', age: '12h', text: 'DOGE budget cuts face legal challenge in federal court.' },
+    ],
+    ideology: [
+      { label: 'EconScore', value: '+5.8', pct: 29, color: '#00e5ff', sub: 'Tax cuts · Deregulation · Free market' },
+      { label: 'GeoScore', value: '+7.2', pct: 36, color: '#f5a623', sub: 'Interventionist · Tariff hawk · Isolationist' },
+      { label: 'AuthScore', value: '+4.0', pct: 20, color: '#e53935', sub: '' },
+    ],
+  },
+  relation: {
+    type: 'ALLIED', strength: 'CRITICAL', score: 9.2, strengthPct: 92,
+    riskScore: 2.4, severity: 'MEDIUM', activeSince: '2024-11-06',
+    analysis: 'Musk serves as senior advisor to the Trump administration via DOGE (Department of Government Efficiency). This alliance grants Musk unprecedented access to federal policy — particularly defense procurement, space contracts, and AI regulation. The relationship is mutually reinforcing: Trump gains Musk\'s platform and industrial capacity, Musk gains regulatory favor for Tesla, SpaceX, and xAI.',
+    powerDynamic: 'Asymmetric: Trump holds formal state power, Musk holds industrial and platform power. Neither can fully constrain the other. However, Musk\'s China exposure (Tesla Shanghai) creates a structural vulnerability that Trump can exploit via trade policy.',
+    levers: [
+      { text: 'Defense procurement — SpaceX Starshield, Pentagon launch monopoly', color: '#00e5ff' },
+      { text: 'EV tariff policy — Tesla China vs trade war escalation', color: '#00e5ff' },
+      { text: 'AI regulation — xAI competitive advantage over Google/OpenAI', color: '#00e5ff' },
+      { text: 'Government efficiency — DOGE advisory and federal contracts', color: '#00e5ff' },
+    ],
+    risks: [
+      { text: 'Congressional oversight of DOGE advisory role', color: '#e53935' },
+      { text: 'Tesla brand damage in European markets from political association', color: '#f5a623' },
+      { text: 'Tesla Shanghai dependency conflicts with Trump\'s trade war', color: '#e53935' },
+    ],
+    timelines: [
+      { badge: 'POLICY', badgeColor: 'red', age: '2d ago', text: 'DOGE advisory role under congressional review', pct: 41, color: '#e53935' },
+      { badge: 'TRADE', badgeColor: 'teal', age: '5d ago', text: 'EV tariff exemption for Tesla in trade deal package', pct: 67, color: '#00e5ff' },
+      { badge: 'DEFENSE', badgeColor: 'purple', age: '1w ago', text: 'SpaceX Starshield contract renewal — Pentagon priority', pct: 82, color: '#a855f7' },
+    ],
+    shared: [
+      { initials: 'JP', name: 'Jerome Powell', type: 'Musk: Monitors · Trump: Pressures', color: '#00e5ff' },
+      { initials: 'XJ', name: 'Xi Jinping', type: 'Musk: Depends (Shanghai) · Trump: Trade War', color: '#e53935' },
+      { initials: 'NV', name: 'NVIDIA', type: 'Musk: Partners (xAI) · Trump: Export Controls', color: '#f5a623' },
+    ],
+    cascade: { exposed: '$2.1T', sectors: 4, countries: 'USA, CHN, DEU', hops: '3 hops' },
+  },
+  nodes: [
+    { id: 'trump', cx: 155, cy: 95, r: 22, initials: 'DT', label: 'Trump', edgeType: 'Allied', stroke: '#00d4aa', edgeStroke: 'rgba(0,212,170,0.35)', edgeWidth: 2.5 },
+    { id: 'huang', cx: 460, cy: 85, r: 19, initials: 'JH', label: 'Huang', edgeType: 'Partners', stroke: '#00e5ff', edgeStroke: 'rgba(0,229,255,0.3)', edgeWidth: 2 },
+    { id: 'powell', cx: 490, cy: 220, r: 16, initials: 'JP', label: 'Powell', edgeType: '', stroke: '#6b7a90', edgeStroke: 'rgba(138,155,181,0.2)', edgeWidth: 1.2 },
+    { id: 'fink', cx: 115, cy: 260, r: 16, initials: 'LF', label: 'Fink', edgeType: '', stroke: '#f5a623', edgeStroke: 'rgba(245,166,35,0.25)', edgeWidth: 1.5 },
+    { id: 'xi', cx: 435, cy: 330, r: 20, initials: 'XJ', label: 'Xi Jinping', edgeType: 'DependsOn', stroke: '#e53935', edgeStroke: 'rgba(229,57,53,0.3)', edgeWidth: 2, pulse: true },
+    { id: 'altman', cx: 170, cy: 340, r: 15, initials: 'SA', label: 'Altman', edgeType: '', stroke: '#a855f7', edgeStroke: 'rgba(168,85,247,0.2)', edgeWidth: 1 },
+  ],
+  connections: [
+    { initials: 'DT', name: 'Donald Trump', role: 'President USA · Allied', score: '9.2', color: '#00d4aa', scoreColor: '#00e5ff' },
+    { initials: 'JH', name: 'Jensen Huang', role: 'CEO NVIDIA · Partners', score: '8.9', color: '#00e5ff', scoreColor: '#00e5ff' },
+    { initials: 'JP', name: 'Jerome Powell', role: 'Fed Chairman · Monitors', score: '7.6', color: '#6b7a90', scoreColor: '#6b7a90' },
+    { initials: 'LF', name: 'Larry Fink', role: 'CEO BlackRock · Finances', score: '7.6', color: '#6b7a90', scoreColor: '#6b7a90' },
+  ],
+  clients: [
+    { initials: '🏛', name: 'US DoD', role: 'Official', score: '9.1', color: '#378ADD', scoreColor: '#00e5ff' },
+    { initials: '🚀', name: 'NASA', role: 'Major Client', score: '8.9', color: '#378ADD', scoreColor: '#00e5ff' },
+    { initials: 'CT', name: 'CATL', role: 'China Strategic', score: '5.7', color: '#f5a623', scoreColor: '#f5a623' },
+  ],
+  sectors: [
+    { name: 'EV & Energy', status: 'Primary', color: '#00e5ff' },
+    { name: 'Aerospace & Defense', status: 'Primary', color: '#00e5ff' },
+    { name: 'AI / LLM', status: 'Growing', color: '#00d4aa' },
+    { name: 'Social / Media', status: 'Secondary', color: '#f5a623' },
+    { name: 'Neurotechnology', status: 'Emerging', color: '#a855f7' },
+  ],
+};
+
+// ═══════════════════════════════════════════════════
+// STATE MACHINE (vanilla)
+// ═══════════════════════════════════════════════════
+
+const state = {
+  view: 'solo', // 'solo' | 'transition' | 'relation'
+  activeTab: 'overview',
+  selectedNode: 'trump',
+  graphView: 'NETWORK',
+  transitionLabel: '',
+  transitionSub: '',
+};
+
+function setState(patch) {
+  Object.assign(state, patch);
+  render();
+}
+
+// ═══════════════════════════════════════════════════
+// RENDERERS
+// ═══════════════════════════════════════════════════
+
+function render() {
+  const app = document.getElementById('app');
+  if (state.view === 'solo') {
+    app.innerHTML = renderSoloView();
+  } else if (state.view === 'transition') {
+    app.innerHTML = renderCinematic();
+  } else if (state.view === 'relation') {
+    app.innerHTML = renderRelationView();
+  }
+  bindEvents();
+}
+
+// ── CINEMATIC TRANSITION ──
+function renderCinematic() {
+  return `
+    <div class="cinematic" id="cin">
+      <div class="cin-bg" style="background-image:url('https://images.unsplash.com/photo-1501466044931-62695aada8e9?w=1600&q=80')"></div>
+      <div class="cin-gradient"></div>
+      <div class="cin-label">${state.transitionLabel}</div>
+      <div class="cin-sub">${state.transitionSub}</div>
+      <div class="cin-scan"></div>
+    </div>
+  `;
+}
+
+// ── SOLO VIEW ──
+function renderSoloView() {
+  const p = DATA.person;
+  const tabs = ['Overview', 'Trader View', 'Analyst', 'Predictions'];
+  return `
+  <div class="ov ov--solo view-enter">
+    <div class="close-btn" title="Close overlay">×</div>
+
+    <!-- LEFT PANEL -->
+    <div class="ov__panel ov__panel--left">
+      <div class="photo-wrap" style="height:320px">
+        <img src="Musk.jpeg" alt="Musk">
+        <div class="photo-fade"></div>
+      </div>
+      <div style="padding:2px 16px 12px">
+        <div class="pe-name">${p.name}</div>
+        <div class="pe-title">${p.title}</div>
+        <div class="pe-badges">${p.badges.map(b => `<span class="badge badge--${b.color}">${b.label}</span>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div style="padding:10px 16px">
+        <div class="ov__label">Companies</div>
+        ${p.companies.map(c => `
+          <div class="co-row">
+            <div class="co-icon" style="color:${c.color}">${c.icon}</div>
+            <span class="co-name">${c.name}</span>
+            <span class="co-edge">${c.role}</span>
+            <span class="co-cap">${c.cap}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="divider"></div>
+      <div style="padding:10px 16px">
+        <div class="ov__label">Signals</div>
+        ${p.signals.map(s => `
+          <div class="sig">
+            <div class="sig-bar" style="background:${s.color}"></div>
+            <div>
+              <div style="display:flex;align-items:center"><span class="sig-src" style="color:${s.color}">${s.src}</span><span class="sig-age">${s.age}</span></div>
+              <div class="sig-hl">${s.text}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="divider"></div>
+      <div style="padding:10px 16px">
+        <div class="ov__label" style="display:flex;align-items:center;gap:6px">Supply Chain Risk <span style="width:5px;height:5px;border-radius:50%;background:#e53935"></span></div>
+        <div class="risk-card risk-card--critical">
+          <div class="risk-header"><span class="risk-name">Detroit / Shanghai</span><span class="badge badge--red">CRITICAL</span></div>
+          <div class="risk-grid">
+            <div><div class="risk-label">GPE</div><div class="risk-value" style="color:#e0e6ef">72</div></div>
+            <div><div class="risk-label">Risk</div><div class="risk-value" style="color:#e53935">Chips</div></div>
+            <div><div class="risk-label">Exposure</div><div class="risk-value" style="color:#00d4aa">Low</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT AREA -->
+    <div class="pe-right">
+      <!-- EGO NETWORK -->
+      <div class="visual-zone">
+        <div class="vs-wrap">
+          ${['NETWORK','SPHERE','FORCE'].map(v => `<button class="vs-btn ${state.graphView === v ? 'vs-btn--active' : ''}" data-view="${v}">${v}</button>`).join('')}
+        </div>
+        <svg viewBox="0 0 600 400" style="width:100%;height:100%;max-width:none">
+          <defs>
+            <radialGradient id="cg" cx="50%" cy="50%" r="40%">
+              <stop offset="0%" stop-color="rgba(0,229,255,0.04)"/>
+              <stop offset="100%" stop-color="transparent"/>
+            </radialGradient>
+          </defs>
+          <rect width="600" height="400" fill="url(#cg)"/>
+          <circle cx="300" cy="200" r="135" fill="none" stroke="rgba(0,229,255,0.04)" stroke-width="0.5"/>
+          <circle cx="300" cy="200" r="90" fill="none" stroke="rgba(0,229,255,0.03)" stroke-width="0.5" stroke-dasharray="3 6"/>
+
+          <!-- Edges -->
+          ${DATA.nodes.map(n => `<line x1="300" y1="200" x2="${n.cx}" y2="${n.cy}" stroke="${n.edgeStroke}" stroke-width="${n.edgeWidth}"/>`).join('')}
+
+          <!-- Animated pulse dots -->
+          <circle r="2.5" fill="#00d4aa" opacity="0.8"><animateMotion dur="2.5s" repeatCount="indefinite" path="M 300 200 L 155 95"/></circle>
+          <circle r="2" fill="#e53935" opacity="0.7"><animateMotion dur="3s" repeatCount="indefinite" path="M 300 200 L 435 330"/></circle>
+          <circle r="2" fill="#00e5ff" opacity="0.6"><animateMotion dur="2.8s" repeatCount="indefinite" path="M 300 200 L 460 85"/></circle>
+
+          <!-- Central node -->
+          <circle cx="300" cy="200" r="30" fill="#060e1a" stroke="#00e5ff" stroke-width="2"/>
+          <circle cx="300" cy="200" r="35" fill="none" stroke="rgba(0,229,255,0.12)" stroke-width="1">
+            <animate attributeName="r" values="35;38;35" dur="3s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="1;0.4;1" dur="3s" repeatCount="indefinite"/>
+          </circle>
+          <text x="300" y="196" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="700" fill="#00e5ff">EM</text>
+          <text x="300" y="210" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#5a6b80">91</text>
+
+          <!-- Neighbor nodes -->
+          ${DATA.nodes.map(n => `
+            <g class="graph-node" data-node="${n.id}">
+              <circle cx="${n.cx}" cy="${n.cy}" r="${n.r + 8}" fill="transparent"/>
+              <circle cx="${n.cx}" cy="${n.cy}" r="${n.r}" fill="#060e1a" stroke="${n.stroke}" stroke-width="1.5"/>
+              ${n.pulse ? `<circle cx="${n.cx}" cy="${n.cy}" r="${n.r + 4}" fill="none" stroke="rgba(229,57,53,0.12)" stroke-width="1"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="2s" repeatCount="indefinite"/></circle>` : ''}
+              <text x="${n.cx}" y="${n.cy + 4}" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="${n.r > 18 ? 10 : 9}" font-weight="700" fill="${n.stroke === '#6b7a90' ? '#8a9bb5' : '#e0e6ef'}">${n.initials}</text>
+              <text x="${n.cx}" y="${n.cy + n.r + 18}" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="9" fill="#7a8ba0">${n.label}</text>
+              ${n.edgeType ? `<text x="${n.cx}" y="${n.cy + n.r + 30}" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="${n.stroke}">${n.edgeType}</text>` : ''}
+            </g>
+          `).join('')}
+
+          <!-- Legend -->
+          <g transform="translate(12,10)" opacity="0.85">
+            <text x="0" y="0" font-family="'JetBrains Mono',monospace" font-size="9" fill="#5a6b80" font-weight="700" letter-spacing="0.1em">1-HOP NETWORK</text>
+            <g transform="translate(0,14)">
+              <line x1="0" y1="0" x2="12" y2="0" stroke="#00d4aa" stroke-width="2"/><text x="16" y="3" font-family="'JetBrains Mono',monospace" font-size="8" fill="#5a6b80">Allied</text>
+              <line x1="58" y1="0" x2="70" y2="0" stroke="#00e5ff" stroke-width="2"/><text x="74" y="3" font-family="'JetBrains Mono',monospace" font-size="8" fill="#5a6b80">Partners</text>
+              <line x1="126" y1="0" x2="138" y2="0" stroke="#e53935" stroke-width="2"/><text x="142" y="3" font-family="'JetBrains Mono',monospace" font-size="8" fill="#5a6b80">Depends</text>
+              <line x1="192" y1="0" x2="204" y2="0" stroke="#f5a623" stroke-width="1.5"/><text x="208" y="3" font-family="'JetBrains Mono',monospace" font-size="8" fill="#5a6b80">Finances</text>
+            </g>
+          </g>
+        </svg>
+
+        <!-- Node Info Panel -->
+        ${state.selectedNode ? renderNodeInfo() : ''}
+      </div>
+
+      <!-- Nav tabs -->
+      <div class="pe-nav">
+        ${tabs.map(t => {
+          const key = t.toLowerCase().replace(' ', '-');
+          return `<button class="tab ${state.activeTab === key ? 'tab--active' : ''}" data-tab="${key}">${t}</button>`;
+        }).join('')}
+      </div>
+
+      <!-- Data grid -->
+      <div class="pe-data">
+        <div class="grid-row-3">
+          <div class="grid-cell">
+            <div class="ov__label">Key Connections</div>
+            ${DATA.connections.map(c => `
+              <div class="pr" data-open-relation="${c.name === 'Donald Trump' ? 'trump' : ''}">
+                <div class="pr-avatar" style="background:rgba(${hexToRgb(c.color)},0.08);border:1.5px solid rgba(${hexToRgb(c.color)},0.4);color:${c.color}">${c.initials}</div>
+                <div style="flex:1;min-width:0"><div class="pr-name">${c.name}</div><div class="pr-role">${c.role}</div></div>
+                <span class="pr-score" style="color:${c.scoreColor}">${c.score}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="grid-cell">
+            <div class="ov__label">Key Clients & Partners</div>
+            ${DATA.clients.map(c => `
+              <div class="pr">
+                <div class="pr-avatar" style="background:rgba(${hexToRgb(c.color)},0.08);border:1.5px solid rgba(${hexToRgb(c.color)},0.4);color:${c.color}">${c.initials}</div>
+                <div style="flex:1;min-width:0"><div class="pr-name">${c.name}</div><div class="pr-role">${c.role}</div></div>
+                <span class="pr-score" style="color:${c.scoreColor}">${c.score}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="grid-cell">
+            <div class="ov__label">Sector Positions</div>
+            ${DATA.sectors.map(s => `
+              <div class="sector-row">
+                <span class="sector-name">${s.name}</span>
+                <span class="sector" style="color:${s.color};background:rgba(${hexToRgb(s.color)},0.06);border:1px solid rgba(${hexToRgb(s.color)},0.2)">${s.status}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div class="grid-row-2">
+          <div class="grid-cell">
+            <div class="ov__label">Supply Chain Risk · 16</div>
+            <div class="risk-card risk-card--critical"><div class="risk-header"><span class="risk-name">Detroit / Shanghai</span><span class="badge badge--red">CRITICAL</span></div></div>
+            <div style="margin-top:6px">
+              <div class="facility"><div style="width:5px;height:5px;border-radius:50%;background:#e53935;flex-shrink:0;margin-top:3px"></div><div><div class="facility-name">Gigafactory Shanghai</div><div class="facility-meta">China · 20K emp · Critical dep.</div></div></div>
+              <div class="facility"><div style="width:5px;height:5px;border-radius:50%;background:#f5a623;flex-shrink:0;margin-top:3px"></div><div><div class="facility-name">Gigafactory Texas</div><div class="facility-meta">Austin · 12K emp</div></div></div>
+              <div class="facility"><div style="width:5px;height:5px;border-radius:50%;background:#00e5ff;flex-shrink:0;margin-top:3px"></div><div><div class="facility-name">Boca Chica Starbase</div><div class="facility-meta">TX · SpaceX launch</div></div></div>
+            </div>
+          </div>
+          <div class="grid-cell">
+            <div class="ov__label">Key Data</div>
+            <div class="kv-grid">
+              <div class="kv-cell"><div class="kv-key">Net Worth</div><div class="kv-val" style="color:#f5a623">${p.netWorth}</div></div>
+              <div class="kv-cell"><div class="kv-key">Global Rank</div><div class="kv-val" style="color:#00e5ff">#${p.globalRank}</div></div>
+              <div class="kv-cell"><div class="kv-key">Archetype</div><div class="kv-val">${p.archetype}</div></div>
+              <div class="kv-cell"><div class="kv-key">Domain</div><div class="kv-val">${p.domain}</div></div>
+              <div class="kv-cell"><div class="kv-key">Citizenship</div><div class="kv-val">${p.citizenship}</div></div>
+              <div class="kv-cell"><div class="kv-key">Born</div><div class="kv-val">${p.born}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="bottom-bar">
+      <span class="bar-label">VIEWING</span>
+      <span class="bar-value bar-value--teal">ELON MUSK</span>
+      <div class="bar-sep"></div>
+      <span class="bar-label">COMPOSITE</span>
+      <span class="bar-value bar-value--teal">${p.compositeScore}</span>
+      <div class="bar-sep"></div>
+      <span class="bar-label">RANK</span>
+      <span class="bar-value bar-value--gold">#${p.globalRank}</span>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <span class="live"><span class="live-dot"></span> LIVE</span>
+        <span class="badge badge--teal">6 EDGES · 3 TIMELINES</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── NODE INFO PANEL ──
+function renderNodeInfo() {
+  const t = DATA.trump;
+  if (state.selectedNode !== 'trump') {
+    const node = DATA.nodes.find(n => n.id === state.selectedNode);
+    if (!node) return '';
+    return `
+    <div class="ni">
+      <div class="ni-header">
+        <div class="ni-avatar" style="background:rgba(${hexToRgb(node.stroke)},0.08);border:1.5px solid rgba(${hexToRgb(node.stroke)},0.4);color:${node.stroke}">${node.initials}</div>
+        <div style="flex:1;min-width:0">
+          <div class="ni-name">${node.label}</div>
+          <div class="ni-meta"><span class="badge badge--teal" style="font-size:8px;padding:2px 5px">${node.edgeType || 'CONNECTED'}</span></div>
+        </div>
+        <div class="ni-close" data-close-ni>×</div>
+      </div>
+    </div>`;
+  }
+  return `
+  <div class="ni">
+    <div class="ni-header">
+      <div class="ni-avatar" style="background:rgba(0,212,170,0.08);border:1.5px solid rgba(0,212,170,0.4);color:#00d4aa">DT</div>
+      <div style="flex:1;min-width:0">
+        <div class="ni-name">Donald Trump</div>
+        <div class="ni-meta">
+          <span class="badge badge--teal" style="font-size:8px;padding:2px 5px">POLITICAL</span>
+          <span style="color:#5a6b80">PEP</span>
+        </div>
+      </div>
+      <div class="ni-close" data-close-ni>×</div>
+    </div>
+    <div class="ni-section">
+      <div class="ov__label" style="margin-bottom:10px">Ideology Profile</div>
+      ${t.ideology.map(s => `
+        <div class="score-row">
+          <span class="score-label">${s.label}</span>
+          <div class="score-track">
+            <div class="score-center"></div>
+            <div class="score-fill" style="left:50%;width:${s.pct}%;background:linear-gradient(90deg,rgba(${hexToRgb(s.color)},0.3),${s.color});border-radius:0 3px 3px 0"></div>
+          </div>
+          <span class="score-val" style="color:${s.color}">${s.value}</span>
+        </div>
+        ${s.sub ? `<div class="score-sub">${s.sub}</div>` : ''}
+      `).join('')}
+    </div>
+    <div class="ni-section">
+      <div class="ov__label" style="margin-bottom:8px">Structural Edges</div>
+      <div class="ni-edge"><div class="ni-edge-dot" style="background:#00d4aa"></div><span class="ni-edge-type">Allied</span><span class="ni-edge-target">Elon Musk</span><span class="ni-edge-strength" style="color:#00d4aa;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.2)">CRITICAL</span></div>
+      <div class="ni-edge"><div class="ni-edge-dot" style="background:#e53935"></div><span class="ni-edge-type">Pressures</span><span class="ni-edge-target">Fed Reserve</span><span class="ni-edge-strength" style="color:#e53935;background:rgba(229,57,53,0.08);border:1px solid rgba(229,57,53,0.2)">HIGH</span></div>
+      <div class="ni-edge"><div class="ni-edge-dot" style="background:#f5a623"></div><span class="ni-edge-type">Governs</span><span class="ni-edge-target">US Military</span><span class="ni-edge-strength" style="color:#f5a623;background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2)">HIGH</span></div>
+    </div>
+    <div class="ni-actions">
+      <button class="ni-btn ni-btn--primary" data-action="open-relation">↗ Open Studio Relation</button>
+      <button class="ni-btn ni-btn--secondary">⟁ Traverse Supply Chain</button>
+    </div>
+  </div>`;
+}
+
+// ── RELATION VIEW ──
+function renderRelationView() {
+  const a = DATA.person;
+  const b = DATA.trump;
+  const r = DATA.relation;
+
+  return `
+  <div class="ov ov--relation view-enter">
+    <div class="close-btn" title="Close overlay">×</div>
+
+    <!-- LEFT: Entity A -->
+    <div class="ov__panel ov__panel--left" style="padding:0;gap:0">
+      <div class="photo-wrap" style="height:300px">
+        <img src="Musk.jpeg" alt="${a.name}">
+        <div class="photo-fade"></div>
+      </div>
+      <div style="padding:0 14px 10px">
+        <div class="pe-name" style="font-size:22px">${a.name}</div>
+        <div class="pe-title">${a.title}</div>
+        <div class="pe-badges">${a.badges.slice(0,2).map(bb => `<span class="badge badge--${bb.color}">${bb.label}</span>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div style="padding:10px 14px">
+        <div class="ov__label">Key Data</div>
+        <div class="kv-grid">
+          <div class="kv-cell"><div class="kv-key">Net Worth</div><div class="kv-val" style="color:#f5a623">${a.netWorth}</div></div>
+          <div class="kv-cell"><div class="kv-key">Rank</div><div class="kv-val" style="color:#00e5ff">#${a.globalRank}</div></div>
+          <div class="kv-cell"><div class="kv-key">Archetype</div><div class="kv-val">${a.archetype}</div></div>
+          <div class="kv-cell"><div class="kv-key">Domain</div><div class="kv-val">${a.domain}</div></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div style="padding:10px 14px">
+        <div class="ov__label">Companies</div>
+        ${a.companies.slice(0,3).map(c => `<div class="co-row"><div class="co-icon" style="color:${c.color}">${c.icon}</div><span class="co-name">${c.name}</span><span class="co-edge">${c.role}</span><span class="co-cap">${c.cap}</span></div>`).join('')}
+      </div>
+      <div class="divider"></div>
+      <div style="padding:10px 14px">
+        <div class="ov__label">Connections</div>
+        <div class="pr pr--active">
+          <div class="pr-avatar" style="background:rgba(0,212,170,0.12);border:1.5px solid rgba(0,212,170,0.6);color:#00d4aa">DT</div>
+          <div style="flex:1;min-width:0"><div class="pr-name" style="color:#00e5ff">Donald Trump</div><div class="pr-role">President USA · Allied</div></div>
+          <span class="pr-score" style="color:#00e5ff">9.2</span>
+        </div>
+        <div class="pr">
+          <div class="pr-avatar" style="background:rgba(255,255,255,0.04);border:1.5px solid rgba(138,155,181,0.4);color:#8a9bb5">JH</div>
+          <div style="flex:1;min-width:0"><div class="pr-name">Jensen Huang</div><div class="pr-role">CEO NVIDIA · Partners</div></div>
+          <span class="pr-score" style="color:#8a9bb5">8.9</span>
+        </div>
+        <div class="pr">
+          <div class="pr-avatar" style="background:rgba(255,255,255,0.04);border:1.5px solid rgba(138,155,181,0.4);color:#8a9bb5">JP</div>
+          <div style="flex:1;min-width:0"><div class="pr-name">Jerome Powell</div><div class="pr-role">Fed Chairman · Monitors</div></div>
+          <span class="pr-score" style="color:#8a9bb5">7.6</span>
+        </div>
+      </div>
+      <div style="padding:10px 14px">
+        <div class="ov__label">Signals</div>
+        ${a.signals.slice(0,2).map(s => `
+          <div class="sig">
+            <div class="sig-bar" style="background:${s.color}"></div>
+            <div><div style="display:flex;align-items:center"><span class="sig-src" style="color:${s.color}">${s.src}</span><span class="sig-age">${s.age}</span></div><div class="sig-hl">${s.text}</div></div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- CENTER: Studio Relation -->
+    <div class="sr-center">
+      <div class="sr-header">
+        <div class="sr-kicker">Studio Relation</div>
+        <div class="sr-label">Allied</div>
+        <div class="sr-type" style="color:#00d4aa">Strength ${r.strengthPct}% · Active since 2024</div>
+        <div class="sr-arc">
+          <svg style="width:100%;height:64px" viewBox="0 0 400 64" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="arcG" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.8"/>
+                <stop offset="50%" stop-color="#00d4aa" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#00e5ff" stop-opacity="0.8"/>
+              </linearGradient>
+            </defs>
+            <path d="M 60 48 Q 200 -10 340 48" fill="none" stroke="url(#arcG)" stroke-width="2"/>
+            <circle cx="60" cy="48" r="4" fill="#00e5ff" opacity="0.8"/>
+            <circle cx="340" cy="48" r="4" fill="#00e5ff" opacity="0.8"/>
+            <circle r="3" fill="#00e5ff"><animateMotion dur="3s" repeatCount="indefinite" path="M 60 48 Q 200 -10 340 48"/></circle>
+          </svg>
+          <div class="sr-arc-ent sr-arc-ent--left">
+            <div class="sr-arc-avatar"><img src="Musk.jpeg" alt=""></div>
+          </div>
+          <div class="sr-arc-ent sr-arc-ent--right">
+            <div class="sr-arc-avatar"><img src="Trump.jpg" alt=""></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sr-content">
+        <button class="back-btn" data-action="back-to-solo"><span style="font-size:14px">←</span> Back to overview</button>
+
+        <!-- Edge Strength -->
+        <div class="str-meter">
+          <div class="str-header">
+            <span class="str-label">Edge Strength</span>
+            <span class="str-val" style="color:#00d4aa">${r.score}</span>
+          </div>
+          <div class="str-track"><div class="str-fill" style="width:${r.strengthPct}%;background:linear-gradient(90deg,rgba(0,229,255,0.3),#00d4aa)"></div></div>
+        </div>
+
+        <!-- Edge Details -->
+        <div>
+          <div class="ov__label">Edge Details</div>
+          <div class="details-grid">
+            <div class="kv-cell"><div class="kv-key">Edge Type</div><div class="kv-val" style="color:#00d4aa">Allied</div></div>
+            <div class="kv-cell"><div class="kv-key">Risk Score</div><div class="kv-val" style="color:#f5a623">${r.riskScore} / 5</div></div>
+            <div class="kv-cell"><div class="kv-key">Linked Timelines</div><div class="kv-val" style="color:#a855f7">3</div></div>
+            <div class="kv-cell"><div class="kv-key">Severity</div><div class="kv-val" style="color:#f5a623">${r.severity}</div></div>
+          </div>
+        </div>
+
+        <!-- Relation Analysis -->
+        <div>
+          <div class="ov__label">Relation Analysis</div>
+          <div class="analysis-desc">${r.analysis}</div>
+        </div>
+
+        <!-- Power Dynamic -->
+        <div>
+          <div class="ov__label">Power Dynamic</div>
+          <div class="power-dyn">${r.powerDynamic}</div>
+        </div>
+
+        <!-- Key Levers -->
+        <div>
+          <div class="ov__label">Key Levers</div>
+          <ul class="lever-list">
+            ${r.levers.map(l => `<li class="lever"><div class="lever-dot" style="background:${l.color}"></div>${l.text}</li>`).join('')}
+          </ul>
+        </div>
+
+        <!-- Risk Factors -->
+        <div>
+          <div class="ov__label">Risk Factors</div>
+          <ul class="lever-list">
+            ${r.risks.map(rr => `<li class="lever"><div class="lever-dot" style="background:${rr.color}"></div>${rr.text}</li>`).join('')}
+          </ul>
+        </div>
+
+        <!-- Timelines -->
+        <div>
+          <div class="ov__label">Affected Timelines</div>
+          ${r.timelines.map(tl => `
+            <div class="tl-card">
+              <div style="display:flex;gap:6px;align-items:center;margin-bottom:5px">
+                <span class="badge badge--${tl.badgeColor}">${tl.badge}</span>
+                <span style="font-family:var(--font-mono);font-size:9px;color:#6b7a90">${tl.age}</span>
+              </div>
+              <div class="tl-q">${tl.text}</div>
+              <div class="tl-bar">
+                <div class="tl-track"><div class="tl-fill" style="width:${tl.pct}%;background:${tl.color}"></div></div>
+                <span class="tl-pct" style="color:${tl.color}">${tl.pct}%</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- Shared Connections -->
+        <div>
+          <div class="ov__label">Shared Connections</div>
+          ${r.shared.map(s => `
+            <div class="shared-row">
+              <div class="shared-avatar" style="color:${s.color};border-color:rgba(${hexToRgb(s.color)},0.3)">${s.initials}</div>
+              <div style="flex:1;min-width:0"><div class="shared-name">${s.name}</div><div class="shared-type">${s.type}</div></div>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- Cascade Exposure -->
+        <div>
+          <div class="ov__label">Cascade Exposure</div>
+          <div class="details-grid">
+            <div class="kv-cell"><div class="kv-key">Total Exposed</div><div class="kv-val" style="color:#e53935">${r.cascade.exposed}</div></div>
+            <div class="kv-cell"><div class="kv-key">Sectors Affected</div><div class="kv-val">${r.cascade.sectors}</div></div>
+            <div class="kv-cell"><div class="kv-key">Countries</div><div class="kv-val">${r.cascade.countries}</div></div>
+            <div class="kv-cell"><div class="kv-key">Propagation</div><div class="kv-val" style="color:#f5a623">${r.cascade.hops}</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Entity B -->
+    <div class="ent-panel ov__panel--right" style="padding:0">
+      <div class="photo-wrap" style="height:300px">
+        <img src="Trump.jpg" alt="Trump">
+        <div class="photo-fade"></div>
+      </div>
+      <div style="padding:0 14px 10px">
+        <div class="pe-name" style="font-size:22px">${b.name}</div>
+        <div class="pe-title">${b.title}</div>
+        <div class="pe-badges">${b.badges.map(bb => `<span class="badge badge--${bb.color}">${bb.label}</span>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div style="padding:10px 14px">
+        <div class="ov__label">Key Data</div>
+        <div class="kv-grid">
+          <div class="kv-cell"><div class="kv-key">Net Worth</div><div class="kv-val" style="color:#f5a623">${b.netWorth}</div></div>
+          <div class="kv-cell"><div class="kv-key">Rank</div><div class="kv-val" style="color:#00e5ff">#${b.globalRank}</div></div>
+          <div class="kv-cell"><div class="kv-key">Archetype</div><div class="kv-val">${b.archetype}</div></div>
+          <div class="kv-cell"><div class="kv-key">Domain</div><div class="kv-val">${b.domain}</div></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div style="padding:10px 14px">
+        <div class="ov__label">Companies</div>
+        ${b.companies.map(c => `<div class="co-row"><div class="co-icon" style="color:${c.color}">${c.icon}</div><span class="co-name">${c.name}</span><span class="co-cap">${c.cap}</span></div>`).join('')}
+      </div>
+      <div class="divider"></div>
+      <div style="padding:10px 14px">
+        <div class="ov__label">Connections</div>
+        <div class="pr pr--active">
+          <div class="pr-avatar" style="background:rgba(0,212,170,0.12);border:1.5px solid rgba(0,212,170,0.6);color:#00d4aa">EM</div>
+          <div style="flex:1;min-width:0"><div class="pr-name" style="color:#00e5ff">Elon Musk</div><div class="pr-role">CEO Tesla · Allied</div></div>
+          <span class="pr-score" style="color:#00e5ff">9.2</span>
+        </div>
+        <div class="pr">
+          <div class="pr-avatar" style="background:rgba(229,57,53,0.08);border:1.5px solid rgba(229,57,53,0.4);color:#e53935">XJ</div>
+          <div style="flex:1;min-width:0"><div class="pr-name">Xi Jinping</div><div class="pr-role">President China · Trade War</div></div>
+          <span class="pr-score" style="color:#e53935">8.8</span>
+        </div>
+        <div class="pr">
+          <div class="pr-avatar" style="background:rgba(245,166,35,0.08);border:1.5px solid rgba(245,166,35,0.4);color:#f5a623">JP</div>
+          <div style="flex:1;min-width:0"><div class="pr-name">Jerome Powell</div><div class="pr-role">Fed Chairman · Pressures</div></div>
+          <span class="pr-score" style="color:#f5a623">9.0</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div style="padding:10px 14px">
+        <div class="ov__label">Signals</div>
+        ${b.signals.map(s => `
+          <div class="sig">
+            <div class="sig-bar" style="background:${s.color}"></div>
+            <div><div style="display:flex;align-items:center"><span class="sig-src" style="color:${s.color}">${s.src}</span><span class="sig-age">${s.age}</span></div><div class="sig-hl">${s.text}</div></div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="bottom-bar">
+      <span class="bar-label">RELATION</span>
+      <span class="bar-value bar-value--teal">MUSK ↔ TRUMP</span>
+      <div class="bar-sep"></div>
+      <span class="bar-label">TYPE</span>
+      <span class="bar-value" style="color:#00d4aa">ALLIED</span>
+      <div class="bar-sep"></div>
+      <span class="bar-label">STRENGTH</span>
+      <span class="bar-value bar-value--teal">${r.strengthPct}%</span>
+      <div class="bar-sep"></div>
+      <span class="bar-label">RISK</span>
+      <span class="bar-value bar-value--gold">${r.riskScore}</span>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <span class="live"><span class="live-dot"></span> LIVE</span>
+        <span class="badge badge--green">3 TIMELINES</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// EVENT BINDING
+// ═══════════════════════════════════════════════════
+
+function bindEvents() {
+  // Graph node clicks
+  document.querySelectorAll('.graph-node').forEach(el => {
+    el.addEventListener('click', () => {
+      setState({ selectedNode: el.dataset.node });
+    });
+  });
+
+  // Close node info
+  document.querySelectorAll('[data-close-ni]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setState({ selectedNode: null });
+    });
+  });
+
+  // Open Studio Relation (from node info button)
+  document.querySelectorAll('[data-action="open-relation"]').forEach(el => {
+    el.addEventListener('click', () => openRelation());
+  });
+
+  // Open relation from connection row
+  document.querySelectorAll('[data-open-relation="trump"]').forEach(el => {
+    el.addEventListener('click', () => openRelation());
+  });
+
+  // Back to solo
+  document.querySelectorAll('[data-action="back-to-solo"]').forEach(el => {
+    el.addEventListener('click', () => {
+      setState({ view: 'solo', selectedNode: 'trump' });
+    });
+  });
+
+  // Tab switching
+  document.querySelectorAll('[data-tab]').forEach(el => {
+    el.addEventListener('click', () => {
+      setState({ activeTab: el.dataset.tab });
+    });
+  });
+
+  // View switcher
+  document.querySelectorAll('[data-view]').forEach(el => {
+    el.addEventListener('click', () => {
+      setState({ graphView: el.dataset.view });
+    });
+  });
+
+  // Cinematic auto-complete
+  if (state.view === 'transition') {
+    setTimeout(() => {
+      setState({ view: 'relation' });
+    }, 800);
+  }
+}
+
+function openRelation() {
+  setState({
+    view: 'transition',
+    transitionLabel: 'WASHINGTON',
+    transitionSub: 'Studio Relation · Allied',
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════
+
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)].join(',');
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+
+render();
+</script>
+</body>
+</html>

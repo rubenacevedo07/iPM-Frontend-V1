@@ -1282,4 +1282,23 @@ html, body, #root {
   margin-top: 3px;
 }
 
-@import './overlay-legacy';
+// Day 4+ (visual): removed `@import './overlay-legacy';`.
+//
+// The legacy stylesheet redeclared every overlay class (~700+ rules) with the
+// V1 design — full-width dark bands, `backdrop-filter: blur(20px)` everywhere,
+// `flex: 1` on the meta chip, etc. Because it was imported LAST in global.scss
+// and the components import `overlay.scss` from their own modules (earlier in
+// the dependency graph), Rolldown placed legacy AFTER overlay.scss in the
+// bundled CSS — so identical-specificity selectors resolved to the *legacy*
+// declarations every time. Net effect: every edit to `overlay.scss` was dead
+// code at runtime (verified via `Select-String` over `dist/assets/index-*.css`,
+// which showed only the legacy `.co-sub` / `.co-hdr__meta` definitions).
+//
+// Verified safe: every class in `overlay-legacy.scss` is also defined in
+// `overlay.scss` (zero unique selectors — `Compare-Object` returned empty).
+// Removing the import disables ~1700 lines of conflicting CSS in one line and
+// promotes `overlay.scss` to the actual source of truth that the rest of the
+// codebase already assumes.
+//
+// The file is kept on disk (un-deleted) for reference + potential cherry-pick
+// of rules we may still want; nothing imports it now.

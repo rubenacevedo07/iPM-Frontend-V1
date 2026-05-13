@@ -1,29 +1,28 @@
-import { useEffect } from 'react'
-import { useSearch } from '@tanstack/react-router'
-import { AppActor } from './app.machine'
 import { GoldOverlay } from '@/features/gold-overlay/GoldOverlay'
-import {
-  elonMuskConnections,
-  elonMuskClients,
-  elonMuskFocalCoords,
-} from '@/features/person-overlay/personFallbackData'
-import { mapPersonConnectionsToArcs } from '@/services/personNetworkMapper'
+import { usePersonsMap } from '@/hooks/usePersonsMap'
+import { useUIState } from './useUIState'
+import { getOverlay } from './selectUIState'
 
+/**
+ * URL → GoldOverlay dispatcher. Active when the discriminated UIState
+ * resolves to an overlay of kind 'gold' on either globe or network.
+ * Day 3: read overlay payload from `useUIState()` instead of `useSearch`.
+ * `selectUIState` already validates `id` is a number; no defensive guard
+ * needed at this site.
+ */
 export function GoldOverlayHost() {
-  const search = useSearch({ from: '/workstation' })
-  const actor  = AppActor.useActorRef()
+  const ui = useUIState()
+  const { persons, loading: personsLoading } = usePersonsMap()
 
-  const isGold = search.overlay === 'gold'
-  const id = typeof search.id === 'number' ? search.id : null
+  const overlay = getOverlay(ui)
+  if (overlay?.kind !== 'gold') return null
+  // Wait for the persons batch before mounting so seed is always available.
+  // Prevents the cold-load race where seed=null causes photo/name to flash in
+  // empty then update 100-300ms later once usePersonIntelligence resolves.
+  if (personsLoading) return null
 
-  useEffect(() => {
-    if (!isGold || id == null) return
-    const arcs = mapPersonConnectionsToArcs(
-      elonMuskConnections, elonMuskClients, elonMuskFocalCoords, 'person:7',
-    )
-    actor.send({ type: 'PERSON_NETWORK_RESOLVED', personId: id, arcs })
-  }, [isGold, id, actor])
-
-  if (!isGold || id == null) return null
-  return <GoldOverlay entityName={`Company #${id}`} />
+  const { id } = overlay
+  const nodeId = `person:${id}`
+  const seed = persons.find(p => p.id === id) ?? null
+  return <GoldOverlay key={id} id={id} nodeId={nodeId} seed={seed} />
 }
