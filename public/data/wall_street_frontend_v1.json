@@ -1,0 +1,3658 @@
+{
+  "metadata": {
+    "graph_name": "Wall Street Power Graph",
+    "version": "1.0",
+    "generated_by": "claude-opus-4-7",
+    "generated_at": "2026-05-10T00:00:00Z",
+    "node_count": 45,
+    "edge_count": 76,
+    "group_count": 4,
+    "chain_count": 3,
+    "scope": "Top financial institutions, regulators, asset managers, and key persons concentrated around Wall Street, Lower Manhattan, plus Washington DC regulators. Includes time-sensitive Powell → Warsh Fed Chair transition occurring 2026-05-15 (5 days after observation date).",
+    "data_quality_notes": "CONFIDENCE-CALIBRATED. CEOs verified via web search May 2026: Dimon (JPM), Solomon (GS), Pick (MS, since Jan 2024), Moynihan (BAC), Fraser (Citi), Scharf (WFC), Fink (BLK). Schwarzman (Blackstone) and Dalio (Bridgewater) not separately verified - assumed stable. FED TRANSITION: Powell term ENDS May 15 2026. Warsh nominated by Trump Jan 30 2026, approved by Senate Banking Committee Apr 29 2026, full Senate vote earliest May 11 2026. Warsh edge marked 'proposed' with confidence_score=0.75 because confirmation not yet final. OWNERSHIP MAGNITUDES: 13F-derived percentages approximate (BlackRock ~6.7% Apple, Vanguard ~8.5% Apple, etc) — confidence_score 0.80-0.90 reflects estimation uncertainty, could be ±0.5pp. NOT VERIFIED: BlackRock <-> Fed advisory relationship details (FMA contract scope), BNY Mellon AUC for BlackRock magnitude is order-of-magnitude estimate. BUILD: 50 hours research equivalent compressed into single-pass JSON generation. INTENTIONALLY EXCLUDED: hedge funds beyond Bridgewater (Citadel, Millennium, Renaissance, Two Sigma) — to keep scope focused on Wall Street power structure rather than trading. Foreign banks (Deutsche, Barclays, UBS, Credit Suisse-now-UBS) excluded for same reason.",
+    "frontend_format_version": "v1",
+    "denormalized": true,
+    "cluster_count": 8,
+    "tier_distribution": {
+      "tier_1": 12,
+      "tier_2": 19,
+      "tier_3": 14
+    }
+  },
+  "view_defaults": {
+    "initial_tier_filter": 1,
+    "tier_filter_max": 3,
+    "min_strength_visible": 0.5,
+    "edge_width_scale": "strength_value",
+    "node_size_scale": "by_tier",
+    "node_color_scale": "primary_cluster",
+    "show_temporal_pending": true,
+    "consensus_field_present": true,
+    "current_consensus_status": "single_model"
+  },
+  "clusters": [
+    {
+      "id": "geographic",
+      "name": "Geographic Anchors",
+      "color": "#94a3b8",
+      "description": "Country, city, district — sovereign hierarchy.",
+      "node_ids": [
+        "country:us",
+        "place:nyc",
+        "place:wall-street",
+        "place:washington-dc"
+      ],
+      "node_count": 4,
+      "default_visible": true
+    },
+    {
+      "id": "wall-street-banks",
+      "name": "Wall Street Banks",
+      "color": "#00e5ff",
+      "description": "Bulge-bracket investment banks and major US universal banks.",
+      "node_ids": [
+        "bank:goldman-sachs",
+        "bank:morgan-stanley",
+        "bank:jpmorgan-chase",
+        "bank:bank-of-america",
+        "bank:citigroup",
+        "bank:wells-fargo",
+        "bank:bny-mellon"
+      ],
+      "node_count": 7,
+      "default_visible": true
+    },
+    {
+      "id": "passive-asset-managers",
+      "name": "Big Three Passive",
+      "color": "#00d4aa",
+      "description": "BlackRock, Vanguard, State Street — index fund giants.",
+      "node_ids": [
+        "asset_manager:blackrock",
+        "asset_manager:vanguard",
+        "asset_manager:state-street"
+      ],
+      "node_count": 3,
+      "default_visible": true
+    },
+    {
+      "id": "alternative-asset-managers",
+      "name": "Alternative Managers",
+      "color": "#a855f7",
+      "description": "PE, hedge funds: Blackstone, KKR, Bridgewater.",
+      "node_ids": [
+        "asset_manager:bridgewater",
+        "asset_manager:blackstone",
+        "asset_manager:kkr"
+      ],
+      "node_count": 3,
+      "default_visible": false
+    },
+    {
+      "id": "regulators",
+      "name": "US Regulators",
+      "color": "#ffb547",
+      "description": "Fed, SEC, FINRA, OCC, FDIC, CFTC — federal oversight.",
+      "node_ids": [
+        "institution:federal-reserve-system",
+        "institution:nyfed",
+        "institution:us-treasury",
+        "institution:sec",
+        "institution:finra",
+        "institution:cftc",
+        "institution:occ",
+        "institution:fdic"
+      ],
+      "node_count": 8,
+      "default_visible": true
+    },
+    {
+      "id": "infrastructure",
+      "name": "Market Infrastructure",
+      "color": "#ff2d92",
+      "description": "Exchanges, clearing, custody — the plumbing.",
+      "node_ids": [
+        "bank:bny-mellon",
+        "company:nyse",
+        "company:nasdaq",
+        "company:ice",
+        "institution:dtcc"
+      ],
+      "node_count": 5,
+      "default_visible": true
+    },
+    {
+      "id": "persons-ceos",
+      "name": "CEO Layer",
+      "color": "#00e5ff",
+      "description": "Chief executives of major institutions.",
+      "node_ids": [
+        "person:jamie-dimon",
+        "person:david-solomon",
+        "person:ted-pick",
+        "person:brian-moynihan",
+        "person:jane-fraser",
+        "person:charlie-scharf",
+        "person:larry-fink",
+        "person:stephen-schwarzman",
+        "person:ray-dalio"
+      ],
+      "node_count": 9,
+      "default_visible": false
+    },
+    {
+      "id": "persons-regulators",
+      "name": "Regulator Persons",
+      "color": "#ffb547",
+      "description": "Fed Chairs, NY Fed Pres, Treasury Secretary.",
+      "node_ids": [
+        "person:jerome-powell",
+        "person:kevin-warsh",
+        "person:john-williams",
+        "person:scott-bessent"
+      ],
+      "node_count": 4,
+      "default_visible": false
+    }
+  ],
+  "nodes": [
+    {
+      "id": "country:us",
+      "entity_type": "country",
+      "entity_subtype": null,
+      "canonical_name": "United States of America",
+      "alias_names": [
+        "USA",
+        "US",
+        "United States"
+      ],
+      "slug": "us",
+      "parent_node_id": null,
+      "country_node_id": null,
+      "lat": 39.8283,
+      "lng": -98.5795,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 1,
+      "cluster_ids": [
+        "geographic"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "place:nyc",
+      "entity_type": "place",
+      "entity_subtype": "city",
+      "canonical_name": "New York City",
+      "alias_names": [
+        "NYC",
+        "New York",
+        "Manhattan"
+      ],
+      "slug": "nyc",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": 40.7128,
+      "lng": -74.006,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 1,
+      "cluster_ids": [
+        "geographic"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "place:wall-street",
+      "entity_type": "place",
+      "entity_subtype": "financial_district",
+      "canonical_name": "Wall Street",
+      "alias_names": [
+        "NYSE area",
+        "The Street",
+        "Lower Manhattan financial district"
+      ],
+      "slug": "wall-street",
+      "parent_node_id": "place:nyc",
+      "country_node_id": "country:us",
+      "lat": 40.7065,
+      "lng": -74.0093,
+      "bounding_box": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -74.014,
+              40.7045
+            ],
+            [
+              -74.0045,
+              40.7045
+            ],
+            [
+              -74.0045,
+              40.7095
+            ],
+            [
+              -74.014,
+              40.7095
+            ],
+            [
+              -74.014,
+              40.7045
+            ]
+          ]
+        ]
+      },
+      "wiki_slug": "Wall_Street",
+      "relevance_tier": 1,
+      "cluster_ids": [
+        "geographic"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "place:washington-dc",
+      "entity_type": "place",
+      "entity_subtype": "city",
+      "canonical_name": "Washington, D.C.",
+      "alias_names": [
+        "DC",
+        "District of Columbia"
+      ],
+      "slug": "washington-dc",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": 38.9072,
+      "lng": -77.0369,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "geographic"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "company:nyse",
+      "entity_type": "company",
+      "entity_subtype": "stock_exchange",
+      "canonical_name": "New York Stock Exchange",
+      "alias_names": [
+        "NYSE",
+        "Big Board"
+      ],
+      "slug": "nyse",
+      "parent_node_id": "place:wall-street",
+      "country_node_id": "country:us",
+      "lat": 40.7069,
+      "lng": -74.0113,
+      "bounding_box": null,
+      "wiki_slug": "New_York_Stock_Exchange",
+      "relevance_tier": 1,
+      "cluster_ids": [
+        "infrastructure"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "company:ice",
+      "entity_type": "company",
+      "entity_subtype": "exchange_holding",
+      "canonical_name": "Intercontinental Exchange",
+      "alias_names": [
+        "ICE",
+        "ICE Group"
+      ],
+      "slug": "ice",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [
+        "infrastructure"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "company:nasdaq",
+      "entity_type": "company",
+      "entity_subtype": "stock_exchange",
+      "canonical_name": "Nasdaq, Inc.",
+      "alias_names": [
+        "NASDAQ"
+      ],
+      "slug": "nasdaq",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "infrastructure"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "institution:dtcc",
+      "entity_type": "institution",
+      "entity_subtype": "clearing_corporation",
+      "canonical_name": "Depository Trust & Clearing Corporation",
+      "alias_names": [
+        "DTCC"
+      ],
+      "slug": "dtcc",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "infrastructure"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "institution:federal-reserve-system",
+      "entity_type": "institution",
+      "entity_subtype": "central_bank",
+      "canonical_name": "Federal Reserve System",
+      "alias_names": [
+        "Fed",
+        "Federal Reserve",
+        "FRS"
+      ],
+      "slug": "federal-reserve-system",
+      "parent_node_id": "place:washington-dc",
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": "Federal_Reserve",
+      "relevance_tier": 1,
+      "cluster_ids": [
+        "regulators"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "institution:nyfed",
+      "entity_type": "institution",
+      "entity_subtype": "reserve_bank",
+      "canonical_name": "Federal Reserve Bank of New York",
+      "alias_names": [
+        "NY Fed",
+        "FRBNY"
+      ],
+      "slug": "nyfed",
+      "parent_node_id": "place:wall-street",
+      "country_node_id": "country:us",
+      "lat": 40.708,
+      "lng": -74.0089,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "regulators"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "institution:us-treasury",
+      "entity_type": "institution",
+      "entity_subtype": "executive_department",
+      "canonical_name": "United States Department of the Treasury",
+      "alias_names": [
+        "US Treasury",
+        "Treasury Department"
+      ],
+      "slug": "us-treasury",
+      "parent_node_id": "place:washington-dc",
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "regulators"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "institution:sec",
+      "entity_type": "institution",
+      "entity_subtype": "regulatory_agency",
+      "canonical_name": "U.S. Securities and Exchange Commission",
+      "alias_names": [
+        "SEC"
+      ],
+      "slug": "sec",
+      "parent_node_id": "place:washington-dc",
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "regulators"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "institution:finra",
+      "entity_type": "institution",
+      "entity_subtype": "self_regulatory_organization",
+      "canonical_name": "Financial Industry Regulatory Authority",
+      "alias_names": [
+        "FINRA"
+      ],
+      "slug": "finra",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [
+        "regulators"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "institution:cftc",
+      "entity_type": "institution",
+      "entity_subtype": "regulatory_agency",
+      "canonical_name": "Commodity Futures Trading Commission",
+      "alias_names": [
+        "CFTC"
+      ],
+      "slug": "cftc",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [
+        "regulators"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "institution:occ",
+      "entity_type": "institution",
+      "entity_subtype": "regulatory_agency",
+      "canonical_name": "Office of the Comptroller of the Currency",
+      "alias_names": [
+        "OCC"
+      ],
+      "slug": "occ",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [
+        "regulators"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "institution:fdic",
+      "entity_type": "institution",
+      "entity_subtype": "regulatory_agency",
+      "canonical_name": "Federal Deposit Insurance Corporation",
+      "alias_names": [
+        "FDIC"
+      ],
+      "slug": "fdic",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [
+        "regulators"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "bank:jpmorgan-chase",
+      "entity_type": "bank",
+      "entity_subtype": "universal_bank",
+      "canonical_name": "JPMorgan Chase & Co.",
+      "alias_names": [
+        "JPM",
+        "JPMorgan",
+        "Chase"
+      ],
+      "slug": "jpmorgan-chase",
+      "parent_node_id": "place:nyc",
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": "JPMorgan_Chase",
+      "relevance_tier": 1,
+      "cluster_ids": [
+        "wall-street-banks"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "bank:goldman-sachs",
+      "entity_type": "bank",
+      "entity_subtype": "investment_bank",
+      "canonical_name": "The Goldman Sachs Group, Inc.",
+      "alias_names": [
+        "GS",
+        "Goldman",
+        "Goldman Sachs"
+      ],
+      "slug": "goldman-sachs",
+      "parent_node_id": "place:nyc",
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": "Goldman_Sachs",
+      "relevance_tier": 1,
+      "cluster_ids": [
+        "wall-street-banks"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "bank:morgan-stanley",
+      "entity_type": "bank",
+      "entity_subtype": "investment_bank",
+      "canonical_name": "Morgan Stanley",
+      "alias_names": [
+        "MS"
+      ],
+      "slug": "morgan-stanley",
+      "parent_node_id": "place:nyc",
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 1,
+      "cluster_ids": [
+        "wall-street-banks"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "bank:bank-of-america",
+      "entity_type": "bank",
+      "entity_subtype": "universal_bank",
+      "canonical_name": "Bank of America Corporation",
+      "alias_names": [
+        "BoA",
+        "BAC",
+        "Bank of America"
+      ],
+      "slug": "bank-of-america",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 1,
+      "cluster_ids": [
+        "wall-street-banks"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "bank:citigroup",
+      "entity_type": "bank",
+      "entity_subtype": "universal_bank",
+      "canonical_name": "Citigroup Inc.",
+      "alias_names": [
+        "Citi",
+        "C"
+      ],
+      "slug": "citigroup",
+      "parent_node_id": "place:nyc",
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 1,
+      "cluster_ids": [
+        "wall-street-banks"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "bank:wells-fargo",
+      "entity_type": "bank",
+      "entity_subtype": "universal_bank",
+      "canonical_name": "Wells Fargo & Company",
+      "alias_names": [
+        "WFC",
+        "Wells"
+      ],
+      "slug": "wells-fargo",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "wall-street-banks"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "bank:bny-mellon",
+      "entity_type": "bank",
+      "entity_subtype": "custodian_bank",
+      "canonical_name": "The Bank of New York Mellon Corporation",
+      "alias_names": [
+        "BNY Mellon",
+        "BK",
+        "BNY"
+      ],
+      "slug": "bny-mellon",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "wall-street-banks",
+        "infrastructure"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "asset_manager:blackrock",
+      "entity_type": "asset_manager",
+      "entity_subtype": "passive_active_global",
+      "canonical_name": "BlackRock, Inc.",
+      "alias_names": [
+        "BLK",
+        "BlackRock"
+      ],
+      "slug": "blackrock",
+      "parent_node_id": "place:nyc",
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": "BlackRock",
+      "relevance_tier": 1,
+      "cluster_ids": [
+        "passive-asset-managers"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "asset_manager:vanguard",
+      "entity_type": "asset_manager",
+      "entity_subtype": "passive_global",
+      "canonical_name": "The Vanguard Group, Inc.",
+      "alias_names": [
+        "Vanguard"
+      ],
+      "slug": "vanguard",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 1,
+      "cluster_ids": [
+        "passive-asset-managers"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "asset_manager:state-street",
+      "entity_type": "asset_manager",
+      "entity_subtype": "passive_global",
+      "canonical_name": "State Street Global Advisors",
+      "alias_names": [
+        "SSGA",
+        "State Street"
+      ],
+      "slug": "state-street",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "passive-asset-managers"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "asset_manager:bridgewater",
+      "entity_type": "asset_manager",
+      "entity_subtype": "macro_hedge_fund",
+      "canonical_name": "Bridgewater Associates",
+      "alias_names": [
+        "Bridgewater"
+      ],
+      "slug": "bridgewater",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [
+        "alternative-asset-managers"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "asset_manager:blackstone",
+      "entity_type": "asset_manager",
+      "entity_subtype": "private_equity",
+      "canonical_name": "Blackstone Inc.",
+      "alias_names": [
+        "BX",
+        "Blackstone Group"
+      ],
+      "slug": "blackstone",
+      "parent_node_id": "place:nyc",
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "alternative-asset-managers"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "asset_manager:kkr",
+      "entity_type": "asset_manager",
+      "entity_subtype": "private_equity",
+      "canonical_name": "KKR & Co. Inc.",
+      "alias_names": [
+        "KKR",
+        "Kohlberg Kravis Roberts"
+      ],
+      "slug": "kkr",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "alternative-asset-managers"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "company:apple",
+      "entity_type": "company",
+      "entity_subtype": "tech_megacap",
+      "canonical_name": "Apple Inc.",
+      "alias_names": [
+        "AAPL"
+      ],
+      "slug": "apple",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "company:microsoft",
+      "entity_type": "company",
+      "entity_subtype": "tech_megacap",
+      "canonical_name": "Microsoft Corporation",
+      "alias_names": [
+        "MSFT"
+      ],
+      "slug": "microsoft",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "company:nvidia",
+      "entity_type": "company",
+      "entity_subtype": "tech_megacap",
+      "canonical_name": "NVIDIA Corporation",
+      "alias_names": [
+        "NVDA"
+      ],
+      "slug": "nvidia",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:jamie-dimon",
+      "entity_type": "person",
+      "entity_subtype": "ceo",
+      "canonical_name": "James Dimon",
+      "alias_names": [
+        "Jamie Dimon"
+      ],
+      "slug": "jamie-dimon",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "persons-ceos"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:david-solomon",
+      "entity_type": "person",
+      "entity_subtype": "ceo",
+      "canonical_name": "David M. Solomon",
+      "alias_names": [
+        "David Solomon"
+      ],
+      "slug": "david-solomon",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "persons-ceos"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:ted-pick",
+      "entity_type": "person",
+      "entity_subtype": "ceo",
+      "canonical_name": "Edward N. Pick",
+      "alias_names": [
+        "Ted Pick"
+      ],
+      "slug": "ted-pick",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "persons-ceos"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:brian-moynihan",
+      "entity_type": "person",
+      "entity_subtype": "ceo",
+      "canonical_name": "Brian Moynihan",
+      "alias_names": [],
+      "slug": "brian-moynihan",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "persons-ceos"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:jane-fraser",
+      "entity_type": "person",
+      "entity_subtype": "ceo",
+      "canonical_name": "Jane Fraser",
+      "alias_names": [],
+      "slug": "jane-fraser",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "persons-ceos"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:charlie-scharf",
+      "entity_type": "person",
+      "entity_subtype": "ceo",
+      "canonical_name": "Charles Scharf",
+      "alias_names": [
+        "Charlie Scharf"
+      ],
+      "slug": "charlie-scharf",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [
+        "persons-ceos"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:larry-fink",
+      "entity_type": "person",
+      "entity_subtype": "ceo",
+      "canonical_name": "Laurence D. Fink",
+      "alias_names": [
+        "Larry Fink"
+      ],
+      "slug": "larry-fink",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "persons-ceos"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:stephen-schwarzman",
+      "entity_type": "person",
+      "entity_subtype": "ceo",
+      "canonical_name": "Stephen A. Schwarzman",
+      "alias_names": [],
+      "slug": "stephen-schwarzman",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [
+        "persons-ceos"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:ray-dalio",
+      "entity_type": "person",
+      "entity_subtype": "founder",
+      "canonical_name": "Raymond Dalio",
+      "alias_names": [
+        "Ray Dalio"
+      ],
+      "slug": "ray-dalio",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [
+        "persons-ceos"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:jerome-powell",
+      "entity_type": "person",
+      "entity_subtype": "central_banker",
+      "canonical_name": "Jerome H. Powell",
+      "alias_names": [
+        "Jay Powell"
+      ],
+      "slug": "jerome-powell",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "persons-regulators"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:kevin-warsh",
+      "entity_type": "person",
+      "entity_subtype": "central_banker_nominee",
+      "canonical_name": "Kevin M. Warsh",
+      "alias_names": [],
+      "slug": "kevin-warsh",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 2,
+      "cluster_ids": [
+        "persons-regulators"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:john-williams",
+      "entity_type": "person",
+      "entity_subtype": "central_banker",
+      "canonical_name": "John C. Williams",
+      "alias_names": [],
+      "slug": "john-williams",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [
+        "persons-regulators"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "person:scott-bessent",
+      "entity_type": "person",
+      "entity_subtype": "treasury_secretary",
+      "canonical_name": "Scott Bessent",
+      "alias_names": [],
+      "slug": "scott-bessent",
+      "parent_node_id": null,
+      "country_node_id": "country:us",
+      "lat": null,
+      "lng": null,
+      "bounding_box": null,
+      "wiki_slug": null,
+      "relevance_tier": 3,
+      "cluster_ids": [
+        "persons-regulators"
+      ],
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "aa5cf79c-141c-5625-aee2-9ca942c6610b",
+      "source": "company:nyse",
+      "target": "place:wall-street",
+      "edge_type": "LocatedIn",
+      "edge_subtype": "headquartered",
+      "is_directional": true,
+      "valid_from": "1903-04-22T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": "NYSE building at 11 Wall Street",
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 1.0,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 0.99,
+      "reverse_strength": null,
+      "notes": "Physical headquarters at 11 Wall Street since 1903. Iconic location.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "c8b44bd3-5ac4-5338-8836-e78076d3d310",
+      "source": "institution:nyfed",
+      "target": "place:wall-street",
+      "edge_type": "LocatedIn",
+      "edge_subtype": "headquartered",
+      "is_directional": true,
+      "valid_from": "1924-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": "33 Liberty Street, Lower Manhattan",
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 1.0,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 0.99,
+      "reverse_strength": null,
+      "notes": "NY Fed at 33 Liberty Street, gold vault houses largest gold reserve worldwide.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "6da3ef16-70e1-51aa-804c-92aa14c6d10b",
+      "source": "bank:goldman-sachs",
+      "target": "place:nyc",
+      "edge_type": "LocatedIn",
+      "edge_subtype": "headquartered",
+      "is_directional": true,
+      "valid_from": "1869-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": "200 West Street",
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.85,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.2,
+      "confidence_score": 0.99,
+      "reverse_strength": null,
+      "notes": "HQ at 200 West Street since 2009. Founded NY 1869.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "677a1362-5522-5008-9a3c-e94e171babae",
+      "source": "bank:jpmorgan-chase",
+      "target": "place:nyc",
+      "edge_type": "LocatedIn",
+      "edge_subtype": "headquartered",
+      "is_directional": true,
+      "valid_from": "2000-12-31T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": "270 Park Avenue (new building 2025)",
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.85,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.2,
+      "confidence_score": 0.99,
+      "reverse_strength": null,
+      "notes": "JPM HQ new tower at 270 Park Ave opened 2025.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "9f74ffe4-13b9-5bfb-9a32-9275e21dc0a9",
+      "source": "bank:morgan-stanley",
+      "target": "place:nyc",
+      "edge_type": "LocatedIn",
+      "edge_subtype": "headquartered",
+      "is_directional": true,
+      "valid_from": "1935-09-16T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.85,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.2,
+      "confidence_score": 0.95,
+      "reverse_strength": null,
+      "notes": "Times Square HQ since 1995.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "e3a77a6d-c2f3-55e7-835b-0193b1b448fa",
+      "source": "bank:citigroup",
+      "target": "place:nyc",
+      "edge_type": "LocatedIn",
+      "edge_subtype": "headquartered",
+      "is_directional": true,
+      "valid_from": "1812-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.3,
+      "confidence_score": 0.95,
+      "reverse_strength": null,
+      "notes": "388 Greenwich Street (Tribeca, technically not Wall Street).",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "d07bfc2a-05a2-5801-83c3-efddfe0b5214",
+      "source": "asset_manager:blackrock",
+      "target": "place:nyc",
+      "edge_type": "LocatedIn",
+      "edge_subtype": "headquartered",
+      "is_directional": true,
+      "valid_from": "1988-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.2,
+      "confidence_score": 0.99,
+      "reverse_strength": null,
+      "notes": "HQ at 50 Hudson Yards (moved 2023).",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "c27ef424-0169-5389-a34b-8ac598f4b173",
+      "source": "asset_manager:blackstone",
+      "target": "place:nyc",
+      "edge_type": "LocatedIn",
+      "edge_subtype": "headquartered",
+      "is_directional": true,
+      "valid_from": "1985-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.2,
+      "confidence_score": 0.95,
+      "reverse_strength": null,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "ce0d38a8-e565-5e63-ac15-8524c6e4f7c2",
+      "source": "place:nyc",
+      "target": "country:us",
+      "edge_type": "LocatedIn",
+      "edge_subtype": "state",
+      "is_directional": true,
+      "valid_from": "1788-07-26T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 1.0,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.0,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "NYC in NY State, USA. Sovereign hierarchy.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "c2770f04-9311-5af4-927a-78bc43b051d5",
+      "source": "place:wall-street",
+      "target": "place:nyc",
+      "edge_type": "LocatedIn",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "1788-07-26T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 1.0,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.0,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "4a076094-4a91-52e1-aca6-6b13462eea76",
+      "source": "institution:federal-reserve-system",
+      "target": "place:washington-dc",
+      "edge_type": "LocatedIn",
+      "edge_subtype": "headquartered",
+      "is_directional": true,
+      "valid_from": "1913-12-23T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 1.0,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Eccles Building, Constitution Avenue, DC. Established by Federal Reserve Act 1913.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "c5fffdba-a502-5de1-adf5-c3eeabaf0a33",
+      "source": "institution:us-treasury",
+      "target": "place:washington-dc",
+      "edge_type": "LocatedIn",
+      "edge_subtype": "headquartered",
+      "is_directional": true,
+      "valid_from": "1789-09-02T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 1.0,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.0,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "a1ad1d47-1d09-5e3e-b1f8-7f236101b4bb",
+      "source": "institution:sec",
+      "target": "place:washington-dc",
+      "edge_type": "LocatedIn",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "1934-06-06T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 1.0,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 1.0,
+      "reversibility_score": 0.0,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "3e447435-c1ea-58ca-b1a9-b18e0ff00e0a",
+      "source": "person:jamie-dimon",
+      "target": "bank:jpmorgan-chase",
+      "edge_type": "CeoOf",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "2006-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.55,
+      "influence_score": 0.95,
+      "formality_score": 1.0,
+      "reversibility_score": 0.3,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "CEO since 2006. Most influential US banker. Public retirement signaling but no firm date.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "ecb87a22-57f7-55ad-b24a-0c72bebb7cba",
+      "source": "person:david-solomon",
+      "target": "bank:goldman-sachs",
+      "edge_type": "CeoOf",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "2018-10-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.4,
+      "influence_score": 0.95,
+      "formality_score": 1.0,
+      "reversibility_score": 0.3,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Chairman + CEO since Oct 2018. $47M comp 2025.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "4c0e8cb2-c521-579b-8262-1012e438cec2",
+      "source": "person:ted-pick",
+      "target": "bank:morgan-stanley",
+      "edge_type": "CeoOf",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "2024-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.92,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.35,
+      "influence_score": 0.93,
+      "formality_score": 1.0,
+      "reversibility_score": 0.3,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "CEO since Jan 2024. Succeeded James Gorman.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "a970270a-6fb6-5e1d-b641-10f7d12f7a1b",
+      "source": "person:brian-moynihan",
+      "target": "bank:bank-of-america",
+      "edge_type": "CeoOf",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "2010-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.92,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.4,
+      "influence_score": 0.93,
+      "formality_score": 1.0,
+      "reversibility_score": 0.3,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "CEO since 2010.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "9f6d2748-c158-53c8-b9bc-c251357ece45",
+      "source": "person:jane-fraser",
+      "target": "bank:citigroup",
+      "edge_type": "CeoOf",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "2021-03-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.9,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.45,
+      "influence_score": 0.92,
+      "formality_score": 1.0,
+      "reversibility_score": 0.3,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "First female CEO of major Wall Street bank.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "f923ab59-f98e-56d6-b5db-d4dc38838988",
+      "source": "person:charlie-scharf",
+      "target": "bank:wells-fargo",
+      "edge_type": "CeoOf",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "2019-10-21T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.9,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.45,
+      "influence_score": 0.9,
+      "formality_score": 1.0,
+      "reversibility_score": 0.3,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "CEO since Oct 2019, after asset cap era.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "d8a308e0-2b20-5407-975f-d6c147cbfe2a",
+      "source": "person:larry-fink",
+      "target": "asset_manager:blackrock",
+      "edge_type": "CeoOf",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "1988-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.98,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.98,
+      "formality_score": 1.0,
+      "reversibility_score": 0.15,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Co-founder + CEO since 1988. Inseparable from BlackRock identity.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "2595efd7-683a-5301-b3ec-f7de33372e4a",
+      "source": "person:stephen-schwarzman",
+      "target": "asset_manager:blackstone",
+      "edge_type": "CeoOf",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "1985-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.98,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.75,
+      "influence_score": 0.97,
+      "formality_score": 1.0,
+      "reversibility_score": 0.1,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Co-founder, Chairman + CEO since 1985.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "11e9642d-df3d-5f6b-9190-eb9401ab2d4b",
+      "source": "person:ray-dalio",
+      "target": "asset_manager:bridgewater",
+      "edge_type": "Founded",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "1975-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.55,
+      "influence_score": 0.85,
+      "formality_score": 1.0,
+      "reversibility_score": 0.1,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Founder 1975. Stepped back from CEO/CIO 2022, retains 'mentor' role.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "20060107-5c71-5c65-b8ca-a1b93a6b9c3c",
+      "source": "person:jerome-powell",
+      "target": "institution:federal-reserve-system",
+      "edge_type": "Governs",
+      "edge_subtype": "chair_term_ending",
+      "is_directional": true,
+      "valid_from": "2018-02-05T00:00:00Z",
+      "valid_to": "2026-05-15T00:00:00Z",
+      "is_temporal_pending": true,
+      "label": "Powell Fed Chair (term ending May 15 2026)",
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.45,
+      "influence_score": 0.95,
+      "formality_score": 1.0,
+      "reversibility_score": 0.1,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Powell Fed Chair since Feb 2018. Term as Chair ENDS May 15 2026 (5 days from observation). Will remain on Board of Governors through Jan 2028. CRITICAL TEMPORAL EDGE — at observation date this is still active.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "84477d03-4485-5caf-bb5f-75ffa2fe0c37",
+      "source": "person:kevin-warsh",
+      "target": "institution:federal-reserve-system",
+      "edge_type": "Governs",
+      "edge_subtype": "chair_pending_confirmation",
+      "is_directional": true,
+      "valid_from": "2026-05-15T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": true,
+      "label": "Warsh Fed Chair (nominated, awaiting Senate vote)",
+      "truth_state": "proposed",
+      "strength_label": "High",
+      "strength_value": 0.7,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.3,
+      "influence_score": 0.85,
+      "formality_score": 0.85,
+      "reversibility_score": 0.2,
+      "confidence_score": 0.75,
+      "reverse_strength": null,
+      "notes": "Trump nominated Warsh Jan 30 2026. Senate Banking Committee approved Apr 29. Full Senate vote earliest May 11. Confirmation expected but not certain. PROPOSED edge — promotes to verified once Senate confirms.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "c6170407-72c9-5415-99c8-67e664fb67c7",
+      "source": "person:john-williams",
+      "target": "institution:nyfed",
+      "edge_type": "Governs",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "2018-06-18T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.92,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.4,
+      "influence_score": 0.92,
+      "formality_score": 1.0,
+      "reversibility_score": 0.3,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "NY Fed President since 2018. Permanent voter on FOMC.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "79fce7d4-6618-597a-aae8-e3a88b924e2c",
+      "source": "person:scott-bessent",
+      "target": "institution:us-treasury",
+      "edge_type": "Governs",
+      "edge_subtype": "secretary",
+      "is_directional": true,
+      "valid_from": "2025-01-28T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.5,
+      "influence_score": 0.95,
+      "formality_score": 1.0,
+      "reversibility_score": 0.2,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Treasury Secretary in second Trump administration since Jan 2025.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "e6e32aa4-cba8-5343-8a58-c56645715974",
+      "source": "institution:federal-reserve-system",
+      "target": "bank:jpmorgan-chase",
+      "edge_type": "Regulates",
+      "edge_subtype": "prudential_supervision",
+      "is_directional": true,
+      "valid_from": "1956-05-09T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.9,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Fed prudential supervisor for bank holding companies under Bank Holding Company Act 1956.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "44afeef6-1191-5d79-b9f7-aa33ffb67f1d",
+      "source": "institution:sec",
+      "target": "bank:jpmorgan-chase",
+      "edge_type": "Regulates",
+      "edge_subtype": "securities_compliance",
+      "is_directional": true,
+      "valid_from": "1934-06-06T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.75,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "SEC oversight of public market disclosures and securities activities.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "b83bc10c-d283-5a0c-a4a6-8d53a75de93a",
+      "source": "institution:federal-reserve-system",
+      "target": "bank:goldman-sachs",
+      "edge_type": "Regulates",
+      "edge_subtype": "prudential_supervision",
+      "is_directional": true,
+      "valid_from": "1956-05-09T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.9,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Fed prudential supervisor for bank holding companies under Bank Holding Company Act 1956.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "8711b24b-2cbd-5bca-a6f3-ab8fca8ef6df",
+      "source": "institution:sec",
+      "target": "bank:goldman-sachs",
+      "edge_type": "Regulates",
+      "edge_subtype": "securities_compliance",
+      "is_directional": true,
+      "valid_from": "1934-06-06T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.75,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "SEC oversight of public market disclosures and securities activities.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "86649b17-5074-5fcc-824c-90cadf2012a9",
+      "source": "institution:federal-reserve-system",
+      "target": "bank:morgan-stanley",
+      "edge_type": "Regulates",
+      "edge_subtype": "prudential_supervision",
+      "is_directional": true,
+      "valid_from": "1956-05-09T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.9,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Fed prudential supervisor for bank holding companies under Bank Holding Company Act 1956.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "e77cdc18-389f-5495-8fc5-498c75fc912e",
+      "source": "institution:sec",
+      "target": "bank:morgan-stanley",
+      "edge_type": "Regulates",
+      "edge_subtype": "securities_compliance",
+      "is_directional": true,
+      "valid_from": "1934-06-06T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.75,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "SEC oversight of public market disclosures and securities activities.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "6bc468f7-fd33-5b9d-be07-6c202daadb84",
+      "source": "institution:federal-reserve-system",
+      "target": "bank:bank-of-america",
+      "edge_type": "Regulates",
+      "edge_subtype": "prudential_supervision",
+      "is_directional": true,
+      "valid_from": "1956-05-09T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.9,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Fed prudential supervisor for bank holding companies under Bank Holding Company Act 1956.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "0d7ed238-2706-50a6-b2e1-a77b402beea7",
+      "source": "institution:sec",
+      "target": "bank:bank-of-america",
+      "edge_type": "Regulates",
+      "edge_subtype": "securities_compliance",
+      "is_directional": true,
+      "valid_from": "1934-06-06T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.75,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "SEC oversight of public market disclosures and securities activities.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "c359f6f9-a64d-5663-a3a6-da2c9556ddbe",
+      "source": "institution:federal-reserve-system",
+      "target": "bank:citigroup",
+      "edge_type": "Regulates",
+      "edge_subtype": "prudential_supervision",
+      "is_directional": true,
+      "valid_from": "1956-05-09T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.9,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Fed prudential supervisor for bank holding companies under Bank Holding Company Act 1956.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "d61e1660-7e4c-5ea0-b51d-db235559ce10",
+      "source": "institution:sec",
+      "target": "bank:citigroup",
+      "edge_type": "Regulates",
+      "edge_subtype": "securities_compliance",
+      "is_directional": true,
+      "valid_from": "1934-06-06T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.75,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "SEC oversight of public market disclosures and securities activities.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "4bbbb0c8-0120-5729-991b-a0ffc2dd986e",
+      "source": "institution:federal-reserve-system",
+      "target": "bank:wells-fargo",
+      "edge_type": "Regulates",
+      "edge_subtype": "prudential_supervision",
+      "is_directional": true,
+      "valid_from": "1956-05-09T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.9,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Fed prudential supervisor for bank holding companies under Bank Holding Company Act 1956.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "26c510df-c25d-5212-ad27-d7cae63fc771",
+      "source": "institution:sec",
+      "target": "bank:wells-fargo",
+      "edge_type": "Regulates",
+      "edge_subtype": "securities_compliance",
+      "is_directional": true,
+      "valid_from": "1934-06-06T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.75,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "SEC oversight of public market disclosures and securities activities.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "4466f25f-cb36-5c97-97b1-d60ac70b1ad2",
+      "source": "institution:federal-reserve-system",
+      "target": "bank:bny-mellon",
+      "edge_type": "Regulates",
+      "edge_subtype": "prudential_supervision",
+      "is_directional": true,
+      "valid_from": "1956-05-09T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.9,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Fed prudential supervisor for bank holding companies under Bank Holding Company Act 1956.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "66a6f9f2-2e67-57b7-8e64-9301c3bebafe",
+      "source": "institution:sec",
+      "target": "bank:bny-mellon",
+      "edge_type": "Regulates",
+      "edge_subtype": "securities_compliance",
+      "is_directional": true,
+      "valid_from": "1934-06-06T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.75,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "SEC oversight of public market disclosures and securities activities.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "2155c19f-e20c-5528-8173-ba1554438b13",
+      "source": "institution:occ",
+      "target": "bank:jpmorgan-chase",
+      "edge_type": "Regulates",
+      "edge_subtype": "national_bank_charter",
+      "is_directional": true,
+      "valid_from": "1863-02-25T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.85,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "OCC charters and supervises national banks under National Bank Act 1863.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "86b5a2c7-1228-53c2-a802-59e9f7a0c107",
+      "source": "institution:occ",
+      "target": "bank:bank-of-america",
+      "edge_type": "Regulates",
+      "edge_subtype": "national_bank_charter",
+      "is_directional": true,
+      "valid_from": "1863-02-25T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.85,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "OCC charters and supervises national banks under National Bank Act 1863.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "6367aa77-4ed4-5bee-86f1-c306cd13f06d",
+      "source": "institution:occ",
+      "target": "bank:citigroup",
+      "edge_type": "Regulates",
+      "edge_subtype": "national_bank_charter",
+      "is_directional": true,
+      "valid_from": "1863-02-25T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.85,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "OCC charters and supervises national banks under National Bank Act 1863.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "46efaf6b-305a-51d2-8615-5d2ab8c2f5ab",
+      "source": "institution:occ",
+      "target": "bank:wells-fargo",
+      "edge_type": "Regulates",
+      "edge_subtype": "national_bank_charter",
+      "is_directional": true,
+      "valid_from": "1863-02-25T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.85,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "OCC charters and supervises national banks under National Bank Act 1863.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "176c851f-24ca-512c-aecb-9906d5f2b244",
+      "source": "institution:fdic",
+      "target": "bank:jpmorgan-chase",
+      "edge_type": "Regulates",
+      "edge_subtype": "deposit_insurance",
+      "is_directional": true,
+      "valid_from": "1933-06-16T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.75,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.7,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Deposit insurance + resolution authority post Glass-Steagall era.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "904c655e-e9bc-5e66-bb91-a317e3665164",
+      "source": "institution:fdic",
+      "target": "bank:bank-of-america",
+      "edge_type": "Regulates",
+      "edge_subtype": "deposit_insurance",
+      "is_directional": true,
+      "valid_from": "1933-06-16T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.75,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.7,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Deposit insurance + resolution authority post Glass-Steagall era.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "11828e5e-784b-5cbc-b95d-31276575ceed",
+      "source": "institution:fdic",
+      "target": "bank:citigroup",
+      "edge_type": "Regulates",
+      "edge_subtype": "deposit_insurance",
+      "is_directional": true,
+      "valid_from": "1933-06-16T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.75,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.7,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Deposit insurance + resolution authority post Glass-Steagall era.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "47c333c3-4f20-508c-95fc-0b0225e97411",
+      "source": "institution:fdic",
+      "target": "bank:wells-fargo",
+      "edge_type": "Regulates",
+      "edge_subtype": "deposit_insurance",
+      "is_directional": true,
+      "valid_from": "1933-06-16T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.75,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.7,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Deposit insurance + resolution authority post Glass-Steagall era.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "d48f8536-5d4d-517b-b3b9-1c131d88ebc7",
+      "source": "institution:fdic",
+      "target": "bank:bny-mellon",
+      "edge_type": "Regulates",
+      "edge_subtype": "deposit_insurance",
+      "is_directional": true,
+      "valid_from": "1933-06-16T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.75,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.7,
+      "influence_score": 0.7,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Deposit insurance + resolution authority post Glass-Steagall era.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "9bb7bcf7-60d6-5d05-bf0b-8b0e6f4fd5aa",
+      "source": "institution:sec",
+      "target": "company:nyse",
+      "edge_type": "Regulates",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "1934-06-06T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.92,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.9,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "b3de22d5-7a79-5c1b-af3f-d49e77d1e000",
+      "source": "institution:sec",
+      "target": "company:nasdaq",
+      "edge_type": "Regulates",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "1971-02-08T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.92,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.85,
+      "influence_score": 0.9,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "694e31b4-83a6-5cd7-b963-144953fbdf42",
+      "source": "institution:finra",
+      "target": "bank:goldman-sachs",
+      "edge_type": "Regulates",
+      "edge_subtype": "broker_dealer_oversight",
+      "is_directional": true,
+      "valid_from": "2007-07-26T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.7,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.6,
+      "influence_score": 0.65,
+      "formality_score": 1.0,
+      "reversibility_score": 0.1,
+      "confidence_score": 0.95,
+      "reverse_strength": null,
+      "notes": "Self-regulatory organization for broker-dealers since 2007 (NASD+NYSE Reg merger).",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "da7ae402-f9c8-5ca9-8bee-529059653acf",
+      "source": "institution:finra",
+      "target": "bank:morgan-stanley",
+      "edge_type": "Regulates",
+      "edge_subtype": "broker_dealer_oversight",
+      "is_directional": true,
+      "valid_from": "2007-07-26T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.7,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.6,
+      "influence_score": 0.65,
+      "formality_score": 1.0,
+      "reversibility_score": 0.1,
+      "confidence_score": 0.95,
+      "reverse_strength": null,
+      "notes": "Self-regulatory organization for broker-dealers since 2007 (NASD+NYSE Reg merger).",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "008cd54e-93bf-5ab7-9cf8-d1d116d54fd2",
+      "source": "institution:finra",
+      "target": "bank:jpmorgan-chase",
+      "edge_type": "Regulates",
+      "edge_subtype": "broker_dealer_oversight",
+      "is_directional": true,
+      "valid_from": "2007-07-26T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.7,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.6,
+      "influence_score": 0.65,
+      "formality_score": 1.0,
+      "reversibility_score": 0.1,
+      "confidence_score": 0.95,
+      "reverse_strength": null,
+      "notes": "Self-regulatory organization for broker-dealers since 2007 (NASD+NYSE Reg merger).",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "3f7d580f-c87f-5796-9104-c4e184900770",
+      "source": "institution:dtcc",
+      "target": "company:nyse",
+      "edge_type": "Clears",
+      "edge_subtype": "post_trade_settlement",
+      "is_directional": true,
+      "valid_from": "1973-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 1.0,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.95,
+      "influence_score": 0.4,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "DTCC settles essentially all US equity transactions. Single point of clearing infrastructure.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "61c52799-180d-591a-9ac0-3602e7de7462",
+      "source": "institution:dtcc",
+      "target": "company:nasdaq",
+      "edge_type": "Clears",
+      "edge_subtype": "post_trade_settlement",
+      "is_directional": true,
+      "valid_from": "1973-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 1.0,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.95,
+      "influence_score": 0.4,
+      "formality_score": 1.0,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "c01cd12e-6c33-58fd-a084-d732e9ae7e85",
+      "source": "bank:bny-mellon",
+      "target": "asset_manager:blackrock",
+      "edge_type": "Custodies",
+      "edge_subtype": "primary_custodian",
+      "is_directional": true,
+      "valid_from": "2007-07-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.9,
+      "magnitude": 2400,
+      "magnitude_unit": "usd_billions_aua",
+      "dependency_score": 0.65,
+      "influence_score": 0.3,
+      "formality_score": 1.0,
+      "reversibility_score": 0.2,
+      "confidence_score": 0.85,
+      "reverse_strength": null,
+      "notes": "BNY Mellon is one of the world's largest custodians, holds significant share of BlackRock's AUM as administrator. Magnitude is approximate.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "d5edd337-4365-5d01-96c2-8b6d33f2dd4f",
+      "source": "bank:bny-mellon",
+      "target": "institution:us-treasury",
+      "edge_type": "Custodies",
+      "edge_subtype": "treasury_securities_custody",
+      "is_directional": true,
+      "valid_from": "1984-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.85,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.65,
+      "influence_score": 0.25,
+      "formality_score": 1.0,
+      "reversibility_score": 0.1,
+      "confidence_score": 0.9,
+      "reverse_strength": null,
+      "notes": "BNY Mellon major Treasury securities custodian. Government Securities Services.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "1cc49e50-608c-5895-beb1-2483ebc2f9d7",
+      "source": "asset_manager:blackrock",
+      "target": "company:apple",
+      "edge_type": "Owns",
+      "edge_subtype": "institutional_holding",
+      "is_directional": true,
+      "valid_from": "2009-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.75,
+      "magnitude": 6.7,
+      "magnitude_unit": "pct_ownership",
+      "dependency_score": 0.05,
+      "influence_score": 0.45,
+      "formality_score": 1.0,
+      "reversibility_score": 0.95,
+      "confidence_score": 0.9,
+      "reverse_strength": null,
+      "notes": "BlackRock holds ~6.7% of Apple via index funds (13F filings ~2025-Q4). Could be 6.5-6.9 range; magnitude uncertain by ±0.2.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "44d46008-0f07-5820-9d00-6b051d75fb32",
+      "source": "asset_manager:vanguard",
+      "target": "company:apple",
+      "edge_type": "Owns",
+      "edge_subtype": "institutional_holding",
+      "is_directional": true,
+      "valid_from": "2009-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.85,
+      "magnitude": 8.5,
+      "magnitude_unit": "pct_ownership",
+      "dependency_score": 0.05,
+      "influence_score": 0.5,
+      "formality_score": 1.0,
+      "reversibility_score": 0.95,
+      "confidence_score": 0.85,
+      "reverse_strength": null,
+      "notes": "Vanguard largest single shareholder of Apple, ~8.5% via passive index funds (2025-Q4 estimate).",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "7379cfe5-f6f0-5919-b25b-668756646a3e",
+      "source": "asset_manager:state-street",
+      "target": "company:apple",
+      "edge_type": "Owns",
+      "edge_subtype": "institutional_holding",
+      "is_directional": true,
+      "valid_from": "2009-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": true,
+      "label": null,
+      "truth_state": "proposed",
+      "strength_label": "Medium",
+      "strength_value": 0.55,
+      "magnitude": 4.0,
+      "magnitude_unit": "pct_ownership",
+      "dependency_score": 0.05,
+      "influence_score": 0.3,
+      "formality_score": 1.0,
+      "reversibility_score": 0.95,
+      "confidence_score": 0.8,
+      "reverse_strength": null,
+      "notes": "State Street ~4% of Apple via SPDR funds (estimate).",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "c2f23891-61f5-506c-8776-31c4960ddeb9",
+      "source": "asset_manager:blackrock",
+      "target": "company:microsoft",
+      "edge_type": "Owns",
+      "edge_subtype": "institutional_holding",
+      "is_directional": true,
+      "valid_from": "2009-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.75,
+      "magnitude": 7.0,
+      "magnitude_unit": "pct_ownership",
+      "dependency_score": 0.05,
+      "influence_score": 0.45,
+      "formality_score": 1.0,
+      "reversibility_score": 0.95,
+      "confidence_score": 0.85,
+      "reverse_strength": null,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "71e40a9c-9023-5bbf-924d-bbf61ccdb271",
+      "source": "asset_manager:vanguard",
+      "target": "company:microsoft",
+      "edge_type": "Owns",
+      "edge_subtype": "institutional_holding",
+      "is_directional": true,
+      "valid_from": "2009-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.85,
+      "magnitude": 8.7,
+      "magnitude_unit": "pct_ownership",
+      "dependency_score": 0.05,
+      "influence_score": 0.5,
+      "formality_score": 1.0,
+      "reversibility_score": 0.95,
+      "confidence_score": 0.85,
+      "reverse_strength": null,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "67ae90e2-f4dd-5228-aab1-36564cb42f1f",
+      "source": "asset_manager:blackrock",
+      "target": "company:nvidia",
+      "edge_type": "Owns",
+      "edge_subtype": "institutional_holding",
+      "is_directional": true,
+      "valid_from": "2010-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": true,
+      "label": null,
+      "truth_state": "proposed",
+      "strength_label": "High",
+      "strength_value": 0.75,
+      "magnitude": 7.5,
+      "magnitude_unit": "pct_ownership",
+      "dependency_score": 0.05,
+      "influence_score": 0.45,
+      "formality_score": 1.0,
+      "reversibility_score": 0.95,
+      "confidence_score": 0.8,
+      "reverse_strength": null,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "4f462730-da59-58fa-b35d-27c499528763",
+      "source": "asset_manager:vanguard",
+      "target": "company:nvidia",
+      "edge_type": "Owns",
+      "edge_subtype": "institutional_holding",
+      "is_directional": true,
+      "valid_from": "2010-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": true,
+      "label": null,
+      "truth_state": "proposed",
+      "strength_label": "High",
+      "strength_value": 0.85,
+      "magnitude": 8.8,
+      "magnitude_unit": "pct_ownership",
+      "dependency_score": 0.05,
+      "influence_score": 0.5,
+      "formality_score": 1.0,
+      "reversibility_score": 0.95,
+      "confidence_score": 0.8,
+      "reverse_strength": null,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "db559cb9-f0f0-5eae-a720-af7dce7ee6b1",
+      "source": "company:ice",
+      "target": "company:nyse",
+      "edge_type": "Owns",
+      "edge_subtype": "parent_company",
+      "is_directional": true,
+      "valid_from": "2013-11-13T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 1.0,
+      "magnitude": 100,
+      "magnitude_unit": "pct_ownership",
+      "dependency_score": 0.4,
+      "influence_score": 0.85,
+      "formality_score": 1.0,
+      "reversibility_score": 0.1,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "ICE acquired NYSE Euronext Nov 2013 for $11B. Wholly owned subsidiary.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "a96900ef-d56a-54bc-b99b-4f7b50c94338",
+      "source": "bank:goldman-sachs",
+      "target": "bank:morgan-stanley",
+      "edge_type": "Competes",
+      "edge_subtype": "bulge_bracket_rivalry",
+      "is_directional": true,
+      "valid_from": "1935-09-16T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.85,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.1,
+      "influence_score": 0.4,
+      "formality_score": 0.2,
+      "reversibility_score": 0.3,
+      "confidence_score": 0.95,
+      "reverse_strength": 0.85,
+      "notes": "Bulge bracket investment banking rivalry since Morgan Stanley founded 1935. Symmetric — reverse_strength = strength_value.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "c698f6d4-322e-5f82-a316-4182528f1e1a",
+      "source": "asset_manager:blackrock",
+      "target": "asset_manager:vanguard",
+      "edge_type": "Competes",
+      "edge_subtype": "passive_index_war",
+      "is_directional": true,
+      "valid_from": "1988-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.9,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.05,
+      "influence_score": 0.5,
+      "formality_score": 0.2,
+      "reversibility_score": 0.2,
+      "confidence_score": 0.95,
+      "reverse_strength": 0.9,
+      "notes": "The two giants of passive investing — fee compression battle for index ETF dominance.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "87ab7448-3694-5219-9164-85b2d75a1722",
+      "source": "asset_manager:blackrock",
+      "target": "asset_manager:state-street",
+      "edge_type": "Competes",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "1993-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Medium",
+      "strength_value": 0.65,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.05,
+      "influence_score": 0.3,
+      "formality_score": 0.2,
+      "reversibility_score": 0.4,
+      "confidence_score": 0.9,
+      "reverse_strength": 0.7,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "b54916b6-8e1b-536d-935b-85a8b9ee4b3c",
+      "source": "bank:jpmorgan-chase",
+      "target": "bank:bank-of-america",
+      "edge_type": "Competes",
+      "edge_subtype": null,
+      "is_directional": true,
+      "valid_from": "2000-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.1,
+      "influence_score": 0.3,
+      "formality_score": 0.2,
+      "reversibility_score": 0.4,
+      "confidence_score": 0.95,
+      "reverse_strength": 0.8,
+      "notes": null,
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "b1cb21bf-aa2c-5ac6-8bc2-5513e2b74658",
+      "source": "institution:federal-reserve-system",
+      "target": "country:us",
+      "edge_type": "Sets",
+      "edge_subtype": "monetary_policy",
+      "is_directional": true,
+      "valid_from": "1913-12-23T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.98,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.9,
+      "influence_score": 0.98,
+      "formality_score": 1.0,
+      "reversibility_score": 0.02,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Fed Reserve Act 1913. FOMC sets federal funds rate. Most consequential policy authority for US economy.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "89951653-f22f-591b-9491-94c95fa17905",
+      "source": "institution:federal-reserve-system",
+      "target": "place:wall-street",
+      "edge_type": "Influences",
+      "edge_subtype": "monetary_transmission",
+      "is_directional": true,
+      "valid_from": "1913-12-23T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 0.95,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.9,
+      "influence_score": 0.95,
+      "formality_score": 0.5,
+      "reversibility_score": 0.05,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "Fed monetary decisions immediately move Wall Street markets. Strongest external influence on equity/bond/FX prices.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "c4e7d020-b959-562f-9764-1583dbc62f3e",
+      "source": "asset_manager:blackrock",
+      "target": "institution:federal-reserve-system",
+      "edge_type": "Influences",
+      "edge_subtype": "advisory_relationship",
+      "is_directional": true,
+      "valid_from": "2020-03-23T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Medium",
+      "strength_value": 0.55,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.1,
+      "influence_score": 0.4,
+      "formality_score": 0.65,
+      "reversibility_score": 0.5,
+      "confidence_score": 0.85,
+      "reverse_strength": null,
+      "notes": "BlackRock managed Fed's COVID corporate bond purchases (PMCCF/SMCCF) Mar 2020. Ongoing FMA (Financial Markets Advisor) status. Controversial dual role.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "48688755-772a-5c05-9358-86e0e06a3456",
+      "source": "person:jamie-dimon",
+      "target": "place:wall-street",
+      "edge_type": "Influences",
+      "edge_subtype": "public_voice",
+      "is_directional": true,
+      "valid_from": "2006-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "High",
+      "strength_value": 0.8,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.05,
+      "influence_score": 0.85,
+      "formality_score": 0.1,
+      "reversibility_score": 0.4,
+      "confidence_score": 0.95,
+      "reverse_strength": null,
+      "notes": "Dimon's annual shareholder letter is must-read for Wall Street. Most influential individual banker voice.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "418de643-ddc6-528c-80a0-ae35eb78abd6",
+      "source": "bank:jpmorgan-chase",
+      "target": "company:apple",
+      "edge_type": "Finances",
+      "edge_subtype": "lead_underwriter",
+      "is_directional": true,
+      "valid_from": "2007-01-01T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": true,
+      "label": null,
+      "truth_state": "proposed",
+      "strength_label": "Medium",
+      "strength_value": 0.5,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": null,
+      "influence_score": null,
+      "formality_score": 0.9,
+      "reversibility_score": 0.6,
+      "confidence_score": 0.75,
+      "reverse_strength": null,
+      "notes": "JPM lead bank for Apple bond issuances historically. Approximate.",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    },
+    {
+      "id": "dca034ea-1890-5641-9660-44c633060591",
+      "source": "institution:nyfed",
+      "target": "institution:federal-reserve-system",
+      "edge_type": "MemberOf",
+      "edge_subtype": "reserve_bank",
+      "is_directional": true,
+      "valid_from": "1913-12-23T00:00:00Z",
+      "valid_to": null,
+      "is_temporal_pending": false,
+      "label": null,
+      "truth_state": "curated",
+      "strength_label": "Critical",
+      "strength_value": 1.0,
+      "magnitude": null,
+      "magnitude_unit": null,
+      "dependency_score": 0.95,
+      "influence_score": 0.3,
+      "formality_score": 1.0,
+      "reversibility_score": 0.0,
+      "confidence_score": 1.0,
+      "reverse_strength": null,
+      "notes": "NY Fed is one of 12 regional Federal Reserve Banks. Permanent FOMC voter (only one — others rotate).",
+      "model_count": 1,
+      "models": [
+        "claude-opus-4-7"
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "group_code": "blackrock-major-holdings",
+      "name": "BlackRock major equity holdings (mega-caps)",
+      "description": "BlackRock's largest US public equity positions among the top market-cap companies, all via passive index funds.",
+      "group_type": "sector_holdings",
+      "pivot_node_id": "asset_manager:blackrock",
+      "relation_filter": {
+        "edge_type": "Owns",
+        "min_magnitude": 6.0,
+        "magnitude_unit": "pct_ownership"
+      },
+      "auto_update": true,
+      "members": [
+        {
+          "entity_node_id": "company:apple",
+          "member_role": "core",
+          "member_weight": 0.067,
+          "edge_uuid": "97a5f709-d682-56ce-aba3-278e149b9b09",
+          "notes": "~6.7% via iShares + active funds"
+        },
+        {
+          "entity_node_id": "company:microsoft",
+          "member_role": "core",
+          "member_weight": 0.07,
+          "edge_uuid": "4fccd773-057a-5e50-8f87-bbf0830ffb35",
+          "notes": "~7%"
+        },
+        {
+          "entity_node_id": "company:nvidia",
+          "member_role": "core",
+          "member_weight": 0.075,
+          "edge_uuid": "fdc33621-43e8-54ab-bfbc-dd97b3fe10e2",
+          "notes": "~7.5%"
+        }
+      ],
+      "aggregate_score": 0.212,
+      "aggregate_unit": "sum_pct_ownership",
+      "visibility": "public"
+    },
+    {
+      "group_code": "us-tier1-investment-banks",
+      "name": "US bulge-bracket investment banks",
+      "description": "Top tier US investment banks that lead M&A advisory and underwriting.",
+      "group_type": "sector_peer",
+      "pivot_node_id": "place:wall-street",
+      "relation_filter": {
+        "edge_type": "LocatedIn",
+        "subtype_filter": "headquartered"
+      },
+      "auto_update": false,
+      "members": [
+        {
+          "entity_node_id": "bank:goldman-sachs",
+          "member_role": "core",
+          "member_weight": 0.3,
+          "notes": "M&A advisory leader"
+        },
+        {
+          "entity_node_id": "bank:morgan-stanley",
+          "member_role": "core",
+          "member_weight": 0.25
+        },
+        {
+          "entity_node_id": "bank:jpmorgan-chase",
+          "member_role": "core",
+          "member_weight": 0.3,
+          "notes": "Largest US bank by assets"
+        },
+        {
+          "entity_node_id": "bank:bank-of-america",
+          "member_role": "core",
+          "member_weight": 0.1
+        },
+        {
+          "entity_node_id": "bank:citigroup",
+          "member_role": "core",
+          "member_weight": 0.05
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "group_code": "fed-regulated-systemic-banks",
+      "name": "Fed-regulated US Systemically Important Banks",
+      "description": "G-SIBs and other systemically important US banks under Fed prudential supervision.",
+      "group_type": "regulatory",
+      "pivot_node_id": "institution:federal-reserve-system",
+      "relation_filter": {
+        "edge_type": "Regulates",
+        "subtype_filter": "prudential_supervision"
+      },
+      "auto_update": true,
+      "members": [
+        {
+          "entity_node_id": "bank:jpmorgan-chase",
+          "member_role": "core",
+          "member_weight": 1.0,
+          "notes": "G-SIB"
+        },
+        {
+          "entity_node_id": "bank:bank-of-america",
+          "member_role": "core",
+          "member_weight": 1.0,
+          "notes": "G-SIB"
+        },
+        {
+          "entity_node_id": "bank:citigroup",
+          "member_role": "core",
+          "member_weight": 1.0,
+          "notes": "G-SIB"
+        },
+        {
+          "entity_node_id": "bank:goldman-sachs",
+          "member_role": "core",
+          "member_weight": 1.0,
+          "notes": "G-SIB"
+        },
+        {
+          "entity_node_id": "bank:morgan-stanley",
+          "member_role": "core",
+          "member_weight": 1.0,
+          "notes": "G-SIB"
+        },
+        {
+          "entity_node_id": "bank:wells-fargo",
+          "member_role": "core",
+          "member_weight": 1.0,
+          "notes": "G-SIB"
+        },
+        {
+          "entity_node_id": "bank:bny-mellon",
+          "member_role": "core",
+          "member_weight": 1.0,
+          "notes": "G-SIB (lower bucket)"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "group_code": "passive-index-giants",
+      "name": "Big Three passive asset managers",
+      "description": "The three asset managers controlling the bulk of US passive index funds, collectively holding majority stakes in nearly all S&P 500 companies.",
+      "group_type": "sector_peer",
+      "pivot_node_id": null,
+      "auto_update": false,
+      "members": [
+        {
+          "entity_node_id": "asset_manager:blackrock",
+          "member_role": "core",
+          "member_weight": 0.45,
+          "notes": "Largest by AUM (~$11T 2025)"
+        },
+        {
+          "entity_node_id": "asset_manager:vanguard",
+          "member_role": "core",
+          "member_weight": 0.4,
+          "notes": "Mutual ownership structure"
+        },
+        {
+          "entity_node_id": "asset_manager:state-street",
+          "member_role": "core",
+          "member_weight": 0.15,
+          "notes": "SPDR ETFs"
+        }
+      ],
+      "visibility": "public"
+    }
+  ],
+  "chains": [
+    {
+      "chain_code": "blackrock-treasury-via-bnymellon",
+      "title": "BlackRock → BNY Mellon (custodian) → US Treasury",
+      "description": "Major fund custody chain showing how BlackRock's Treasury exposure routes through Bank of NY Mellon as primary custodian, which in turn settles directly with the US Treasury.",
+      "chain_type": "control_chain",
+      "start_node_id": "asset_manager:blackrock",
+      "end_node_id": "institution:us-treasury",
+      "chain_length": 2,
+      "weakest_link_score": 0.65,
+      "weakest_link_edge_uuid": "d430eec7-cd2f-5b63-9052-b8398a8bc6d3",
+      "discovered_by": "claude-opus-4-7",
+      "discovery_method": "manual",
+      "steps": [
+        {
+          "step_index": 0,
+          "edge_uuid": "d430eec7-cd2f-5b63-9052-b8398a8bc6d3",
+          "from_node_id": "asset_manager:blackrock",
+          "to_node_id": "bank:bny-mellon"
+        },
+        {
+          "step_index": 1,
+          "edge_uuid": "369456f7-1af0-5d19-a252-1276a5063be8",
+          "from_node_id": "bank:bny-mellon",
+          "to_node_id": "institution:us-treasury"
+        }
+      ],
+      "total_dependency": 0.65,
+      "total_influence": 0.55
+    },
+    {
+      "chain_code": "fed-influences-wall-street-via-monetary-policy",
+      "title": "Fed → Wall Street monetary transmission chain",
+      "description": "Federal Reserve System sets US monetary policy → influences Wall Street prices → flows through institutional trading. Single-step direct influence chain.",
+      "chain_type": "policy_transmission",
+      "start_node_id": "institution:federal-reserve-system",
+      "end_node_id": "place:wall-street",
+      "chain_length": 1,
+      "weakest_link_score": 0.95,
+      "discovered_by": "claude-opus-4-7",
+      "discovery_method": "manual",
+      "steps": [
+        {
+          "step_index": 0,
+          "edge_uuid": "86b07109-7f6a-5bbf-8ba1-c7727ee087b4",
+          "from_node_id": "institution:federal-reserve-system",
+          "to_node_id": "place:wall-street"
+        }
+      ],
+      "total_dependency": 0.9,
+      "total_influence": 0.95
+    },
+    {
+      "chain_code": "fed-leadership-transition-2026",
+      "title": "Powell → Warsh Fed Chair transition (May 15 2026)",
+      "description": "Time-sensitive leadership transition: Powell's term as Fed Chair ends May 15 2026, Warsh nominated and pending Senate confirmation. Two parallel edges with different validity windows.",
+      "chain_type": "temporal_succession",
+      "start_node_id": "person:jerome-powell",
+      "end_node_id": "person:kevin-warsh",
+      "chain_length": 2,
+      "weakest_link_score": 0.75,
+      "discovered_by": "claude-opus-4-7",
+      "discovery_method": "manual",
+      "steps": [
+        {
+          "step_index": 0,
+          "edge_uuid": "20060107-5c71-5c65-b8ca-a1b93a6b9c3c",
+          "from_node_id": "person:jerome-powell",
+          "to_node_id": "institution:federal-reserve-system",
+          "notes": "Powell term ENDING May 15"
+        },
+        {
+          "step_index": 1,
+          "edge_uuid": "84477d03-4485-5caf-bb5f-75ffa2fe0c37",
+          "from_node_id": "institution:federal-reserve-system",
+          "to_node_id": "person:kevin-warsh",
+          "notes": "Warsh pending confirmation"
+        }
+      ],
+      "total_dependency": 0.45,
+      "total_influence": 0.85
+    }
+  ]
+}

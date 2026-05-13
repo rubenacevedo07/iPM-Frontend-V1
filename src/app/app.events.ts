@@ -8,6 +8,14 @@ export type EntityRef = {
   type:   'PERSON' | 'COMPANY' | 'COUNTRY'
   slug:   string
   name:   string
+  isGold?: boolean
+  // Pre-tagged in AppShell when building globe entities: for a PERSON entity,
+  // the company id co-located at the same headquarters. Routes the click to
+  // the headquarters dual overlay (?overlay=hq) instead of single gold.
+  coLocatedCompanyId?: number
+  // Photo/logo URL carried from the entity batch so overlays can render
+  // immediately on cold load without waiting for a separate fetch.
+  photoUrl?: string | null
 }
 
 export type AppEvent =
@@ -15,6 +23,7 @@ export type AppEvent =
   | { type: 'OPEN_PERSON';  id: number }
   | { type: 'OPEN_COMPANY'; id: number }
   | { type: 'OPEN_VS';      a: number; b: number }
+  | { type: 'OPEN_POWERMAP'; id: string }
   | { type: 'CLOSE_OVERLAY' }
   // Phase 6: v3 canonical PersonOverlay dispatches ENTITY.CLOSE to appRef.
   // Kept as alias for CLOSE_OVERLAY so canonical remains untouched (Rule 6).
@@ -31,4 +40,5 @@ export type AppEvent =
   // Phase 8: CompanyOverlayHost emits NETWORK_RESOLVED when provider/client
   // hooks settle. app.machine validates the companyId against the open overlay
   // (stale-id guard) and forwards CMD.SET_ARCS to the active bridge.
-  | { type: 'NETWORK_RESOLVED';    companyId: number; arcs: EngineArc[] }
+  | { type: 'NETWORK_RESOLVED';        companyId: number; arcs: EngineArc[] }
+  | { type: 'PERSON_NETWORK_RESOLVED'; personId:  number; arcs: EngineArc[] }

@@ -5,6 +5,7 @@ When working on data pipeline → read docs/skills/ipm-data-fusion-enforcer.md
 When resuming the sprint → read docs/skills/ipm-frontend-v1-sprint.md
 Architectural rules → read docs/skills/ipm-frontend.md
 When touching GlobeBridge / deck.gl auto-rotation / viewState / wheel-zoom issues → read docs/skills/deck-gl-globe-rotation.md
+When touching AppShell overlays / OverlayPanel / CompanyOverlayHost / GoldOverlay / HeadquartersView → read docs/skills/ipm-appshell-overlay.md
 
 ## The six non-negotiable rules
 1. NO handwritten types...
@@ -30,6 +31,8 @@ Before proposing ANY work on AppShell, app.machine, routing, auth, or theme, Cla
 - Using `ignoreNextUrlChange`, refs, or flags for URL sync (ADR-0001 Decision 3)
 - Adding states beyond the 4 flat parallel regions in app.machine during sprint 1 (ADR-0001 Decision 4)
 - Validating searchParams without Zod when a Zod schema would work (ADR-0001 Decision 1)
+- **Modifying `shouldRotate` in AppShell.tsx to re-enable rotation while a powermap or overlay is active** — this breaks Rule 7 (user-requested invariant, must not be silently reverted)
+- Sending `CMD.SET_ROTATION enabled: true` while `activePowermapId !== null` or any overlay is open
 
 ---
 
@@ -83,3 +86,19 @@ lifecycle. No `<DeckGL />` JSX, no reconciler. This applies to all future
 v3 code ships verbatim. Corrections documented case-by-case in commit 
 messages with rationale. Refactoring window opens post-sprint-1 (tag 
 v1-phase-5 or later).
+
+### Rule 7 — Globe stops rotating when any target is selected (USER INVARIANT)
+When ANY of the following is active, `CMD.SET_ROTATION` MUST be sent with `enabled: false`:
+- A PowerMap is selected (`activePowermapId !== null`)
+- Any overlay is open: person, company, gold, or any future overlay type
+
+The canonical gate in `src/app/AppShell.tsx` is:
+```
+const shouldRotate = !activePowermapId && !isGoldOpen && !isPersonOpen && search.overlay !== 'company'
+```
+Do NOT add exceptions. Do NOT add conditions that re-enable rotation while a target is
+selected. Do NOT modify this formula without explicit written approval from the user.
+
+**Why:** after the cinematic fly-to, the globe must remain centered on the selected entity.
+A rotating globe drifts the target out of view. The user has explicitly requested this as a
+permanent, non-negotiable invariant.

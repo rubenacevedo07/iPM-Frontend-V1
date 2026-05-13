@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import type { Company } from '@/types/company';
 import { FONT_SANS, FONT_MONO, HEADER_H } from './shared';
 
@@ -18,10 +17,7 @@ export default function TopBar({ selected, companies: _companies, onSelect: _onS
   }, []);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
+    <div
       style={{
         position: 'absolute', top: 0, left: 0, right: 0,
         height: HEADER_H, zIndex: 20,
@@ -72,6 +68,6 @@ export default function TopBar({ selected, companies: _companies, onSelect: _onS
       <div style={{ fontFamily: FONT_MONO, fontSize: 11, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.06em', flexShrink: 0 }}>
         {time.toISOString().replace('T', ' ').slice(0, 19)} UTC
       </div>
-    </motion.div>
+    </div>
   );
 }

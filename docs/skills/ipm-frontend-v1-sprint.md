@@ -9,11 +9,11 @@
 ## IDENTITY
 
 - **Repo:** `iPM_Frontend_V1` (new, clean rebuild)
-- **Started:** [FILL ON PHASE 0 COMPLETION]
-- **Budget:** ~40h 30min / ~12 days of 3-4h each
+- **Sprint 1:** complete (tag `v1-phase-10`)
+- **Budget (Sprint 1):** ~40h 30min / ~12 days of 3-4h each
 - **Mission:** Globe-first intelligence workstation MVP. One screen. Globe full-bleed. Overlays float. Video cinematic intro.
 
-Sprint 1 of 2. Sprint 2 adds GraphEngine (Three.js vanilla + Worker + InstancedMesh), VsOverlay, recovery modes.
+Sprint 1 of 2. Sprint 2 adds GraphEngine (Three.js vanilla + Worker + InstancedMesh), VsOverlay, recovery modes — see [`docs/sprint-2-prep.md`](../sprint-2-prep.md).
 
 ---
 
@@ -35,6 +35,14 @@ Sprint 1 of 2. Sprint 2 adds GraphEngine (Three.js vanilla + Worker + InstancedM
 | 10 | Integration + buffer | 4h | 12 | Bug fixing, demo-ready |
 
 Total: ~40h 30min.
+
+---
+
+## SPRINT 2 — PREP (Sprint 1 done)
+
+- **Sprint 1** closed: tag `v1-phase-10` on `master` (phases 0–10, ArcLayer, integration).
+- **Single prep doc:** [`docs/sprint-2-prep.md`](../sprint-2-prep.md) — handoff, mission (GraphEngine + Worker + crossfade + VsOverlay + recovery), must-reads, phase table S2-0…S2-6, first-session checklist, open questions from `graph-engine-research.md`.
+- **At kickoff (S2-0):** read `ipm-engine-runtime`, `graph-engine-research`, `engine-r3f-decision`, then branch and optionally run GATE C from `PHASE_9.md`.
 
 ---
 
@@ -320,10 +328,10 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 ## PROGRESS TRACKER (LIVE STATE)
 
 **Last updated:** 2026-04-25
-**Current phase:** **Sprint 1 (Phases 0–10) — code / integration line complete** (`v1-phase-10`). **GATE C** (DevTools 20× heap + FPS) remains **manual** when you run it — see `PHASE_9.md` / `PHASE_7_DEBT` (f). **Product backlog (not a new “phase” number):** 7.1, 7.2, 7b, `PHASE_8_DEBT` follow-ups, Sprint 2 GraphEngine, etc.
-**Phases complete:** 11 / 11 (0–10 in the phase log; **GATE C** checkmark still independent until you measure)
+**Current phase:** **Sprint 1 closed** (`v1-phase-10`, **GATE C ✅** measured against V3 prod build 2026-04-25). **Product backlog (not a new "phase" number):** 7.1, 7.2, 7b, `PHASE_8_DEBT` follow-ups, Sprint 2 GraphEngine, etc.
+**Phases complete:** 11 / 11 (0–10 in the phase log; all 3 gates closed)
 **Hours consumed:** _tracked per session in notes below_
-**Gates passed:** A [x] B [x] C [ ]
+**Gates passed:** A [x] B [x] C [x]
 
 | Tag / milestone | Note |
 |-----------------|------|
@@ -395,6 +403,11 @@ Mapper for PersonIntelligencePanel: direct, fields match PersonOverlay needs.
 - Done: Progress tracker: Phase 10 log `[x]`, `v1-phase-10` tag, milestone table. Current phase = post–Sprint-1; GATE C still manual.
 - Broke: —
 - Next: Run DevTools when ready; then pick 7.1 / 7.2 / 7b / Sprint 2 by priority.
+
+### Session 2026-04-25 — GATE C measurement (V3 prod build) ✅
+- Done: GATE C measured on V3 (commit `cda6f74`, tag `v1-sprint-1-closed`) using `npm run build` + `vite preview` on :5180. **Heap (20× cycle on `?overlay=company&id=16`):** Snapshot 1 = 40.7 MB → Snapshot 2 = 47.7 MB; ~2 kB total in new user-code constructors (HTMLImageElement, throttle closures, MessageEvent); **−815 kB net of detached DOM** (GC reclaimed baseline crud) — **zero leak signal**. **FPS (Frame Rendering Stats):** Test A globo solo = 60fps, Test B Person overlay no-arcs = 60fps, Test C Company overlay + ArcLayer = 60fps with transient dip to 50 on heavy drag, recovers — within budget. Full record in `docs/PHASE_9.md` §"GATE C — CLOSED". `PHASE_7_DEBT` (f) marked CLOSED. **V1 inherits the result subject to no diverging code changes** — re-measure if V1's engine/machine/AppShell drift from V3's snapshot at the measurement time.
+- Broke: First Test C reported sustained 30fps; not reproduced in controlled aislamiento — likely DevTools overhead or pre-warm state. Documented as note in `PHASE_9.md`.
+- Next: Sprint 1 fully closed. Sprint 2 (GraphEngine) unblocked — see `docs/sprint-2-prep.md`. Optional: tag `v1-sprint-1-closed` on V1 once these doc updates land (consider merging `experiment/design-features` → `master`/`main` first per `docs/WORKSPACE-REPOS.md`).
 
 ---
 

@@ -1,0 +1,70 @@
+.body {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.canvasWrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.edgeTooltip {
+  position: fixed;
+  z-index: 30;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 10px 12px;
+  background: rgba(8, 11, 17, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  color: #e8edf5;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: none;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tooltipType {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #00e5ff;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tooltipPending {
+  color: #ffb547;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.tooltipNodes {
+  color: #cdd6e8;
+}
+
+.tooltipScores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #8a9bb5;
+}
+
+.tooltipNotes {
+  font-style: italic;
+  font-size: 10px;
+  color: #8a9bb5;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 6px;
+}

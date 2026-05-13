@@ -1,0 +1,26 @@
+.backLink,
+.advancedLink {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: rgba(0, 229, 255, 0.7);
+  transition: color 180ms ease, background 180ms ease;
+  padding: 6px 10px;
+  border-radius: 3px;
+
+  &:hover {
+    color: #00e5ff;
+    background: rgba(0, 229, 255, 0.06);
+  }
+}
+
+.advancedLink {
+  color: rgba(148, 163, 184, 0.7);
+
+  &:hover {
+    color: #cdd6e8;
+    background: rgba(148, 163, 184, 0.06);
+  }
+}

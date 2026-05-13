@@ -676,10 +676,10 @@
   left: 0;
   right: 0;
   z-index: 10;
-  background: rgba(3, 5, 10, 0.90);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 209, 255, 0.12);
+  background: transparent;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  border-bottom: 0px solid rgba(0, 209, 255, 0.12);
   display: flex;
   flex-direction: column;
 }
@@ -687,7 +687,7 @@
 .co-hdr__inner {
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 14px;
   gap: 14px;
   height: 100%;
 }
@@ -717,11 +717,8 @@
 
 .co-hdr__middle {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-  flex: 1;
-  min-width: 0;
+  align-items: baseline;
+  flex-shrink: 0;
 }
 
 .co-hdr__pills {
@@ -742,9 +739,9 @@
 }
 
 .co-hdr__pill--primary {
-  color: #ffaa00;
-  background: #ffaa0015;
-  border: 1px solid #ffaa0045;
+  color: #00e676;
+  background: #00e67612;
+  border: 1px solid #00e67630;
 }
 
 .co-hdr__pill--secondary {
@@ -759,13 +756,19 @@
   border: 1px solid rgba(255, 255, 255, 0.20);
 }
 
+// Day 4+ (visual): removed `backdrop-filter: blur(20px)` — the blur over the
+// dark deck.gl globe was being perceived as a soft shadow "behind" the
+// CompanyOverlay panels. Opacity bumped from 0.84 → 0.94 so the meta chip
+// stays self-readable now that there's no underlying blur to mask the globe.
 .co-hdr__meta {
+  background: rgba(4, 6, 9, 0.94);
+  border-radius: 8px;
+  padding: 6px 8px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
+  gap: 4px;
+  flex: none;
+  color: #ffffff;
 }
 
 .co-hdr__meta-item {
@@ -782,7 +785,7 @@
 .co-hdr__meta-text {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.48);
+  color: #ffffff;
   white-space: nowrap;
 }
 
@@ -839,16 +842,17 @@
 
 .co-sub {
   position: absolute;
+  top: 71px;
   left: 0;
   right: 0;
   z-index: 10;
-  background: rgba(3, 5, 10, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 209, 255, 0.10);
+  background: transparent;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  border-bottom: 0px solid rgba(0, 209, 255, 0.12);
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 12px 14px;
   gap: 20px;
 }
 
@@ -981,10 +985,10 @@
   gap: 10px;
 }
 
+// Day 4+ (visual): removed `backdrop-filter: blur(20px)` — same reason as
+// `.co-hdr__meta` above. Opacity bumped 0.84 → 0.94.
 .co-net__section {
-  background: rgba(4, 6, 9, 0.84);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(4, 6, 9, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 8px;
   padding: 12px 14px;
@@ -2388,4 +2392,9 @@
 @keyframes cin-fade-up {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes rimPulse {
+  from { opacity: 0.6; }
+  to   { opacity: 1.0; }
 }

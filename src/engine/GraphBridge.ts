@@ -35,6 +35,16 @@ export class GraphBridge implements IEngineBridge {
   private _suspended = false;
   private _time = 0;
 
+  // Worker + layout
+  private _worker: Worker | null = null;
+  private _revision = 0;
+  private _layoutPositions: Float32Array | null = null;
+
+  // FPS / degraded tracking
+  private _frameCount = 0;
+  private _fpsWindowStart = 0;
+  private _degraded = false;
+
   private static readonly MAX_INSTANCES = 256;
   private readonly _workMatrix = new THREE.Matrix4();
   private readonly _workVec = new THREE.Vector3();
@@ -97,6 +107,7 @@ export class GraphBridge implements IEngineBridge {
       });
       this._ro.observe(input.container);
 
+      this._initWorker();
       this._status = 'ready';
       this._suspended = false;
       this._startLoop();
@@ -131,6 +142,8 @@ export class GraphBridge implements IEngineBridge {
 
   dispose(): void {
     this._stopLoop();
+    this._worker?.terminate();
+    this._worker = null;
     this._ro?.disconnect();
     this._ro = null;
 
@@ -182,8 +195,18 @@ export class GraphBridge implements IEngineBridge {
         break;
       case 'CMD.SET_GRAPH': {
         this._graph = command.data.graph;
-        this._applyInstances();
-        this._rebuildEdgeLines();
+        this._layoutPositions = null;  // reset until worker responds
+        this._revision++;
+        if (this._worker) {
+          const { nodeCount, edgeCount, edgeFrom, edgeTo } = this._graph;
+          // Intentionally not transferring buffers — edgeFrom/edgeTo stay valid
+          // in the main thread for _rebuildEdgeLines() after worker responds.
+          this._worker.postMessage({ kind: 'LAYOUT', revision: this._revision, nodeCount, edgeCount, edgeFrom, edgeTo });
+        } else {
+          // Worker unavailable — render with raw nodeXY from input.
+          this._applyInstances();
+          this._rebuildEdgeLines();
+        }
         break;
       }
       case 'CMD.SUSPEND':
@@ -235,17 +258,19 @@ export class GraphBridge implements IEngineBridge {
     }
     const input = this._graph;
     if (input.edgeCount <= 0) return;
-    const maxE = Math.min(input.edgeCount, 4096);
+    const edgeCap = this._degraded ? 512 : 4096;
+    const maxE = Math.min(input.edgeCount, edgeCap);
     const pos = new Float32Array(maxE * 2 * 3);
+    const xy = this._layoutPositions ?? input.nodeXY;
     let o = 0;
     for (let e = 0; e < maxE; e++) {
       const fi = input.edgeFrom[e];
       const ti = input.edgeTo[e];
       if (fi === undefined || ti === undefined) continue;
-      const x0 = input.nodeXY[fi * 2] ?? 0;
-      const y0 = input.nodeXY[fi * 2 + 1] ?? 0;
-      const x1 = input.nodeXY[ti * 2] ?? 0;
-      const y1 = input.nodeXY[ti * 2 + 1] ?? 0;
+      const x0 = xy[fi * 2] ?? 0;
+      const y0 = xy[fi * 2 + 1] ?? 0;
+      const x1 = xy[ti * 2] ?? 0;
+      const y1 = xy[ti * 2 + 1] ?? 0;
       pos[o++] = x0; pos[o++] = y0; pos[o++] = 0.02;
       pos[o++] = x1; pos[o++] = y1; pos[o++] = 0.02;
     }
@@ -266,16 +291,16 @@ export class GraphBridge implements IEngineBridge {
     const mat = this._instanced.material as THREE.MeshBasicMaterial;
     const input = this._graph;
     const hasData = input.nodeCount > 0;
-    const n = hasData
-      ? Math.min(input.nodeCount, GraphBridge.MAX_INSTANCES)
-      : 3;
+    const cap = this._degraded ? Math.min(128, GraphBridge.MAX_INSTANCES) : GraphBridge.MAX_INSTANCES;
+    const n = hasData ? Math.min(input.nodeCount, cap) : 3;
     this._instanced.count = n;
     mat.color.setHex(0x00e5ff);
     for (let i = 0; i < n; i++) {
       let x: number; let y: number;
       if (hasData) {
-        x = input.nodeXY[i * 2] ?? 0;
-        y = input.nodeXY[i * 2 + 1] ?? 0;
+        const xy = this._layoutPositions ?? input.nodeXY;
+        x = xy[i * 2] ?? 0;
+        y = xy[i * 2 + 1] ?? 0;
       } else {
         const t = (i * 2 * Math.PI) / 3 - Math.PI / 2;
         x = Math.cos(t) * 0.45;
@@ -288,9 +313,35 @@ export class GraphBridge implements IEngineBridge {
     this._instanced.instanceMatrix.needsUpdate = true;
   }
 
+  private _initWorker(): void {
+    try {
+      this._worker = new Worker(new URL('./graph.worker.ts', import.meta.url), { type: 'module' });
+      this._worker.onmessage = (e: MessageEvent<{ kind: string; revision: number; positions: Float32Array }>) => {
+        if (e.data.kind !== 'LAYOUT_DONE') return;
+        if (e.data.revision !== this._revision) return;  // stale — discard
+        this._applyPositions(e.data.positions);
+      };
+      this._worker.onerror = (err) => {
+        console.warn('[GraphBridge] worker error — falling back to nodeXY', err);
+        this._worker = null;
+      };
+    } catch (err) {
+      console.warn('[GraphBridge] worker init failed — falling back to nodeXY', err);
+      this._worker = null;
+    }
+  }
+
+  private _applyPositions(positions: Float32Array): void {
+    this._layoutPositions = positions;
+    this._applyInstances();
+    this._rebuildEdgeLines();
+  }
+
   private _startLoop(): void {
     this._stopLoop();
     this._time = performance.now() / 1000;
+    this._frameCount = 0;
+    this._fpsWindowStart = 0;
     const tick = (now: number) => {
       this._raf = requestAnimationFrame(tick);
       if (this._suspended || this._status !== 'ready' || !this._scene || !this._camera || !this._renderer) {
@@ -299,7 +350,23 @@ export class GraphBridge implements IEngineBridge {
       const t = now / 1000;
       const dt = t - this._time;
       this._time = t;
-      if (this._instanced) {
+
+      // FPS tracking — activate degraded mode when sustained FPS < 40.
+      this._frameCount++;
+      if (this._fpsWindowStart === 0) this._fpsWindowStart = t;
+      if (t - this._fpsWindowStart >= 3) {
+        const fps = this._frameCount / (t - this._fpsWindowStart);
+        this._frameCount = 0;
+        this._fpsWindowStart = t;
+        if (!this._degraded && fps < 40) {
+          this._degraded = true;
+          this._renderer.setPixelRatio(1);
+          console.warn('[GraphBridge] degraded mode activated (fps=' + fps.toFixed(1) + ')');
+        }
+      }
+
+      // Decorative rotation — disabled in degraded mode.
+      if (!this._degraded && this._instanced) {
         this._instanced.rotation.z += dt * 0.2;
       }
       this._renderer.render(this._scene, this._camera);

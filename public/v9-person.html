@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPM · Person Overlay · Elon Musk</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#090b10;--bgPanel:#0d1017;--bgCard:#111620;--bgHover:#161d2c;
+  --border:rgba(255,255,255,.07);--borderLt:rgba(255,255,255,.12);
+  --teal:#00e5ff;--green:#00d4aa;--gold:#f5a623;--red:#e53935;
+  --purple:#a855f7;--blue:#378ADD;
+  --text:#e8edf5;--text2:#8a9bb5;--text3:#4a5568;
+  --mono:'JetBrains Mono',monospace;--raj:'Rajdhani',sans-serif;--sans:'DM Sans',sans-serif;
+  --botH:30px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
+
+/* ── MAIN LAYOUT ── */
+.main-area{
+  position:fixed;
+  top:0;
+  left:0;right:0;bottom:var(--botH);
+  display:grid;
+  grid-template-columns:260px 1fr 280px;
+  overflow:hidden;
+}
+
+/* ── LEFT COLUMN ── */
+.left-col{
+  background:rgba(10,12,18,.98);
+  border-right:1px solid var(--borderLt);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  box-shadow:4px 0 20px rgba(0,0,0,.4);
+}
+.lc-head{
+  padding:14px 14px 10px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.entity-photo{
+  width:46px;height:46px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:14px;font-weight:700;
+  border:2.5px solid;
+}
+.entity-info{flex:1;min-width:0}
+.entity-name{font-family:var(--raj);font-size:15px;font-weight:700;line-height:1.2}
+.entity-role{font-family:var(--mono);font-size:7px;color:var(--text3);margin-top:3px;line-height:1.4}
+.lc-close{width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);border-radius:3px;font-size:12px;flex-shrink:0}
+.lc-close:hover{background:var(--bgHover);color:var(--text)}
+
+/* Score strip */
+.score-strip{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.big-score{font-family:var(--mono);font-size:32px;font-weight:700;line-height:1}
+.score-meta{display:flex;flex-direction:column;gap:4px}
+.s-badge{font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:3px}
+
+/* Tabs */
+.lc-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.lc-tab{padding:7px 10px;font-family:var(--mono);font-size:7px;letter-spacing:.5px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .12s;flex-shrink:0}
+.lc-tab:hover{color:var(--text2)}
+.lc-tab.active{color:var(--teal);border-bottom-color:var(--teal)}
+
+/* Left body scroll */
+.lc-body{flex:1;overflow-y:auto;padding:12px 14px}
+.lc-body::-webkit-scrollbar{width:2px}
+.lc-body::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* Sections */
+.sec{margin-bottom:14px}
+.sec-title{font-family:var(--mono);font-size:7px;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:7px}
+.kv{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.kv:last-child{border-bottom:none}
+.kk{font-family:var(--mono);font-size:8px;color:var(--text3)}
+.kv-v{font-family:var(--mono);font-size:8px;font-weight:600}
+
+/* Power bars */
+.pb-row{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.pb-lbl{font-family:var(--mono);font-size:7px;width:22px;flex-shrink:0}
+.pb-track{flex:1;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.pb-fill{height:100%;border-radius:2px}
+.pb-val{font-family:var(--mono);font-size:8px;font-weight:700;width:20px;text-align:right}
+
+/* Chips */
+.chip-row{display:flex;flex-wrap:wrap;gap:3px}
+.chip{font-family:var(--mono);font-size:7px;padding:2px 6px;border-radius:3px;border:1px solid;cursor:pointer;white-space:nowrap;transition:opacity .12s}
+.chip:hover{opacity:.7}
+
+/* Vulnerability bars */
+.vuln-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.vuln-lbl{font-family:var(--mono);font-size:7px;color:var(--text3);flex:1}
+.vuln-track{width:80px;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;flex-shrink:0}
+.vuln-fill{height:100%;border-radius:2px}
+.vuln-v{font-family:var(--mono);font-size:7px;font-weight:700;width:18px;text-align:right;flex-shrink:0}
+
+/* Sofia strip left col */
+.lc-sofia{padding:10px 14px;border-top:1px solid var(--border);background:rgba(0,229,255,.04);flex-shrink:0}
+.lc-sofia-lbl{font-family:var(--mono);font-size:7px;color:var(--teal);letter-spacing:1px;margin-bottom:4px}
+.lc-sofia-txt{font-family:var(--sans);font-size:9px;color:var(--text2);line-height:1.5}
+
+/* ── CENTER CANVAS ── */
+.center-col{
+  position:relative;overflow:hidden;
+  background:var(--bg);
+  display:flex;flex-direction:column;
+}
+
+/* Canvas mode header tabs */
+.canvas-tabs{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  display:flex;gap:0;background:rgba(9,11,16,.9);
+  border:1px solid var(--borderLt);border-radius:7px;overflow:hidden;
+  backdrop-filter:blur(12px);z-index:20;
+}
+.ctab{
+  padding:7px 16px;font-family:var(--mono);font-size:8px;letter-spacing:.7px;
+  color:var(--text2);cursor:pointer;border-right:1px solid var(--border);
+  transition:all .12s;white-space:nowrap;display:flex;align-items:center;gap:5px;
+}
+.ctab:last-child{border-right:none}
+.ctab:hover{background:var(--bgHover);color:var(--text)}
+.ctab.active{color:var(--green);background:rgba(0,212,170,.07)}
+.ctab-icon{font-size:10px}
+
+/* Globe behind canvas */
+.canvas-globe{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .35s ease;
+}
+/* Solid overlay */
+.canvas-solid{
+  position:absolute;inset:0;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .35s ease;
+}
+
+/* Entity annotation ring */
+.entity-ring{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  pointer-events:none;
+}
+.ring-photo{
+  width:64px;height:64px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:20px;font-weight:700;
+  border:3px solid;
+  box-shadow:0 0 0 8px rgba(0,229,255,.06),0 0 40px rgba(0,229,255,.2);
+  position:relative;z-index:2;
+}
+.ring-pulse{
+  position:absolute;width:64px;height:64px;border-radius:50%;
+  border:1px solid rgba(0,229,255,.4);
+  animation:ringPulse 2.5s ease-out infinite;
+}
+.ring-pulse.p2{animation-delay:.7s}
+.ring-pulse.p3{animation-delay:1.4s}
+@keyframes ringPulse{from{transform:scale(1);opacity:.5}to{transform:scale(3);opacity:0}}
+
+/* Floating annotation pills */
+.map-annot{
+  position:absolute;
+  padding:5px 10px;border-radius:5px;border:1px solid;
+  font-family:var(--mono);font-size:8px;
+  backdrop-filter:blur(8px);
+  white-space:nowrap;cursor:pointer;
+  animation:annotIn .4s ease forwards;
+}
+@keyframes annotIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+
+/* CHARTS canvas */
+.charts-grid{
+  position:absolute;inset:0;padding:60px 20px 20px;
+  display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px;
+}
+.chart-card{
+  background:rgba(10,12,18,.88);border:1px solid var(--border);border-radius:8px;
+  padding:12px;display:flex;flex-direction:column;backdrop-filter:blur(12px);
+}
+.chart-title{font-family:var(--mono);font-size:8px;color:var(--text3);letter-spacing:1px;margin-bottom:10px}
+.chart-area{flex:1;display:flex;align-items:flex-end;gap:3px;min-height:0}
+.bar-g{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bar-fill{border-radius:2px 2px 0 0;min-height:2px;transition:height .5s ease}
+.bar-label{font-family:var(--mono);font-size:6px;color:var(--text3)}
+
+/* INTELLIGENCE canvas */
+.intel-content{
+  position:absolute;inset:0;padding:60px 24px 20px;
+  overflow-y:auto;display:flex;flex-direction:column;gap:12px;
+}
+.intel-content::-webkit-scrollbar{width:2px}
+.intel-content::-webkit-scrollbar-thumb{background:var(--border)}
+.intel-card{background:rgba(10,12,18,.9);border:1px solid var(--border);border-radius:8px;padding:14px;flex-shrink:0}
+.intel-card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.intel-tag{font-family:var(--mono);font-size:7px;padding:2px 7px;border-radius:2px}
+.intel-title{font-family:var(--sans);font-size:12px;font-weight:500;line-height:1.4}
+.intel-meta{font-family:var(--mono);font-size:8px;color:var(--text3);margin-top:5px}
+.intel-body{font-family:var(--sans);font-size:10px;color:var(--text2);line-height:1.6;margin-top:6px}
+
+/* Globe nav buttons */
+.globe-nav{
+  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  display:flex;gap:0;background:rgba(9,11,16,.88);border:1px solid var(--borderLt);
+  border-radius:7px;overflow:hidden;backdrop-filter:blur(12px);z-index:10;
+}
+.gnav-btn{padding:7px 13px;font-family:var(--mono);font-size:7px;letter-spacing:.8px;color:var(--text2);cursor:pointer;border-right:1px solid var(--border);display:flex;align-items:center;gap:4px;transition:all .12s}
+.gnav-btn:last-child{border-right:none}
+.gnav-btn:hover{background:var(--bgHover);color:var(--text)}
+.gnav-btn.active{color:var(--green);background:rgba(0,212,170,.06)}
+
+/* Sofia conclusions */
+.canvas-sofia{
+  position:absolute;bottom:48px;left:12px;right:12px;
+  padding:10px 14px;background:rgba(9,11,16,.92);border:1px solid var(--borderLt);
+  border-radius:7px;backdrop-filter:blur(12px);z-index:10;
+  display:flex;align-items:flex-start;gap:10px;
+}
+.cs-lbl{font-family:var(--mono);font-size:7px;color:var(--teal);letter-spacing:1px;flex-shrink:0;margin-top:1px}
+.cs-txt{font-family:var(--sans);font-size:9px;color:var(--text2);line-height:1.5}
+
+/* ── RIGHT COLUMN ── */
+.right-col{
+  background:rgba(10,12,18,.98);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  direction:rtl;
+}
+.right-col-inner{direction:ltr;flex:1;overflow-y:auto;padding:14px}
+.right-col-inner::-webkit-scrollbar{width:2px}
+.right-col-inner::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* Right col panel tabs */
+.rc-panel-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;direction:ltr}
+.rct{padding:8px 10px;font-family:var(--mono);font-size:7px;letter-spacing:.5px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .12s;flex-shrink:0}
+.rct:hover{color:var(--text2)}
+.rct.active{color:var(--purple);border-bottom-color:var(--purple)}
+
+.rc-section{margin-bottom:16px}
+.rc-title{font-family:var(--mono);font-size:7px;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px}
+
+/* Portfolio incidence */
+.pi-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.pi-row:last-child{border-bottom:none}
+.pi-label{font-family:var(--mono);font-size:8px;color:var(--text2)}
+.pi-val{font-family:var(--mono);font-size:9px;font-weight:700}
+.pi-bar{width:100%;height:2px;background:rgba(255,255,255,.05);border-radius:1px;overflow:hidden;margin-top:3px}
+.pi-bar-fill{height:100%;border-radius:1px}
+
+/* Display toggles */
+.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.toggle-row:last-child{border-bottom:none}
+.tog-lbl{font-family:var(--mono);font-size:8px;color:var(--text2)}
+.toggle{width:28px;height:14px;border-radius:7px;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
+.toggle.on{background:rgba(0,212,170,.4);border:1px solid #00d4aa60}
+.toggle.off{background:rgba(255,255,255,.08);border:1px solid var(--border)}
+.toggle-knob{position:absolute;top:2px;width:10px;height:10px;border-radius:50%;transition:left .2s}
+.toggle.on .toggle-knob{left:16px;background:var(--green)}
+.toggle.off .toggle-knob{left:2px;background:var(--text3)}
+
+/* Sherman signal */
+.signal-card{padding:10px 12px;background:var(--bgCard);border:1px solid var(--border);border-radius:6px;margin-bottom:6px}
+.signal-dir{font-family:var(--mono);font-size:10px;font-weight:700;margin-bottom:3px}
+.signal-basis{font-family:var(--sans);font-size:9px;color:var(--text2);line-height:1.4}
+.signal-meta{display:flex;gap:8px;margin-top:6px}
+.signal-meta span{font-family:var(--mono);font-size:7px;padding:2px 6px;border-radius:2px}
+
+/* ── BOT BAR ── */
+.botbar{position:fixed;bottom:0;left:0;right:0;height:var(--botH);z-index:600;background:rgba(9,11,16,.96);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 14px}
+.bot-stat{font-family:var(--mono);font-size:8px;color:var(--text3)}
+.bot-stat span{color:var(--teal)}
+.bot-badge{font-family:var(--mono);font-size:7px;padding:2px 7px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- MAIN 3-COLUMN LAYOUT -->
+<div class="main-area">
+
+  <!-- ── LEFT COLUMN ── -->
+  <div class="left-col">
+    <div class="lc-head">
+      <div class="entity-photo" style="background:#0d1525;color:var(--teal);border-color:#00e5ff70;box-shadow:0 0 20px rgba(0,229,255,.18)">EM</div>
+      <div class="entity-info">
+        <div class="entity-name">Elon Musk</div>
+        <div class="entity-role">CEO Tesla · CEO SpaceX · Owner X<br>COERCIVE / TECH ARCHETYPE · Id=7</div>
+      </div>
+      <div class="lc-close" onclick="window.parent.postMessage('close-person-overlay','*')">×</div>
+    </div>
+
+    <div class="score-strip">
+      <div>
+        <div class="big-score" style="color:var(--teal)">74</div>
+        <div style="font-family:var(--mono);font-size:7px;color:var(--text3);letter-spacing:1px;margin-top:2px">COMPOSITE</div>
+      </div>
+      <div class="score-meta">
+        <span class="s-badge" style="background:#00e5ff12;color:var(--teal);border:1px solid #00e5ff30">#5 GLOBAL</span>
+        <span class="s-badge" style="background:#a855f712;color:var(--purple);border:1px solid #a855f730">COERCIVE</span>
+      </div>
+    </div>
+
+    <div class="lc-tabs">
+      <div class="lc-tab active">PROFILE</div>
+      <div class="lc-tab">NETWORK</div>
+      <div class="lc-tab">IDEOLOGY</div>
+      <div class="lc-tab">VULNERABILITIES</div>
+      <div class="lc-tab">INTEL</div>
+    </div>
+
+    <div class="lc-body">
+
+      <div class="sec">
+        <div class="sec-title">Power Dimensions</div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="color:var(--teal)">FPI</span>
+          <div class="pb-track"><div class="pb-fill" style="width:88%;background:var(--teal)"></div></div>
+          <span class="pb-val" style="color:var(--teal)">88</span>
+        </div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="color:var(--purple)">CPI</span>
+          <div class="pb-track"><div class="pb-fill" style="width:71%;background:var(--purple)"></div></div>
+          <span class="pb-val" style="color:var(--purple)">71</span>
+        </div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="color:var(--gold)">IPI</span>
+          <div class="pb-track"><div class="pb-fill" style="width:82%;background:var(--gold)"></div></div>
+          <span class="pb-val" style="color:var(--gold)">82</span>
+        </div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="color:var(--green)">SPI</span>
+          <div class="pb-track"><div class="pb-fill" style="width:79%;background:var(--green)"></div></div>
+          <span class="pb-val" style="color:var(--green)">79</span>
+        </div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="color:var(--red)">MPI</span>
+          <div class="pb-track"><div class="pb-fill" style="width:12%;background:var(--red)"></div></div>
+          <span class="pb-val" style="color:var(--red)">12</span>
+        </div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="color:var(--blue)">PPI</span>
+          <div class="pb-track"><div class="pb-fill" style="width:38%;background:var(--blue)"></div></div>
+          <span class="pb-val" style="color:var(--blue)">38</span>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Key Facts</div>
+        <div class="kv"><span class="kk">Net Worth</span><span class="kv-v" style="color:var(--teal)">$340B</span></div>
+        <div class="kv"><span class="kk">CategoryCode</span><span class="kv-v">BILLIONAIRE</span></div>
+        <div class="kv"><span class="kk">Nationality</span><span class="kv-v">🇺🇸 🇿🇦</span></div>
+        <div class="kv"><span class="kk">Companies owned</span><span class="kv-v">7+</span></div>
+        <div class="kv"><span class="kk">Active edges</span><span class="kv-v">24</span></div>
+        <div class="kv"><span class="kk">PEP flag</span><span class="kv-v" style="color:var(--gold)">ADVISORY</span></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Ideology (5 of 7 axes)</div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="font-size:6px;width:40px;color:var(--text3)">Tech-utopia</span>
+          <div class="pb-track"><div class="pb-fill" style="width:92%;background:var(--teal)"></div></div>
+          <span class="pb-val" style="color:var(--teal)">92</span>
+        </div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="font-size:6px;width:40px;color:var(--text3)">Libertarian</span>
+          <div class="pb-track"><div class="pb-fill" style="width:78%;background:var(--purple)"></div></div>
+          <span class="pb-val" style="color:var(--purple)">78</span>
+        </div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="font-size:6px;width:40px;color:var(--text3)">Populist</span>
+          <div class="pb-track"><div class="pb-fill" style="width:62%;background:var(--gold)"></div></div>
+          <span class="pb-val" style="color:var(--gold)">62</span>
+        </div>
+        <div class="pb-row">
+          <span class="pb-lbl" style="font-size:6px;width:40px;color:var(--text3)">Anti-reg</span>
+          <div class="pb-track"><div class="pb-fill" style="width:85%;background:var(--green)"></div></div>
+          <span class="pb-val" style="color:var(--green)">85</span>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">TF-IDF Topics</div>
+        <div class="chip-row">
+          <span class="chip" style="background:#00e5ff12;color:var(--teal);border-color:#00e5ff30">AI regulation</span>
+          <span class="chip" style="background:#a855f712;color:var(--purple);border-color:#a855f730">Mars colonization</span>
+          <span class="chip" style="background:#00d4aa12;color:var(--green);border-color:#00d4aa30">EV markets</span>
+          <span class="chip" style="background:#f5a62312;color:var(--gold);border-color:#f5a62330">DOGEgov</span>
+          <span class="chip" style="background:rgba(255,255,255,.05);color:var(--text3);border-color:var(--border)">Starlink</span>
+          <span class="chip" style="background:rgba(255,255,255,.05);color:var(--text3);border-color:var(--border)">Free speech</span>
+          <span class="chip" style="background:#e5393512;color:#e53935;border-color:#e5393530">SEC conflict</span>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Vulnerabilities</div>
+        <div class="vuln-row">
+          <span class="vuln-lbl">Regulatory exposure</span>
+          <div class="vuln-track"><div class="vuln-fill" style="width:82%;background:#e53935"></div></div>
+          <span class="vuln-v" style="color:#e53935">82</span>
+        </div>
+        <div class="vuln-row">
+          <span class="vuln-lbl">Public opinion risk</span>
+          <div class="vuln-track"><div class="vuln-fill" style="width:74%;background:var(--gold)"></div></div>
+          <span class="vuln-v" style="color:var(--gold)">74</span>
+        </div>
+        <div class="vuln-row">
+          <span class="vuln-lbl">Twitter/X concentration</span>
+          <div class="vuln-track"><div class="vuln-fill" style="width:68%;background:var(--gold)"></div></div>
+          <span class="vuln-v" style="color:var(--gold)">68</span>
+        </div>
+        <div class="vuln-row">
+          <span class="vuln-lbl">China supply chain</span>
+          <div class="vuln-track"><div class="vuln-fill" style="width:71%;background:var(--red)"></div></div>
+          <span class="vuln-v" style="color:var(--red)">71</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="lc-sofia">
+      <div class="lc-sofia-lbl">✦ SOFIA</div>
+      <div class="lc-sofia-txt">Musk's China exposure (Tesla Shanghai = 40% of production) combined with Trump tariff signals creates the highest coercive vulnerability in the tech archetype cluster. IPI 82 reflects narrative control at platform scale.</div>
+    </div>
+  </div>
+
+  <!-- ── CENTER CANVAS ── -->
+  <div class="center-col">
+
+    <div class="canvas-tabs">
+      <div class="ctab active" data-mode="map" onclick="setMode('map')"><span class="ctab-icon">🗺</span>2D MAP</div>
+      <div class="ctab" data-mode="3d" onclick="setMode('3d')"><span class="ctab-icon">🌐</span>3D</div>
+      <div class="ctab" data-mode="charts" onclick="setMode('charts')"><span class="ctab-icon">📊</span>CHARTS</div>
+      <div class="ctab" data-mode="intel" onclick="setMode('intel')"><span class="ctab-icon">✦</span>INTELLIGENCE</div>
+    </div>
+
+    <!-- MAP MODE -->
+    <div id="mode-map" class="canvas-globe" style="opacity:1">
+      <svg width="680" height="620" viewBox="0 0 680 620">
+        <defs>
+          <radialGradient id="gG" cx="36%" cy="32%">
+            <stop offset="0%" stop-color="#162234"/>
+            <stop offset="55%" stop-color="#0c1520"/>
+            <stop offset="100%" stop-color="#060c14"/>
+          </radialGradient>
+          <clipPath id="gCl"><circle cx="340" cy="310" r="270"/></clipPath>
+        </defs>
+        <circle cx="340" cy="310" r="277" fill="none" stroke="rgba(0,229,255,.1)" stroke-width="7" opacity=".6"/>
+        <circle cx="340" cy="310" r="270" fill="url(#gG)" stroke="rgba(0,229,255,.2)" stroke-width="1"/>
+        <g clip-path="url(#gCl)" stroke="rgba(255,255,255,.06)" stroke-width=".5" fill="none">
+          <ellipse cx="340" cy="310" rx="270" ry="44"/>
+          <ellipse cx="340" cy="310" rx="270" ry="108"/>
+          <ellipse cx="340" cy="310" rx="270" ry="170"/>
+          <line x1="340" y1="40" x2="340" y2="580"/>
+          <line x1="190" y1="68" x2="490" y2="552"/>
+          <line x1="100" y1="188" x2="580" y2="432"/>
+        </g>
+        <g clip-path="url(#gCl)">
+          <path d="M 195 208 Q 246 175 278 193 Q 295 225 278 278 Q 259 314 232 322 Q 204 314 186 286 Q 168 258 195 208 Z" fill="rgba(0,229,255,.16)" stroke="rgba(0,229,255,.5)" stroke-width="1.5"/>
+          <path d="M 448 182 Q 516 168 548 194 Q 561 218 544 252 Q 516 270 483 264 Q 448 248 440 220 Z" fill="rgba(229,57,53,.14)" stroke="rgba(229,57,53,.45)" stroke-width="1.2"/>
+          <path d="M 330 190 Q 364 174 388 190 Q 400 210 390 234 Q 375 246 352 241 Q 328 231 326 210 Z" fill="rgba(168,85,247,.15)" stroke="rgba(168,85,247,.4)" stroke-width="1"/>
+          <path d="M 336 255 Q 372 248 388 275 Q 400 310 390 366 Q 376 404 352 412 Q 328 404 318 366 Q 307 320 320 278 Z" fill="rgba(245,166,35,.1)" stroke="rgba(245,166,35,.25)" stroke-width=".8"/>
+          <path d="M 510 366 Q 550 354 572 374 Q 582 400 566 420 Q 545 432 518 422 Q 498 406 500 382 Z" fill="rgba(0,212,170,.1)" stroke="rgba(0,212,170,.25)" stroke-width=".8"/>
+        </g>
+        <path d="M 235 248 Q 190 210 175 225" fill="none" stroke="rgba(0,229,255,.6)" stroke-width="1.5" stroke-dasharray="5,4"><animate attributeName="stroke-dashoffset" values="0;-18" dur="2s" repeatCount="indefinite"/></path>
+        <path d="M 238 245 Q 340 175 490 220" fill="none" stroke="rgba(229,57,53,.45)" stroke-width="1.2" stroke-dasharray="5,5"><animate attributeName="stroke-dashoffset" values="0;-20" dur="2.8s" repeatCount="indefinite"/></path>
+        <path d="M 237 246 Q 290 196 352 218" fill="none" stroke="rgba(168,85,247,.4)" stroke-width="1" stroke-dasharray="4,5"><animate attributeName="stroke-dashoffset" values="0;-18" dur="2.3s" repeatCount="indefinite"/></path>
+        <rect x="210" y="238" width="22" height="22" rx="4" fill="rgba(229,57,53,.12)" stroke="rgba(229,57,53,.45)" stroke-width="1"/>
+        <text x="221" y="253" text-anchor="middle" font-family="monospace" font-size="8" font-weight="700" fill="#e53935">T</text>
+        <rect x="185" y="242" width="22" height="22" rx="4" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.25)" stroke-width="1"/>
+        <text x="196" y="257" text-anchor="middle" font-family="monospace" font-size="7" font-weight="700" fill="#e8edf5">SX</text>
+        <rect x="345" y="182" width="22" height="22" rx="4" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.2)" stroke-width="1"/>
+        <text x="356" y="197" text-anchor="middle" font-family="monospace" font-size="9" font-weight="700" fill="#8a9bb5">X</text>
+        <circle cx="203" cy="244" r="10" fill="rgba(229,57,53,.12)" stroke="rgba(229,57,53,.4)" stroke-width="1"/>
+        <text x="203" y="248" text-anchor="middle" font-family="monospace" font-size="6" font-weight="700" fill="#e53935">DT</text>
+      </svg>
+
+      <div class="entity-ring">
+        <div class="ring-pulse"></div>
+        <div class="ring-pulse p2"></div>
+        <div class="ring-pulse p3"></div>
+        <div class="ring-photo" style="background:#0d1525;color:var(--teal);border-color:#00e5ff80">EM</div>
+      </div>
+
+      <div class="map-annot" style="top:16%;left:22%;background:rgba(0,229,255,.06);border-color:rgba(0,229,255,.25);color:var(--teal);animation-delay:.1s">
+        ⚡ 24 active edges
+      </div>
+      <div class="map-annot" style="top:62%;left:18%;background:rgba(229,57,53,.06);border-color:rgba(229,57,53,.25);color:#F87171;animation-delay:.2s">
+        ⚠ China supply chain risk 71%
+      </div>
+      <div class="map-annot" style="top:18%;right:14%;background:rgba(245,166,35,.06);border-color:rgba(245,166,35,.25);color:var(--gold);animation-delay:.3s">
+        💡 Starlink · 62 countries
+      </div>
+      <div class="map-annot" style="top:70%;right:12%;background:rgba(168,85,247,.06);border-color:rgba(168,85,247,.25);color:var(--purple);animation-delay:.4s">
+        🗺 SpaceX · 7 launch sites
+      </div>
+    </div>
+
+    <!-- CHARTS MODE -->
+    <div id="mode-charts" class="canvas-globe" style="opacity:0;pointer-events:none">
+      <svg width="680" height="620" viewBox="0 0 680 620" style="opacity:.2">
+        <defs>
+          <radialGradient id="gG2" cx="36%" cy="32%">
+            <stop offset="0%" stop-color="#162234"/><stop offset="100%" stop-color="#060c14"/>
+          </radialGradient>
+          <clipPath id="gC2"><circle cx="340" cy="310" r="270"/></clipPath>
+        </defs>
+        <circle cx="340" cy="310" r="270" fill="url(#gG2)" stroke="rgba(0,229,255,.15)" stroke-width="1"/>
+        <g clip-path="url(#gC2)" stroke="rgba(255,255,255,.05)" stroke-width=".5" fill="none">
+          <ellipse cx="340" cy="310" rx="270" ry="108"/>
+          <line x1="340" y1="40" x2="340" y2="580"/>
+        </g>
+      </svg>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">POWER DIMENSIONS</div>
+          <div class="chart-area">
+            <div class="bar-g"><div class="bar-fill" style="width:22px;height:88%;background:var(--teal)"></div><div class="bar-label">FPI 88</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:22px;height:71%;background:var(--purple)"></div><div class="bar-label">CPI 71</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:22px;height:82%;background:var(--gold)"></div><div class="bar-label">IPI 82</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:22px;height:79%;background:var(--green)"></div><div class="bar-label">SPI 79</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:22px;height:38%;background:var(--blue)"></div><div class="bar-label">PPI 38</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:22px;height:12%;background:var(--red)"></div><div class="bar-label">MPI 12</div></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">NET WORTH TREND (12M)</div>
+          <div class="chart-area">
+            <div class="bar-g"><div class="bar-fill" style="width:18px;height:55%;background:rgba(0,229,255,.4)"></div><div class="bar-label">Q1</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:18px;height:48%;background:rgba(0,229,255,.4)"></div><div class="bar-label">Q2</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:18px;height:72%;background:rgba(0,229,255,.6)"></div><div class="bar-label">Q3</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:18px;height:88%;background:var(--teal)"></div><div class="bar-label">Q4</div></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">COMPANY EXPOSURE</div>
+          <div class="chart-area">
+            <div class="bar-g"><div class="bar-fill" style="width:20px;height:78%;background:#e53935"></div><div class="bar-label">TESLA</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:20px;height:65%;background:rgba(255,255,255,.3)"></div><div class="bar-label">SPACEX</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:20px;height:42%;background:rgba(255,255,255,.2)"></div><div class="bar-label">X</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:20px;height:28%;background:var(--purple)"></div><div class="bar-label">XAI</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:20px;height:22%;background:var(--blue)"></div><div class="bar-label">DOGE</div></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">EDGE RISK SCORE TREND</div>
+          <div class="chart-area">
+            <div class="bar-g"><div class="bar-fill" style="width:18px;height:42%;background:rgba(245,166,35,.5)"></div><div class="bar-label">2023</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:18px;height:58%;background:rgba(245,166,35,.65)"></div><div class="bar-label">2024</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:18px;height:74%;background:var(--gold)"></div><div class="bar-label">2025</div></div>
+            <div class="bar-g"><div class="bar-fill" style="width:18px;height:81%;background:#e53935"></div><div class="bar-label">NOW</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTELLIGENCE MODE -->
+    <div id="mode-intel" class="canvas-solid" style="opacity:0;pointer-events:none">
+      <div class="intel-content">
+        <div style="font-family:var(--mono);font-size:7px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;flex-shrink:0">Intelligence Feed · Elon Musk</div>
+        <div class="intel-card">
+          <div class="intel-card-head">
+            <span class="intel-tag" style="background:#e5393512;color:#e53935;border:1px solid #e5393530">CRITICAL</span>
+            <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">2h ago · Reuters</span>
+          </div>
+          <div class="intel-title">SEC investigates X's financing structure — Musk regulatory risk score elevated to 82/100</div>
+          <div class="intel-body">The Securities and Exchange Commission has opened a formal investigation into whether X Corp's 2022 financing violated securities disclosure requirements. Tesla shares fell 3.2% on the news, reflecting cross-company regulatory contagion risk.</div>
+          <div class="intel-meta">EdgeRiskScore updated · Tesla-Musk: +0.3 | X-Musk: +0.5 · China supply chain signal: UNCHANGED</div>
+        </div>
+        <div class="intel-card">
+          <div class="intel-card-head">
+            <span class="intel-tag" style="background:#00e5ff12;color:var(--teal);border:1px solid #00e5ff30">TECH</span>
+            <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">6h ago · FT</span>
+          </div>
+          <div class="intel-title">SpaceX Starlink receives Pentagon contract for military communications — $1.8B 5-year deal</div>
+          <div class="intel-body">The contract elevates SpaceX's Pentagon relationship to a strategic infrastructure provider. IPM EdgeType: Supplies → US Military. EdgeStrength update pending. SPI score increase of +3 projected.</div>
+          <div class="intel-meta">Pentagon edge update queued · EdgeStrength: 78 → ~81 · SPI impact: +3</div>
+        </div>
+        <div class="intel-card">
+          <div class="intel-card-head">
+            <span class="intel-tag" style="background:#f5a62312;color:var(--gold);border:1px solid #f5a62330">CHINA</span>
+            <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">1d ago · Bloomberg</span>
+          </div>
+          <div class="intel-title">Tesla Shanghai Q1 deliveries miss by 8% — tariff escalation pressure noted</div>
+          <div class="intel-body">Tesla's Shanghai Gigafactory produced 580K units in Q1, below 630K target. Analysts cite supply chain stress from US-China tariff escalation. Musk's Trump relationship complicates diplomatic resolution. China vulnerability score: 71/100.</div>
+          <div class="intel-meta">CPI score review · China exposure vulnerability: ELEVATED</div>
+        </div>
+        <div class="intel-card">
+          <div class="intel-card-head">
+            <span class="intel-tag" style="background:#a855f712;color:var(--purple);border:1px solid #a855f730">AI</span>
+            <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">2d ago · TechCrunch</span>
+          </div>
+          <div class="intel-title">xAI launches Grok-3 — direct GPT-4 competitor on X platform with 650M daily users</div>
+          <div class="intel-body">xAI's Grok-3 deployment across X represents a vertical integration of AI capability with distribution at scale. IPI impact positive. OpenAI divergence edge: Musk vs. Altman ideological conflict now scored at 7.2/10.</div>
+          <div class="intel-meta">IPI update: +2 · xAI-OpenAI divergence edge created</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3D MODE -->
+    <div id="mode-3d" class="canvas-solid" style="opacity:0;pointer-events:none">
+      <div style="text-align:center">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:1.5px;margin-bottom:12px">3D NETWORK GRAPH</div>
+        <div style="width:280px;height:280px;border-radius:50%;border:1px solid rgba(0,229,255,.15);display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative;background:radial-gradient(circle at 40% 35%,rgba(0,229,255,.05),transparent)">
+          <div style="width:40px;height:40px;border-radius:50%;background:#0d1525;color:var(--teal);border:2.5px solid #00e5ff80;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700">EM</div>
+          <div style="position:absolute;top:30px;left:50%;transform:translateX(-50%);width:28px;height:28px;border-radius:50%;background:#201010;color:#e53935;border:2px solid #e5393550;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px">DT</div>
+          <div style="position:absolute;bottom:40px;left:30px;width:26px;height:26px;border-radius:4px;background:#1a1010;color:#e53935;border:1px solid #e5393540;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px">T</div>
+          <div style="position:absolute;bottom:40px;right:30px;width:26px;height:26px;border-radius:4px;background:#101020;color:var(--purple);border:1px solid #a855f740;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px">SX</div>
+          <div style="position:absolute;top:50%;left:20px;transform:translateY(-50%);width:24px;height:24px;border-radius:4px;background:#101010;color:var(--text2);border:1px solid #ffffff20;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px">X</div>
+          <div style="position:absolute;top:50%;right:20px;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:#1a1520;color:var(--purple);border:2px solid #a855f750;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px">XI</div>
+          <svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 280 280">
+            <line x1="140" y1="140" x2="140" y2="30" stroke="rgba(229,57,53,.3)" stroke-width="1" stroke-dasharray="4,3"/>
+            <line x1="140" y1="140" x2="56" y2="240" stroke="rgba(229,57,53,.3)" stroke-width="1" stroke-dasharray="4,3"/>
+            <line x1="140" y1="140" x2="224" y2="240" stroke="rgba(168,85,247,.3)" stroke-width="1" stroke-dasharray="4,3"/>
+            <line x1="140" y1="140" x2="20" y2="140" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-dasharray="4,3"/>
+            <line x1="140" y1="140" x2="260" y2="140" stroke="rgba(168,85,247,.25)" stroke-width="1" stroke-dasharray="4,3"/>
+          </svg>
+        </div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--text3);margin-top:14px">24 nodes · 3D view powered by Three.js in React</div>
+      </div>
+    </div>
+
+    <div class="globe-nav" id="globe-nav">
+      <div class="gnav-btn active">⚡ EVENTS</div>
+      <div class="gnav-btn">⏱ TIMELINES</div>
+      <div class="gnav-btn">🗺 POWER MAP</div>
+      <div class="gnav-btn">⚓ CHOKEPOINTS</div>
+    </div>
+
+    <div class="canvas-sofia" id="canvas-sofia">
+      <span class="cs-lbl">✦</span>
+      <span class="cs-txt">Musk's tech-coercive archetype creates a unique dual-power pattern: FPI 88 through company portfolio, CPI 71 through platform narrative control. The China supply chain vulnerability (71) combined with active SEC investigation elevates cross-company risk. SpaceX Starlink's Pentagon contract (+$1.8B) is the dominant positive signal this week.</span>
+    </div>
+  </div>
+
+  <!-- ── RIGHT COLUMN ── -->
+  <div class="right-col">
+    <div class="rc-panel-tabs">
+      <div class="rct active">DISPLAY</div>
+      <div class="rct">PORTFOLIO</div>
+      <div class="rct">SHERMAN</div>
+    </div>
+    <div class="right-col-inner">
+
+      <div class="rc-section">
+        <div class="rc-title">Map Layer Toggles</div>
+        <div class="toggle-row"><span class="tog-lbl">Person nodes</span><div class="toggle on"><div class="toggle-knob"></div></div></div>
+        <div class="toggle-row"><span class="tog-lbl">Company nodes</span><div class="toggle on"><div class="toggle-knob"></div></div></div>
+        <div class="toggle-row"><span class="tog-lbl">Country nodes</span><div class="toggle on"><div class="toggle-knob"></div></div></div>
+        <div class="toggle-row"><span class="tog-lbl">Relation arcs</span><div class="toggle on"><div class="toggle-knob"></div></div></div>
+        <div class="toggle-row"><span class="tog-lbl">Chokepoints</span><div class="toggle off"><div class="toggle-knob"></div></div></div>
+        <div class="toggle-row"><span class="tog-lbl">Ideology halos</span><div class="toggle off"><div class="toggle-knob"></div></div></div>
+        <div class="toggle-row"><span class="tog-lbl">Risk overlay</span><div class="toggle off"><div class="toggle-knob"></div></div></div>
+      </div>
+
+      <div class="rc-section">
+        <div class="rc-title">Portfolio Incidence</div>
+        <div class="pi-row"><span class="pi-label">GCRI impact</span><span class="pi-val" style="color:var(--red)">HIGH</span></div>
+        <div class="pi-row"><span class="pi-label">DSI sensitivity</span><span class="pi-val" style="color:var(--gold)">MED</span></div>
+        <div class="pi-row"><span class="pi-label">Tech sector exposure</span><span class="pi-val" style="color:var(--teal)">88%</span></div>
+        <div style="margin-top:8px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">Tesla (TSLA)</span>
+            <span style="font-family:var(--mono);font-size:8px;font-weight:700;color:#e53935">↓3.2%</span>
+          </div>
+          <div class="pi-bar"><div class="pi-bar-fill" style="width:68%;background:rgba(229,57,53,.5)"></div></div>
+        </div>
+        <div style="margin-top:6px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">NVIDIA (NVDA)</span>
+            <span style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--green)">↑1.8%</span>
+          </div>
+          <div class="pi-bar"><div class="pi-bar-fill" style="width:44%;background:rgba(0,212,170,.5)"></div></div>
+        </div>
+      </div>
+
+      <div class="rc-section">
+        <div class="rc-title">Consensus · Analysts</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="padding:8px 10px;background:var(--bgCard);border:1px solid var(--border);border-radius:5px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-family:var(--mono);font-size:7px;color:var(--text3)">@quant_atlas</span>
+              <span style="font-family:var(--mono);font-size:7px;padding:1px 5px;border-radius:2px;background:#e5393512;color:#e53935;border:1px solid #e5393530">BEARISH</span>
+            </div>
+            <div style="font-family:var(--sans);font-size:9px;color:var(--text2);line-height:1.4">China tariff risk underpriced in Tesla. SEC + China = double vulnerability. Reducing exposure.</div>
+          </div>
+          <div style="padding:8px 10px;background:var(--bgCard);border:1px solid var(--border);border-radius:5px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-family:var(--mono);font-size:7px;color:var(--text3)">@macro_atlas</span>
+              <span style="font-family:var(--mono);font-size:7px;padding:1px 5px;border-radius:2px;background:#00d4aa12;color:var(--green);border:1px solid #00d4aa30">BULLISH</span>
+            </div>
+            <div style="font-family:var(--sans);font-size:9px;color:var(--text2);line-height:1.4">SpaceX Pentagon contract is the signal. Defense + AI + Starlink convergence overrides short-term China noise.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rc-section">
+        <div class="rc-title">Sherman Signal</div>
+        <div class="signal-card">
+          <div class="signal-dir" style="color:var(--gold)">➡ WATCH · EUR/USD</div>
+          <div class="signal-basis">Musk–Trump policy alignment + SEC news → USD uncertainty signal. Powell divergence +22.4 still active. Monitor for breakout above 1.095.</div>
+          <div class="signal-meta">
+            <span style="background:#f5a62312;color:var(--gold);border:1px solid #f5a62330">W% 58</span>
+            <span style="background:rgba(255,255,255,.05);color:var(--text3);border:1px solid var(--border)">E=+0.34R</span>
+            <span style="background:rgba(255,255,255,.05);color:var(--text3);border:1px solid var(--border)">PRIORITY 2</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- BOT BAR -->
+<div class="botbar">
+  <div style="display:flex;gap:14px">
+    <span class="bot-stat">VIEWING <span style="color:var(--teal)">ELON MUSK</span></span>
+    <span class="bot-stat">EDGES <span>24</span></span>
+    <span class="bot-stat">CANVAS <span id="mode-label">2D MAP</span></span>
+  </div>
+  <div style="display:flex;gap:6px">
+    <span class="bot-badge" style="background:#00d4aa12;color:var(--green);border:1px solid #00d4aa30">● LIVE</span>
+    <span class="bot-badge" style="background:#00e5ff12;color:var(--teal);border:1px solid #00e5ff30">COERCIVE · #5 GLOBAL</span>
+  </div>
+</div>
+
+<script>
+const modes = {
+  map:    { el: 'mode-map',    label: '2D MAP',       showNav: true,  showSofia: true  },
+  '3d':  { el: 'mode-3d',     label: '3D GRAPH',     showNav: false, showSofia: false },
+  charts:{ el: 'mode-charts', label: 'CHARTS',        showNav: true,  showSofia: true  },
+  intel: { el: 'mode-intel',  label: 'INTELLIGENCE', showNav: false, showSofia: false },
+}
+let current = 'map'
+
+function setMode(m) {
+  const cur = modes[current]
+  const curEl = document.getElementById(cur.el)
+  curEl.style.opacity = '0'
+  curEl.style.pointerEvents = 'none'
+  document.querySelectorAll('.ctab').forEach(t => t.classList.remove('active'))
+  current = m
+  const next = modes[m]
+  const nextEl = document.getElementById(next.el)
+  nextEl.style.opacity = '1'
+  nextEl.style.pointerEvents = 'all'
+  document.querySelector(`[data-mode="${m}"]`).classList.add('active')
+  document.getElementById('globe-nav').style.opacity = next.showNav ? '1' : '0'
+  document.getElementById('canvas-sofia').style.opacity = next.showSofia ? '1' : '0'
+  document.getElementById('mode-label').textContent = next.label
+}
+
+document.querySelectorAll('.gnav-btn').forEach(b => {
+  b.addEventListener('click', function() {
+    document.querySelectorAll('.gnav-btn').forEach(x => x.classList.remove('active'))
+    this.classList.add('active')
+  })
+})
+
+document.querySelectorAll('.toggle').forEach(t => {
+  t.addEventListener('click', function() {
+    this.classList.toggle('on')
+    this.classList.toggle('off')
+  })
+})
+
+document.querySelectorAll('.lc-tab').forEach(t => {
+  t.addEventListener('click', function() {
+    document.querySelectorAll('.lc-tab').forEach(x => x.classList.remove('active'))
+    this.classList.add('active')
+  })
+})
+
+document.querySelectorAll('.rct').forEach(t => {
+  t.addEventListener('click', function() {
+    document.querySelectorAll('.rct').forEach(x => x.classList.remove('active'))
+    this.classList.add('active')
+  })
+})
+</script>
+</body>
+</html>

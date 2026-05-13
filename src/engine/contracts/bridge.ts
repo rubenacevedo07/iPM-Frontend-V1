@@ -33,12 +33,15 @@ export type BridgeCommand =
   | { type: 'CMD.SET_VIEW';               view: AtlasView }
   | { type: 'CMD.SET_FOCUS';              target: EntityRef | null }
   | { type: 'CMD.SET_ENTITIES';           data: EngineEntityData }
-  | { type: 'CMD.SET_ARCS';              data: EngineArcData }
-  | { type: 'CMD.SET_GRAPH';             data: GraphEngineData }
-  | { type: 'CMD.SET_COMPANY_SELECTION'; data: EngineCompanySelectionData }
+  | { type: 'CMD.SET_ARCS';               data: EngineArcData }
+  | { type: 'CMD.SET_GRAPH';              data: GraphEngineData }
+  | { type: 'CMD.SET_COMPANY_SELECTION';  data: EngineCompanySelectionData }
   | { type: 'CMD.SUSPEND' }
   | { type: 'CMD.RESUME' }
-  | { type: 'CMD.DISPOSE' };
+  | { type: 'CMD.DISPOSE' }
+  | { type: 'CMD.SET_POWERMAP'; powermapId: string | null }
+  | { type: 'CMD.FLY_TO'; longitude: number; latitude: number; zoom?: number; duration?: number }
+  | { type: 'CMD.SET_ROTATION'; enabled: boolean };
 
 /**
  * Bridge instance attached to a single engine slot.

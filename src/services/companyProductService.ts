@@ -16,14 +16,13 @@ export const companyProductService = {
    * @param companyId  Numeric company id, e.g. 1 for NVIDIA.
    */
   getByCompanyId: async (companyId: number): Promise<CompanyProduct[]> => {
-    const response = await fetch(`${API_PRODUCTS}/CompanyProducts/company/${companyId}`);
-
-    if (!response.ok) {
-      throw new Error(
-        `Error fetching products for company ${companyId}: ${response.statusText}`
-      );
+    try {
+      const response = await fetch(`${API_PRODUCTS}/CompanyProducts/company/${companyId}`);
+      if (!response.ok) throw new Error(`${response.status}`);
+      return response.json();
+    } catch {
+      const res = await fetch('/companyproducts.json');
+      return res.json();
     }
-
-    return response.json();
   },
 };

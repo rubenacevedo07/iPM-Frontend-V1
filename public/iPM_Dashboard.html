@@ -1,0 +1,2644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPM · Intelligence Power Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #030710;
+  --bg-panel:    rgba(8,14,22,0.82);
+  --border:      rgba(255,255,255,0.08);
+  --border-hi:   rgba(255,255,255,0.14);
+  --cyan:        #00e5ff;
+  --gold:        #d4a847;
+  --red:         #e53935;
+  --blue:        #3b8bd4;
+  --green:       #00e676;
+  --purple:      #8B5CF6;
+  --text:        #ffffff;
+  --text-2:      rgba(255,255,255,0.72);
+  --text-muted:  rgba(255,255,255,0.38);
+  --rajdhani:    'Rajdhani', sans-serif;
+  --dm:          'DM Sans', sans-serif;
+  --manrope:     'Manrope', sans-serif;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow-x: hidden;
+  background: var(--bg);
+  font-family: var(--dm);
+  color: var(--text);
+}
+
+/* ── NOISE OVERLAY ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999; opacity: 0.5;
+}
+
+/* ── HEADER ── */
+#header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  background: rgba(5,10,18,0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  z-index: 500;
+  gap: 0;
+}
+
+/* Burger */
+#burger {
+  display: flex; flex-direction: column; gap: 5px;
+  cursor: pointer; padding: 4px; opacity: 0.75;
+  transition: opacity 0.2s; flex-shrink: 0;
+}
+#burger:hover { opacity: 1; }
+#burger span {
+  display: block; width: 20px; height: 1.5px;
+  background: var(--text); border-radius: 1px;
+}
+
+/* Logo */
+#logo {
+  margin-left: 16px;
+  font-family: var(--rajdhani);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  user-select: none;
+}
+#logo-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+  animation: logoPulse 2.4s ease-in-out infinite;
+}
+@keyframes logoPulse {
+  0%,100%{ opacity:1; transform:scale(1); }
+  50%{ opacity:0.4; transform:scale(0.65); }
+}
+
+/* Search — centered */
+#search-center {
+  position: absolute;
+  left: 50%; transform: translateX(-50%);
+  width: 400px;
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.11);
+  border-radius: 20px;
+  padding: 0 14px; height: 36px;
+  transition: border-color 0.2s, background 0.2s;
+}
+#search-center:focus-within {
+  border-color: rgba(0,229,255,0.3);
+  background: rgba(255,255,255,0.07);
+}
+#search-input {
+  background: none; border: none; outline: none;
+  color: var(--text);
+  font-family: var(--dm); font-size: 14px; font-weight: 400;
+  width: 100%; letter-spacing: 0.02em;
+}
+#search-input::placeholder { color: rgba(255,255,255,0.55); }
+.search-ico {
+  color: rgba(255,255,255,0.55);
+  font-size: 14px; flex-shrink: 0;
+}
+
+/* Header right */
+#header-right {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 18px;
+}
+.hdr-icon {
+  width: 20px; height: 20px;
+  color: var(--text-2);
+  cursor: pointer; opacity: 0.7;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+.hdr-icon:hover { opacity: 1; }
+
+/* Notification bell wrapper */
+.bell-wrap {
+  position: relative; display: flex; align-items: center;
+}
+.bell-badge {
+  position: absolute; top: -4px; right: -4px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--red);
+  border: 1.5px solid rgba(5,10,18,1);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--manrope);
+  font-size: 8px; font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+/* Avatar */
+#avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: rgba(0,229,255,0.1);
+  border: 1px solid rgba(0,229,255,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--manrope);
+  font-size: 11px; font-weight: 700;
+  color: var(--cyan);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+#avatar:hover { border-color: rgba(0,229,255,0.5); }
+
+/* ── MAIN LAYOUT ── */
+#main {
+  position: relative;
+  margin-top: 56px;
+  left: 0; right: 0;
+  height: calc(100vh - 56px);
+  display: flex;
+}
+
+/* Deep space background */
+#space-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 100% 100% at 60% 50%, #07152a 0%, #040c1a 45%, #030710 100%);
+  z-index: 0;
+}
+
+/* Star field */
+#stars {
+  position: absolute; inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── LEFT COLUMN ── */
+#left-col {
+  position: sticky;
+  top: 56px;
+  align-self: flex-start;
+  z-index: 10;
+  width: 272px;
+  flex-shrink: 0;
+  height: calc(100vh - 56px);
+  transition: width 0.25s cubic-bezier(0.4,0,0.2,1);
+  background: rgba(5,10,18,0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Column header */
+.col-header {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.col-title {
+  font-family: var(--manrope);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text);
+}
+.col-live {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--rajdhani);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--green);
+}
+.col-live::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: livePulse 1.8s ease-in-out infinite;
+}
+
+/* Feed items */
+.feed-item {
+  padding: 11px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+.feed-item:hover { background: rgba(255,255,255,0.03); }
+
+.feed-av {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--manrope);
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+  position: relative;
+}
+.av-p  { background: rgba(229,57,53,0.14);  border: 1px solid rgba(229,57,53,0.25);  color: var(--red); }
+.av-c  { background: rgba(212,168,71,0.12);  border: 1px solid rgba(212,168,71,0.22);  color: var(--gold); }
+.av-co { background: rgba(59,139,212,0.12);  border: 1px solid rgba(59,139,212,0.22);  color: var(--blue); }
+.av-g  { background: rgba(0,230,118,0.1);    border: 1px solid rgba(0,230,118,0.2);    color: var(--green); }
+
+.feed-dot {
+  position: absolute;
+  top: 0; right: 0;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 1.5px solid rgba(5,10,18,1);
+}
+.feed-dot.off { background: rgba(255,255,255,0.2); }
+
+.feed-body { flex: 1; min-width: 0; }
+.feed-top {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 2px;
+}
+.feed-name {
+  font-family: var(--dm);
+  font-size: 13px; font-weight: 500;
+  color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.feed-tag {
+  font-family: var(--manrope);
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 1px 5px; border-radius: 3px;
+  flex-shrink: 0;
+}
+.tag-geo { background: rgba(212,168,71,0.14); color: var(--gold); border: 1px solid rgba(212,168,71,0.24); }
+.tag-fin { background: rgba(59,139,212,0.14); color: var(--blue); border: 1px solid rgba(59,139,212,0.24); }
+.tag-sec { background: rgba(229,57,53,0.14);  color: var(--red);  border: 1px solid rgba(229,57,53,0.24); }
+
+.feed-headline {
+  font-family: var(--dm);
+  font-size: 12px; font-weight: 300;
+  color: var(--text-2);
+  line-height: 1.45;
+  margin-bottom: 3px;
+}
+.feed-time {
+  font-family: var(--dm);
+  font-size: 11px; font-weight: 300;
+  color: var(--text-muted);
+}
+
+/* Divider with label */
+.col-divider {
+  padding: 10px 16px 6px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.col-divider-label {
+  font-family: var(--rajdhani);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.col-divider-count {
+  font-family: var(--rajdhani);
+  font-size: 10px; font-weight: 600;
+  color: var(--cyan);
+}
+
+/* Watchlist entity rows */
+.entity-row {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+.entity-row:hover { background: rgba(255,255,255,0.03); }
+
+.entity-av {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--manrope);
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+}
+.entity-info { flex: 1; min-width: 0; }
+.entity-name {
+  font-family: var(--manrope);
+  font-size: 13px; font-weight: 600;
+  color: var(--text); line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.entity-sub {
+  font-family: var(--dm);
+  font-size: 11px; font-weight: 300;
+  color: var(--text-muted); margin-top: 1px;
+}
+.entity-score {
+  font-family: var(--rajdhani);
+  font-size: 16px; font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Risk micro-bar */
+.risk-micro {
+  margin-top: 6px;
+  height: 2px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.risk-fill { height: 100%; border-radius: 1px; }
+.rf-red  { background: var(--red); }
+.rf-gold { background: var(--gold); }
+.rf-blue { background: var(--blue); }
+.rf-cyan { background: var(--cyan); }
+
+/* ── CENTER AREA ── */
+#center {
+  position: sticky;
+  top: 56px;
+  align-self: flex-start;
+  z-index: 10;
+  flex: 1;
+  height: calc(100vh - 56px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Mode buttons row */
+#mode-bar {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  padding: 14px 0 0;
+  z-index: 20;
+  position: relative;
+}
+
+.mode-btn {
+  font-family: var(--rajdhani);
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-2);
+  transition: all 0.18s;
+  white-space: nowrap;
+  user-select: none;
+}
+.mode-btn:hover {
+  color: var(--text);
+  border-color: rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.06);
+}
+.mode-btn.active {
+  color: var(--cyan);
+  border-color: rgba(0,229,255,0.3);
+  background: rgba(0,229,255,0.06);
+}
+
+/* Globe container */
+#globe-wrap {
+  position: relative;
+  z-index: 10;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+
+/* Outer glow ring */
+#globe-wrap::before {
+  content: '';
+  position: absolute;
+  width: min(72vh, 55vw); height: min(72vh, 55vw);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%,
+    rgba(0,229,255,0.06) 0%,
+    rgba(0,229,255,0.02) 50%,
+    transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Canvas element */
+#globe-canvas {
+  border-radius: 50%;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+/* GCRI badge — top right of globe */
+#gcri-badge {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: rgba(8,14,22,0.9);
+  border: 1px solid rgba(229,57,53,0.3);
+  border-radius: 6px;
+  padding: 8px 14px;
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+  animation: badgeFadeIn 1.5s 1s forwards;
+  opacity: 0;
+  z-index: 20;
+}
+.badge-label {
+  font-family: var(--rajdhani);
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+.badge-value {
+  font-family: var(--manrope);
+  font-size: 22px; font-weight: 800;
+  color: var(--red); line-height: 1;
+}
+.badge-sub {
+  font-family: var(--rajdhani);
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(229,57,53,0.7);
+}
+
+/* Entity count — bottom left of globe */
+#entity-count {
+  position: absolute;
+  bottom: 12px; left: 12px;
+  background: rgba(8,14,22,0.9);
+  border: 1px solid rgba(0,229,255,0.2);
+  border-radius: 6px;
+  padding: 8px 14px;
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+  animation: badgeFadeIn 1.5s 1.3s forwards;
+  opacity: 0;
+  z-index: 20;
+}
+
+/* Live indicator — top left */
+#live-indicator {
+  position: absolute;
+  top: 12px; left: 12px;
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(8,14,22,0.88);
+  border: 1px solid rgba(0,230,118,0.2);
+  border-radius: 20px;
+  padding: 5px 12px;
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+  animation: badgeFadeIn 1.5s 1.6s forwards;
+  opacity: 0;
+  z-index: 20;
+}
+.live-dot-pulse {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: livePulse 1.8s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%,100%{ opacity:1; transform:scale(1); }
+  50%{ opacity:0.3; transform:scale(0.7); }
+}
+.live-text {
+  font-family: var(--rajdhani);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--green);
+}
+
+@keyframes badgeFadeIn {
+  from { opacity:0; transform: translateY(6px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* ── BELOW FOLD ── */
+#below-fold {
+  background: var(--bg);
+  padding: 0 24px 0;
+  position: relative;
+  z-index: 5;
+  border-top: 1px solid rgba(0,229,255,0.12);
+}
+
+.bf-section-header {
+  padding: 48px 0 28px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+.bf-kicker {
+  font-family: var(--rajdhani); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--cyan); display: block; margin-bottom: 8px;
+}
+.bf-h2 {
+  font-family: var(--manrope); font-size: 28px; font-weight: 800;
+  color: var(--text); letter-spacing: -0.02em; line-height: 1;
+}
+.bf-section-meta {
+  font-family: var(--rajdhani); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Grid layouts */
+.bf-grid-3 {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 16px; margin-bottom: 16px;
+}
+.bf-grid-2 {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 16px; margin-bottom: 16px;
+}
+
+/* Card */
+.bf-card, .bf-full-card {
+  background: rgba(8,14,22,0.7);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  overflow: hidden;
+}
+.bf-full-card { margin-bottom: 16px; }
+.bf-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.bf-card-title {
+  font-family: var(--manrope); font-size: 13px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--text);
+}
+.bf-card-badge {
+  font-family: var(--rajdhani); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 3px;
+}
+.badge-cyan   { background: rgba(0,229,255,0.07);  color: var(--cyan);   border: 1px solid rgba(0,229,255,0.16); }
+.badge-red    { background: rgba(229,57,53,0.07);  color: var(--red);    border: 1px solid rgba(229,57,53,0.18); }
+.badge-gold   { background: rgba(212,168,71,0.07); color: var(--gold);   border: 1px solid rgba(212,168,71,0.18); }
+.badge-purple { background: rgba(139,92,246,0.07); color: var(--purple); border: 1px solid rgba(139,92,246,0.18); }
+.badge-blue   { background: rgba(59,139,212,0.07); color: var(--blue);   border: 1px solid rgba(59,139,212,0.18); }
+
+/* Map nodes */
+.bf-map-nodes { display: flex; flex-direction: column; gap: 6px; }
+.bf-node-row { display: flex; align-items: center; gap: 10px; }
+.bf-node-av {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--manrope); font-size: 10px; font-weight: 700; flex-shrink: 0;
+}
+.bf-node-info { flex: 1; min-width: 0; }
+.bf-node-name { font-family: var(--dm); font-size: 12px; font-weight: 500; color: var(--text); }
+.bf-node-sub { font-family: var(--dm); font-size: 10px; font-weight: 300; color: var(--text-muted); }
+.bf-node-score { font-family: var(--manrope); font-size: 16px; font-weight: 800; flex-shrink: 0; }
+.bf-node-edge {
+  display: flex; align-items: center; gap: 8px;
+  padding: 2px 0 2px 38px;
+}
+.bf-edge-line {
+  width: 16px; height: 1px; background: rgba(255,255,255,0.15); flex-shrink: 0;
+}
+.bf-edge-label { font-family: var(--dm); font-size: 10px; font-weight: 300; color: var(--text-muted); flex: 1; }
+.bf-edge-score { font-family: var(--rajdhani); font-size: 10px; font-weight: 600; color: var(--text-muted); flex-shrink: 0; }
+
+/* Events */
+.bf-events { display: flex; flex-direction: column; gap: 12px; }
+.bf-event { padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.bf-event:last-child { border-bottom: none; padding-bottom: 0; }
+.bf-event-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.bf-event-entity { font-family: var(--dm); font-size: 11px; font-weight: 600; color: var(--cyan); }
+.bf-event-time { font-family: var(--dm); font-size: 10px; color: var(--text-muted); }
+.bf-event-headline { font-family: var(--dm); font-size: 12px; font-weight: 300; color: var(--text-2); line-height: 1.5; margin-bottom: 6px; }
+.bf-event-tags { display: flex; align-items: center; gap: 8px; }
+.bf-tag {
+  font-family: var(--manrope); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 1px 6px; border-radius: 3px;
+}
+.bf-impact { font-family: var(--rajdhani); font-size: 11px; font-weight: 700; color: var(--text-muted); }
+
+/* Timelines deep */
+.bf-timelines { display: flex; flex-direction: column; gap: 14px; }
+.bf-tl-item { padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.bf-tl-item:last-child { border-bottom: none; }
+.bf-tl-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.bf-tl-name { font-family: var(--dm); font-size: 12px; font-weight: 500; color: var(--text); }
+.bf-tl-prob { font-family: var(--manrope); font-size: 18px; font-weight: 800; line-height: 1; }
+.bf-tl-branches { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; }
+.bf-branch { display: flex; align-items: center; justify-content: space-between; }
+.bf-branch-label { font-family: var(--dm); font-size: 11px; font-weight: 300; color: var(--text-muted); }
+.bf-branch-prob { font-family: var(--rajdhani); font-size: 11px; font-weight: 700; color: var(--text-muted); }
+.active-branch .bf-branch-label, .active-branch .bf-branch-prob { color: inherit; }
+.bf-tl-bar { height: 2px; background: rgba(255,255,255,0.07); border-radius: 1px; overflow: hidden; margin-bottom: 5px; }
+.bf-tl-fill { height: 100%; border-radius: 1px; }
+.bf-tl-meta { display: flex; justify-content: space-between; }
+.bf-tl-meta span { font-family: var(--dm); font-size: 10px; font-weight: 300; color: var(--text-muted); }
+
+/* Oracle table */
+.bf-oracle-table { display: flex; flex-direction: column; }
+.bf-oracle-row {
+  display: grid;
+  grid-template-columns: 2fr 80px 80px 80px 100px 1fr;
+  gap: 12px; align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.bf-oracle-row:last-child { border-bottom: none; }
+.bf-oracle-head .bf-oc {
+  font-family: var(--rajdhani); font-size: 9px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted);
+}
+.bf-oc { font-family: var(--dm); font-size: 12px; font-weight: 400; color: var(--text-2); }
+.oc-signal { font-weight: 500; color: var(--text); }
+.oc-market, .oc-ai, .oc-gap { font-family: var(--rajdhani); font-size: 13px; font-weight: 700; }
+.bf-dir-badge {
+  font-family: var(--rajdhani); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 3px; border: 1px solid;
+}
+.bf-conf-bar { height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+.bf-conf-fill { height: 100%; border-radius: 2px; }
+
+/* Power matrix */
+.bf-matrix { display: flex; flex-direction: column; gap: 0; }
+.bf-matrix-head, .bf-matrix-row {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(6, 40px) 50px;
+  gap: 4px; align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.bf-matrix-head .bf-mx {
+  font-family: var(--rajdhani); font-size: 9px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);
+}
+.bf-mx { font-family: var(--dm); font-size: 11px; color: var(--text-2); }
+.mx-name { font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mx-axis, .mx-val { text-align: center; font-family: var(--rajdhani); font-size: 12px; font-weight: 600; }
+.mx-total { text-align: right; font-family: var(--rajdhani); font-size: 9px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.1em; }
+.mx-total-val { text-align: right; font-family: var(--manrope); font-size: 15px; font-weight: 800; }
+
+/* Ideology */
+.bf-ideology { display: flex; flex-direction: column; gap: 20px; }
+.bf-ideo-person {}
+.bf-ideo-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.bf-ideo-axes { display: flex; flex-direction: column; gap: 6px; }
+.bf-axis-row { display: flex; align-items: center; gap: 8px; }
+.bf-axis-label { font-family: var(--rajdhani); font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); width: 72px; flex-shrink: 0; }
+.bf-axis-bar, .bf-axis-bar-neg { flex: 1; height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+.bf-axis-fill, .bf-axis-fill-neg { height: 100%; border-radius: 2px; }
+.bf-axis-val { font-family: var(--rajdhani); font-size: 11px; font-weight: 700; color: var(--text-2); width: 30px; text-align: right; flex-shrink: 0; }
+
+
+/* ── MAP PANEL (right col preset view) ── */
+#map-panel {
+  display: none;
+  flex-direction: column;
+  position: fixed;
+  top: 56px;
+  left: 272px;
+  width: 280px;
+  height: calc(100vh - 56px);
+  background: rgba(5,10,18,0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(0,229,255,0.15);
+  border-left: 1px solid var(--border);
+  z-index: 300;
+  overflow: hidden;
+  transition: opacity 0.25s ease;
+}
+#map-panel.active { display: flex; }
+
+.mp-header {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.mp-title {
+  display: flex; align-items: center; gap: 8px;
+}
+.mp-icon { font-size: 16px; line-height: 1; }
+.mp-name {
+  font-family: var(--manrope); font-size: 13px; font-weight: 700;
+  color: var(--text); letter-spacing: 0.04em;
+}
+.mp-close {
+  font-family: var(--rajdhani); font-size: 18px; font-weight: 400;
+  color: var(--text-muted); cursor: pointer; line-height: 1;
+  transition: color 0.15s; padding: 2px 4px;
+}
+.mp-close:hover { color: var(--text); }
+
+.mp-section-label {
+  padding: 10px 16px 5px;
+  font-family: var(--rajdhani); font-size: 9px; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.mp-entity-list {
+  flex: 1; overflow-y: auto; scrollbar-width: none;
+}
+.mp-entity-list::-webkit-scrollbar { display: none; }
+
+.mp-entity {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer; transition: background 0.15s;
+}
+.mp-entity:hover { background: rgba(255,255,255,0.03); }
+
+.mp-entity-top {
+  display: flex; align-items: center; gap: 9px; margin-bottom: 6px;
+}
+.mp-av {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--manrope); font-size: 10px; font-weight: 700; flex-shrink: 0;
+}
+.mp-entity-info { flex: 1; min-width: 0; }
+.mp-entity-name {
+  font-family: var(--dm); font-size: 12px; font-weight: 500; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mp-entity-sub {
+  font-family: var(--dm); font-size: 10px; font-weight: 300; color: var(--text-muted);
+}
+.mp-entity-score {
+  font-family: var(--manrope); font-size: 16px; font-weight: 800; flex-shrink: 0;
+}
+
+.mp-relations {
+  display: flex; flex-direction: column; gap: 3px; padding-left: 37px;
+}
+.mp-rel {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--dm); font-size: 10px; font-weight: 300; color: var(--text-muted);
+}
+.mp-rel-arrow { color: rgba(255,255,255,0.2); flex-shrink: 0; }
+.mp-rel-target { color: var(--text-2); }
+.mp-rel-type {
+  font-family: var(--rajdhani); font-size: 8px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 1px 4px; border-radius: 2px; flex-shrink: 0;
+}
+.mp-rel-risk {
+  margin-left: auto; font-family: var(--rajdhani); font-size: 10px; font-weight: 700;
+  flex-shrink: 0;
+}
+
+.mp-footer {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex; gap: 8px;
+}
+.mp-action-btn {
+  flex: 1; font-family: var(--rajdhani); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 7px 0; border-radius: 4px; cursor: pointer;
+  text-align: center; transition: all 0.15s;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-2); background: rgba(255,255,255,0.03);
+}
+.mp-action-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); }
+.mp-action-btn.primary { color: var(--cyan); border-color: rgba(0,229,255,0.3); background: rgba(0,229,255,0.05); }
+.mp-action-btn.primary:hover { background: rgba(0,229,255,0.1); }
+
+/* ── RIGHT COLUMN ── */
+#right-col {
+  position: sticky;
+  top: 56px;
+  align-self: flex-start;
+  z-index: 10;
+  width: 260px;
+  flex-shrink: 0;
+  height: calc(100vh - 56px);
+  transition: width 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
+  background: rgba(5,10,18,0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Tab bar */
+#right-tabs {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.r-tab {
+  flex: 1;
+  padding: 13px 0;
+  text-align: center;
+  font-family: var(--rajdhani);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.18s;
+  user-select: none;
+}
+.r-tab:hover { color: var(--text-2); }
+.r-tab.active {
+  color: var(--cyan);
+  border-bottom-color: var(--cyan);
+}
+
+/* Tab panels */
+.r-panel { display: none; flex-direction: column; flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.r-panel::-webkit-scrollbar { display: none; }
+.r-panel.active { display: flex; }
+
+/* ── NETWORK TAB ── */
+.net-section-label {
+  padding: 10px 16px 6px;
+  font-family: var(--rajdhani);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  flex-shrink: 0;
+}
+
+.net-item {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+.net-item:hover { background: rgba(255,255,255,0.03); }
+
+.net-av {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--manrope); font-size: 10px; font-weight: 700;
+  flex-shrink: 0;
+}
+.net-info { flex: 1; min-width: 0; }
+.net-name {
+  font-family: var(--dm); font-size: 12px; font-weight: 500;
+  color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.net-rel {
+  font-family: var(--dm); font-size: 11px; font-weight: 300;
+  color: var(--text-muted); margin-top: 1px;
+}
+.net-badge {
+  font-family: var(--rajdhani); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 3px; flex-shrink: 0;
+}
+.nb-ally     { background: rgba(0,230,118,0.1);  color: var(--green); border: 1px solid rgba(0,230,118,0.2); }
+.nb-rival    { background: rgba(229,57,53,0.1);   color: var(--red);   border: 1px solid rgba(229,57,53,0.2); }
+.nb-partner  { background: rgba(59,139,212,0.1);  color: var(--blue);  border: 1px solid rgba(59,139,212,0.2); }
+.nb-controls { background: rgba(212,168,71,0.1);  color: var(--gold);  border: 1px solid rgba(212,168,71,0.2); }
+.nb-owns     { background: rgba(139,92,246,0.1);  color: var(--purple);border: 1px solid rgba(139,92,246,0.2); }
+
+/* ── TIMELINES TAB ── */
+.tl-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.tl-item:hover { background: rgba(255,255,255,0.03); }
+
+.tl-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 5px;
+}
+.tl-name {
+  font-family: var(--dm); font-size: 12px; font-weight: 500;
+  color: var(--text); line-height: 1.3;
+  flex: 1; padding-right: 8px;
+}
+.tl-prob {
+  font-family: var(--manrope); font-size: 16px; font-weight: 800;
+  flex-shrink: 0; line-height: 1;
+}
+.tl-branches {
+  display: flex; gap: 6px; margin-bottom: 6px;
+}
+.tl-branch {
+  font-family: var(--rajdhani); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 3px;
+}
+.br-a { background: rgba(0,229,255,0.08); color: var(--cyan); border: 1px solid rgba(0,229,255,0.18); }
+.br-b { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); }
+.tl-bar {
+  height: 2px; background: rgba(255,255,255,0.07); border-radius: 1px; overflow: hidden;
+}
+.tl-fill { height: 100%; border-radius: 1px; background: var(--cyan); }
+.tl-meta {
+  margin-top: 4px; display: flex; justify-content: space-between;
+}
+.tl-meta-txt {
+  font-family: var(--dm); font-size: 10px; font-weight: 300; color: var(--text-muted);
+}
+
+/* ── RISK TAB ── */
+.risk-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  flex-shrink: 0;
+}
+.risk-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.risk-entity {
+  font-family: var(--dm); font-size: 12px; font-weight: 500; color: var(--text);
+}
+.risk-score-val {
+  font-family: var(--manrope); font-size: 15px; font-weight: 800;
+}
+.risk-dimensions {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.risk-dim {
+  display: flex; align-items: center; gap: 8px;
+}
+.risk-dim-label {
+  font-family: var(--rajdhani); font-size: 9px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-muted); width: 52px; flex-shrink: 0;
+}
+.risk-dim-bar {
+  flex: 1; height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden;
+}
+.risk-dim-fill { height: 100%; border-radius: 2px; }
+.risk-dim-val {
+  font-family: var(--rajdhani); font-size: 10px; font-weight: 600;
+  color: var(--text-2); width: 24px; text-align: right; flex-shrink: 0;
+}
+
+/* ── LEFT PANELS ── */
+.lp-panel { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+.lp-panel.active { display: flex; }
+
+/* Preset grid — Power Map */
+.lp-preset-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; padding: 12px 14px; flex-shrink: 0;
+}
+.lp-preset {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px; padding: 10px 10px 8px;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.lp-preset:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.16); }
+.active-preset {
+  background: rgba(0,229,255,0.06) !important;
+  border-color: rgba(0,229,255,0.28) !important;
+}
+.lp-preset-icon { font-size: 14px; line-height: 1; margin-bottom: 2px; }
+.lp-preset-name {
+  font-family: var(--manrope); font-size: 11px; font-weight: 700;
+  color: var(--text); line-height: 1;
+}
+.lp-preset-sub {
+  font-family: var(--dm); font-size: 10px; font-weight: 300;
+  color: var(--text-muted); line-height: 1.3;
+}
+
+/* Entity list */
+.lp-section-label {
+  padding: 8px 14px 5px;
+  font-family: var(--rajdhani); font-size: 9px; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted);
+  flex-shrink: 0;
+}
+.lp-entity-list { flex: 1; overflow-y: auto; scrollbar-width: none; }
+.lp-entity-list::-webkit-scrollbar { display: none; }
+.lp-entity {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer; transition: background 0.15s;
+}
+.lp-entity:hover { background: rgba(255,255,255,0.03); }
+.lp-entity-av {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--manrope); font-size: 8px; font-weight: 700; flex-shrink: 0;
+}
+.lp-entity-name {
+  font-family: var(--dm); font-size: 12px; font-weight: 400; color: var(--text-2); flex: 1;
+}
+.lp-entity-remove {
+  font-family: var(--manrope); font-size: 14px; color: var(--text-muted);
+  cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+.lp-entity:hover .lp-entity-remove { opacity: 1; }
+
+/* Analyst panel */
+.lp-analyst-pick { display: flex; flex-direction: column; flex: 1; overflow-y: auto; scrollbar-width: none; }
+.lp-analyst-pick::-webkit-scrollbar { display: none; }
+.lp-analyst {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer; transition: background 0.15s;
+}
+.lp-analyst:hover { background: rgba(255,255,255,0.03); }
+.active-analyst { background: rgba(0,229,255,0.05) !important; border-left: 2px solid var(--cyan); }
+.lp-analyst-av {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--manrope); font-size: 10px; font-weight: 700;
+  flex-shrink: 0; border: 1px solid;
+}
+.lp-analyst-info { flex: 1; min-width: 0; }
+.lp-analyst-name {
+  font-family: var(--dm); font-size: 12px; font-weight: 500; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lp-analyst-role {
+  font-family: var(--dm); font-size: 10px; font-weight: 300; color: var(--text-muted);
+}
+.lp-ask-bar {
+  display: flex; gap: 0; padding: 10px 14px; flex-shrink: 0;
+  border-top: 1px solid var(--border);
+}
+.lp-ask-input {
+  flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-right: none; border-radius: 4px 0 0 4px; padding: 7px 10px;
+  font-family: var(--dm); font-size: 12px; color: var(--text); outline: none;
+}
+.lp-ask-input::placeholder { color: var(--text-muted); }
+.lp-ask-btn {
+  background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.25);
+  border-radius: 0 4px 4px 0; padding: 7px 12px;
+  font-family: var(--rajdhani); font-size: 13px; font-weight: 700;
+  color: var(--cyan); cursor: pointer; transition: background 0.15s;
+}
+.lp-ask-btn:hover { background: rgba(0,229,255,0.18); }
+
+/* Rankings panel */
+.lp-rank-tabs {
+  display: flex; gap: 0; padding: 8px 14px; flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.lp-rtab {
+  font-family: var(--rajdhani); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 5px 10px; cursor: pointer; color: var(--text-muted);
+  border-bottom: 2px solid transparent; transition: all 0.15s;
+}
+.lp-rtab:hover { color: var(--text-2); }
+.lp-rtab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.lp-rank-list { display: none; flex-direction: column; flex: 1; overflow-y: auto; scrollbar-width: none; }
+.lp-rank-list::-webkit-scrollbar { display: none; }
+.lp-rank-list.active { display: flex; }
+.lp-rank-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer; transition: background 0.15s;
+}
+.lp-rank-row:hover { background: rgba(255,255,255,0.03); }
+.lp-rk-pos {
+  font-family: var(--rajdhani); font-size: 12px; font-weight: 700;
+  color: var(--text-muted); width: 22px; flex-shrink: 0;
+}
+.lp-rk-av {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--manrope); font-size: 8px; font-weight: 700; flex-shrink: 0;
+}
+.lp-rk-name {
+  font-family: var(--dm); font-size: 12px; font-weight: 400; color: var(--text-2);
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lp-rk-val {
+  font-family: var(--rajdhani); font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+
+/* Timelines panel */
+.lp-tl-filters {
+  display: flex; gap: 6px; padding: 8px 14px; flex-shrink: 0;
+}
+.lp-filter-btn {
+  font-family: var(--rajdhani); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 3px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);
+  background: rgba(255,255,255,0.03); transition: all 0.15s;
+}
+.lp-filter-btn:hover { color: var(--text-2); }
+.active-filter { color: var(--cyan) !important; border-color: rgba(0,229,255,0.3) !important; background: rgba(0,229,255,0.06) !important; }
+.lp-tl-list { flex: 1; overflow-y: auto; scrollbar-width: none; }
+.lp-tl-list::-webkit-scrollbar { display: none; }
+.lp-tl-item {
+  padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer; transition: background 0.15s;
+}
+.lp-tl-item:hover { background: rgba(255,255,255,0.03); }
+.lp-tl-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.lp-tl-name { font-family: var(--dm); font-size: 12px; font-weight: 500; color: var(--text); }
+.lp-tl-pin {
+  font-size: 16px; color: var(--cyan); cursor: pointer;
+  transition: transform 0.15s; flex-shrink: 0;
+}
+.lp-tl-pin:hover { transform: scale(1.3); }
+.lp-tl-bar { height: 2px; background: rgba(255,255,255,0.07); border-radius: 1px; overflow: hidden; margin-bottom: 5px; }
+.lp-tl-fill { height: 100%; border-radius: 1px; }
+.lp-tl-meta { display: flex; align-items: center; justify-content: space-between; }
+.lp-tl-status {
+  font-family: var(--rajdhani); font-size: 9px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px;
+}
+.lp-tl-status.open { background: rgba(0,229,255,0.07); color: var(--cyan); border: 1px solid rgba(0,229,255,0.18); }
+.lp-tl-status.resolved { background: rgba(0,230,118,0.07); color: var(--green); border: 1px solid rgba(0,230,118,0.18); }
+.lp-tl-prob { font-family: var(--rajdhani); font-size: 12px; font-weight: 700; }
+
+/* Risk Flow panel */
+.lp-range-wrap { padding: 8px 14px 12px; flex-shrink: 0; }
+.lp-range-labels { display: flex; justify-content: space-between; font-family: var(--rajdhani); font-size: 9px; color: var(--text-muted); margin-bottom: 4px; }
+.lp-range {
+  width: 100%; accent-color: var(--cyan);
+  background: transparent; cursor: pointer;
+}
+.lp-range-val { font-family: var(--rajdhani); font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+.lp-check-list { padding: 4px 14px 10px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.lp-check {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  font-family: var(--dm); font-size: 12px; color: var(--text-2);
+}
+.lp-check input { accent-color: var(--cyan); cursor: pointer; }
+.sev-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.lp-depth-btns { display: flex; gap: 6px; padding: 4px 14px 10px; flex-shrink: 0; }
+.lp-depth-btn {
+  font-family: var(--rajdhani); font-size: 13px; font-weight: 700;
+  width: 32px; height: 28px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
+  cursor: pointer; color: var(--text-muted); background: rgba(255,255,255,0.03);
+  transition: all 0.15s;
+}
+.lp-depth-btn:hover { color: var(--text-2); border-color: rgba(255,255,255,0.22); }
+.active-depth { color: var(--cyan) !important; border-color: rgba(0,229,255,0.3) !important; background: rgba(0,229,255,0.08) !important; }
+.lp-triggers { padding: 4px 14px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.lp-trigger {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--dm); font-size: 11px; font-weight: 300; color: var(--text-2);
+}
+.lp-trigger-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div id="burger">
+    <span></span><span></span><span></span>
+  </div>
+
+  <div id="logo">
+    <div id="logo-dot"></div>
+    IPM
+  </div>
+
+  <div id="search-center">
+    <input id="search-input" placeholder="Search entities, relations, timelines…" autocomplete="off" spellcheck="false">
+    <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </div>
+
+  <div id="header-right">
+    <div class="bell-wrap">
+      <svg class="hdr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <div class="bell-badge">3</div>
+    </div>
+    <div id="avatar">AK</div>
+  </div>
+</div>
+
+<!-- MAIN CANVAS -->
+<div id="main">
+  <div id="space-bg"></div>
+  <canvas id="stars"></canvas>
+
+  <!-- LEFT COLUMN -->
+  <div id="left-col">
+
+    <!-- PANEL: POWER MAP -->
+    <div class="lp-panel active" id="lp-power-map">
+      <div class="col-header">
+        <span class="col-title">Power Map</span>
+        <span class="col-live">6 presets</span>
+      </div>
+      <div class="lp-preset-grid">
+        <div class="lp-preset active-preset" onclick="selectPreset(this)">
+          <div class="lp-preset-icon" style="color:var(--gold)">◈</div>
+          <div class="lp-preset-name">Financial</div>
+          <div class="lp-preset-sub">Fink · Dimon · Powell</div>
+        </div>
+        <div class="lp-preset" onclick="selectPreset(this)">
+          <div class="lp-preset-icon" style="color:var(--cyan)">◈</div>
+          <div class="lp-preset-name">AI</div>
+          <div class="lp-preset-sub">Altman · Huang · Musk</div>
+        </div>
+        <div class="lp-preset" onclick="selectPreset(this)">
+          <div class="lp-preset-icon" style="color:var(--blue)">◈</div>
+          <div class="lp-preset-name">Dollar</div>
+          <div class="lp-preset-sub">Fed · Treasury · IMF</div>
+        </div>
+        <div class="lp-preset" onclick="selectPreset(this)">
+          <div class="lp-preset-icon" style="color:var(--purple)">◈</div>
+          <div class="lp-preset-name">The Big Three</div>
+          <div class="lp-preset-sub">BlackRock · Vanguard · SSGA</div>
+        </div>
+        <div class="lp-preset" onclick="selectPreset(this)">
+          <div class="lp-preset-icon" style="color:var(--green)">◈</div>
+          <div class="lp-preset-name">Wall Street</div>
+          <div class="lp-preset-sub">JPM · GS · MS · Citi</div>
+        </div>
+        <div class="lp-preset" onclick="selectPreset(this)">
+          <div class="lp-preset-icon" style="color:var(--red)">◈</div>
+          <div class="lp-preset-name">Military</div>
+          <div class="lp-preset-sub">Pentagon · NATO · PLA</div>
+        </div>
+      </div>
+      <div class="lp-section-label">Entities on map</div>
+      <div class="lp-entity-list" id="lp-entity-list">
+        <div class="lp-entity"><div class="lp-entity-av av-c">LF</div><span class="lp-entity-name">Larry Fink</span><span class="lp-entity-remove">×</span></div>
+        <div class="lp-entity"><div class="lp-entity-av av-co">JP</div><span class="lp-entity-name">JPMorgan Chase</span><span class="lp-entity-remove">×</span></div>
+        <div class="lp-entity"><div class="lp-entity-av av-co">BR</div><span class="lp-entity-name">BlackRock</span><span class="lp-entity-remove">×</span></div>
+        <div class="lp-entity"><div class="lp-entity-av av-co">GS</div><span class="lp-entity-name">Goldman Sachs</span><span class="lp-entity-remove">×</span></div>
+        <div class="lp-entity"><div class="lp-entity-av av-co">FD</div><span class="lp-entity-name">Federal Reserve</span><span class="lp-entity-remove">×</span></div>
+      </div>
+    </div>
+
+    <!-- PANEL: SUPPLY CHAIN (Analyst) -->
+    <div class="lp-panel" id="lp-supply-chain">
+      <div class="col-header">
+        <span class="col-title">Analyst</span>
+        <span class="col-live">AI</span>
+      </div>
+      <div class="lp-analyst-pick">
+        <div class="lp-analyst active-analyst" onclick="selectAnalyst(this)">
+          <div class="lp-analyst-av" style="background:rgba(0,229,255,0.08);border-color:rgba(0,229,255,0.2);color:var(--cyan)">MW</div>
+          <div class="lp-analyst-info"><div class="lp-analyst-name">Marcus Webb</div><div class="lp-analyst-role">Intelligence Strategist</div></div>
+        </div>
+        <div class="lp-analyst" onclick="selectAnalyst(this)">
+          <div class="lp-analyst-av" style="background:rgba(212,168,71,0.08);border-color:rgba(212,168,71,0.2);color:var(--gold)">VA</div>
+          <div class="lp-analyst-info"><div class="lp-analyst-name">Victoria Ashworth</div><div class="lp-analyst-role">Financial Intelligence</div></div>
+        </div>
+        <div class="lp-analyst" onclick="selectAnalyst(this)">
+          <div class="lp-analyst-av" style="background:rgba(59,139,212,0.08);border-color:rgba(59,139,212,0.2);color:var(--blue)">AV</div>
+          <div class="lp-analyst-info"><div class="lp-analyst-name">Alexei Volkov</div><div class="lp-analyst-role">Quant Trader</div></div>
+        </div>
+        <div class="lp-analyst" onclick="selectAnalyst(this)">
+          <div class="lp-analyst-av" style="background:rgba(229,57,53,0.08);border-color:rgba(229,57,53,0.2);color:var(--red)">IR</div>
+          <div class="lp-analyst-info"><div class="lp-analyst-name">Dr. Isabela Ramos</div><div class="lp-analyst-role">Geopolitical Analyst</div></div>
+        </div>
+        <div class="lp-analyst" onclick="selectAnalyst(this)">
+          <div class="lp-analyst-av" style="background:rgba(139,92,246,0.08);border-color:rgba(139,92,246,0.2);color:var(--purple)">NF</div>
+          <div class="lp-analyst-info"><div class="lp-analyst-name">Dr. Nadia Ferraris</div><div class="lp-analyst-role">Probabilistic Modeling</div></div>
+        </div>
+        <div class="lp-analyst" onclick="selectAnalyst(this)">
+          <div class="lp-analyst-av" style="background:rgba(0,230,118,0.08);border-color:rgba(0,230,118,0.2);color:var(--green)">PS</div>
+          <div class="lp-analyst-info"><div class="lp-analyst-name">Dr. Priya Sundaram</div><div class="lp-analyst-role">Graph Intelligence</div></div>
+        </div>
+        <div class="lp-analyst" onclick="selectAnalyst(this)">
+          <div class="lp-analyst-av" style="background:rgba(212,168,71,0.08);border-color:rgba(212,168,71,0.2);color:var(--gold)">LC</div>
+          <div class="lp-analyst-info"><div class="lp-analyst-name">Lawrence Cole</div><div class="lp-analyst-role">Market Technician</div></div>
+        </div>
+        <div class="lp-analyst" onclick="selectAnalyst(this)">
+          <div class="lp-analyst-av" style="background:rgba(229,57,53,0.08);border-color:rgba(229,57,53,0.2);color:var(--red)">IR</div>
+          <div class="lp-analyst-info"><div class="lp-analyst-name">Ivan Reyes</div><div class="lp-analyst-role">Systematic Trader</div></div>
+        </div>
+      </div>
+      <div class="lp-ask-bar">
+        <input class="lp-ask-input" placeholder="Ask the analyst…" />
+        <button class="lp-ask-btn">→</button>
+      </div>
+    </div>
+
+    <!-- PANEL: RANKINGS -->
+    <div class="lp-panel" id="lp-rankings">
+      <div class="col-header">
+        <span class="col-title">Rankings</span>
+        <span class="col-live">Live</span>
+      </div>
+      <div class="lp-rank-tabs">
+        <div class="lp-rtab active" onclick="switchRankTab(this,'rk-power')">Power</div>
+        <div class="lp-rtab" onclick="switchRankTab(this,'rk-influence')">Influence</div>
+        <div class="lp-rtab" onclick="switchRankTab(this,'rk-wealth')">Wealth</div>
+        <div class="lp-rtab" onclick="switchRankTab(this,'rk-military')">Military</div>
+      </div>
+      <div class="lp-rank-list active" id="rk-power">
+        <div class="lp-rank-row"><span class="lp-rk-pos">#1</span><div class="lp-rk-av" style="background:rgba(229,57,53,0.1);border:1px solid rgba(229,57,53,0.2);color:var(--red)">VP</div><span class="lp-rk-name">Vladimir Putin</span><span class="lp-rk-val" style="color:var(--red)">81</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#2</span><div class="lp-rk-av" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:var(--purple)">XI</div><span class="lp-rk-name">Xi Jinping</span><span class="lp-rk-val" style="color:var(--purple)">79</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#3</span><div class="lp-rk-av av-p">EM</div><span class="lp-rk-name">Elon Musk</span><span class="lp-rk-val" style="color:var(--red)">74</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#4</span><div class="lp-rk-av av-c">LF</div><span class="lp-rk-name">Larry Fink</span><span class="lp-rk-val" style="color:var(--gold)">72</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#5</span><div class="lp-rk-av av-co">JD</div><span class="lp-rk-name">Jamie Dimon</span><span class="lp-rk-val" style="color:var(--gold)">68</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#6</span><div class="lp-rk-av av-co">JP</div><span class="lp-rk-name">Jerome Powell</span><span class="lp-rk-val" style="color:var(--blue)">62</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#7</span><div class="lp-rk-av av-c">SA</div><span class="lp-rk-name">Mohammed bin Salman</span><span class="lp-rk-val" style="color:var(--gold)">78</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#8</span><div class="lp-rk-av av-co">JH</div><span class="lp-rk-name">Jensen Huang</span><span class="lp-rk-val" style="color:var(--cyan)">61</span></div>
+      </div>
+      <div class="lp-rank-list" id="rk-influence">
+        <div class="lp-rank-row"><span class="lp-rk-pos">#1</span><div class="lp-rk-av av-p">EM</div><span class="lp-rk-name">Elon Musk</span><span class="lp-rk-val" style="color:var(--cyan)">220M</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#2</span><div class="lp-rk-av" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:var(--purple)">XI</div><span class="lp-rk-name">Xi Jinping</span><span class="lp-rk-val" style="color:var(--purple)">1.4B</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#3</span><div class="lp-rk-av" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.18);color:var(--cyan)">MZ</div><span class="lp-rk-name">Mark Zuckerberg</span><span class="lp-rk-val" style="color:var(--cyan)">3.2B</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#4</span><div class="lp-rk-av av-c">LF</div><span class="lp-rk-name">Larry Fink</span><span class="lp-rk-val" style="color:var(--gold)">$10T</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#5</span><div class="lp-rk-av av-co">SA</div><span class="lp-rk-name">Sam Altman</span><span class="lp-rk-val" style="color:var(--blue)">400M</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#6</span><div class="lp-rk-av av-co">JH</div><span class="lp-rk-name">Jensen Huang</span><span class="lp-rk-val" style="color:var(--cyan)">180M</span></div>
+      </div>
+      <div class="lp-rank-list" id="rk-wealth">
+        <div class="lp-rank-row"><span class="lp-rk-pos">#1</span><div class="lp-rk-av av-p">EM</div><span class="lp-rk-name">Elon Musk</span><span class="lp-rk-val" style="color:var(--gold)">$334B</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#2</span><div class="lp-rk-av" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.18);color:var(--cyan)">JB</div><span class="lp-rk-name">Jeff Bezos</span><span class="lp-rk-val" style="color:var(--gold)">$230B</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#3</span><div class="lp-rk-av av-co">JH</div><span class="lp-rk-name">Jensen Huang</span><span class="lp-rk-val" style="color:var(--gold)">$116B</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#4</span><div class="lp-rk-av" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.18);color:var(--cyan)">MZ</div><span class="lp-rk-name">Mark Zuckerberg</span><span class="lp-rk-val" style="color:var(--gold)">$204B</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#5</span><div class="lp-rk-av av-c">WB</div><span class="lp-rk-name">Warren Buffett</span><span class="lp-rk-val" style="color:var(--gold)">$147B</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#6</span><div class="lp-rk-av av-c">LF</div><span class="lp-rk-name">Larry Fink</span><span class="lp-rk-val" style="color:var(--gold)">$1.2B</span></div>
+      </div>
+      <div class="lp-rank-list" id="rk-military">
+        <div class="lp-rank-row"><span class="lp-rk-pos">#1</span><div class="lp-rk-av" style="background:rgba(229,57,53,0.1);border:1px solid rgba(229,57,53,0.2);color:var(--red)">US</div><span class="lp-rk-name">United States</span><span class="lp-rk-val" style="color:var(--red)">$886B</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#2</span><div class="lp-rk-av" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:var(--purple)">CN</div><span class="lp-rk-name">China</span><span class="lp-rk-val" style="color:var(--purple)">$296B</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#3</span><div class="lp-rk-av" style="background:rgba(229,57,53,0.1);border:1px solid rgba(229,57,53,0.2);color:var(--red)">RU</div><span class="lp-rk-name">Russia</span><span class="lp-rk-val" style="color:var(--red)">$109B</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#4</span><div class="lp-rk-av av-c">SA</div><span class="lp-rk-name">Saudi Arabia</span><span class="lp-rk-val" style="color:var(--gold)">$75B</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#5</span><div class="lp-rk-av av-co">UK</div><span class="lp-rk-name">United Kingdom</span><span class="lp-rk-val" style="color:var(--blue)">$68B</span></div>
+        <div class="lp-rank-row"><span class="lp-rk-pos">#6</span><div class="lp-rk-av" style="background:rgba(212,168,71,0.1);border:1px solid rgba(212,168,71,0.2);color:var(--gold)">IN</div><span class="lp-rk-name">India</span><span class="lp-rk-val" style="color:var(--gold)">$81B</span></div>
+      </div>
+    </div>
+
+    <!-- PANEL: TIMELINES -->
+    <div class="lp-panel" id="lp-timelines">
+      <div class="col-header">
+        <span class="col-title">Timelines</span>
+        <span class="col-live">5 open</span>
+      </div>
+      <div class="lp-tl-filters">
+        <div class="lp-filter-btn active-filter" onclick="filterTL(this,'all')">All</div>
+        <div class="lp-filter-btn" onclick="filterTL(this,'open')">Open</div>
+        <div class="lp-filter-btn" onclick="filterTL(this,'resolved')">Resolved</div>
+      </div>
+      <div class="lp-tl-list">
+        <div class="lp-tl-item" data-status="open">
+          <div class="lp-tl-top">
+            <span class="lp-tl-name">DOGE Federal Restructuring</span>
+            <div class="lp-tl-pin" title="Pin to globe">⊕</div>
+          </div>
+          <div class="lp-tl-bar"><div class="lp-tl-fill" style="width:67%;background:var(--cyan)"></div></div>
+          <div class="lp-tl-meta"><span class="lp-tl-status open">Open</span><span class="lp-tl-prob" style="color:var(--cyan)">67%</span></div>
+        </div>
+        <div class="lp-tl-item" data-status="open">
+          <div class="lp-tl-top">
+            <span class="lp-tl-name">Hormuz Strait Closure</span>
+            <div class="lp-tl-pin">⊕</div>
+          </div>
+          <div class="lp-tl-bar"><div class="lp-tl-fill" style="width:44%;background:var(--red)"></div></div>
+          <div class="lp-tl-meta"><span class="lp-tl-status open">Open</span><span class="lp-tl-prob" style="color:var(--red)">44%</span></div>
+        </div>
+        <div class="lp-tl-item" data-status="open">
+          <div class="lp-tl-top">
+            <span class="lp-tl-name">Fed Rate Cut H2 2026</span>
+            <div class="lp-tl-pin">⊕</div>
+          </div>
+          <div class="lp-tl-bar"><div class="lp-tl-fill" style="width:58%;background:var(--gold)"></div></div>
+          <div class="lp-tl-meta"><span class="lp-tl-status open">Open</span><span class="lp-tl-prob" style="color:var(--gold)">58%</span></div>
+        </div>
+        <div class="lp-tl-item" data-status="open">
+          <div class="lp-tl-top">
+            <span class="lp-tl-name">Taiwan Strait Escalation</span>
+            <div class="lp-tl-pin">⊕</div>
+          </div>
+          <div class="lp-tl-bar"><div class="lp-tl-fill" style="width:28%;background:var(--red)"></div></div>
+          <div class="lp-tl-meta"><span class="lp-tl-status open">Open</span><span class="lp-tl-prob" style="color:var(--red)">28%</span></div>
+        </div>
+        <div class="lp-tl-item" data-status="resolved">
+          <div class="lp-tl-top">
+            <span class="lp-tl-name">UK Election 2024</span>
+            <div class="lp-tl-pin" style="color:var(--text-muted);pointer-events:none">✓</div>
+          </div>
+          <div class="lp-tl-bar"><div class="lp-tl-fill" style="width:100%;background:var(--green)"></div></div>
+          <div class="lp-tl-meta"><span class="lp-tl-status resolved">Resolved</span><span class="lp-tl-prob" style="color:var(--green)">Labour win</span></div>
+        </div>
+        <div class="lp-tl-item" data-status="resolved">
+          <div class="lp-tl-top">
+            <span class="lp-tl-name">ECB Rate Decision Mar 2026</span>
+            <div class="lp-tl-pin" style="color:var(--text-muted);pointer-events:none">✓</div>
+          </div>
+          <div class="lp-tl-bar"><div class="lp-tl-fill" style="width:100%;background:var(--green)"></div></div>
+          <div class="lp-tl-meta"><span class="lp-tl-status resolved">Resolved</span><span class="lp-tl-prob" style="color:var(--green)">Hold confirmed</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL: RISK FLOW -->
+    <div class="lp-panel" id="lp-risk-flow">
+      <div class="col-header">
+        <span class="col-title">Risk Flow</span>
+        <span class="col-live">Filters</span>
+      </div>
+      <div class="lp-section-label">Risk Score Range</div>
+      <div class="lp-range-wrap">
+        <div class="lp-range-labels"><span>0</span><span>10</span></div>
+        <input type="range" class="lp-range" id="risk-min" min="0" max="10" step="0.1" value="5" oninput="updateRange()">
+        <div class="lp-range-val">Min: <span id="risk-min-val">5.0</span></div>
+      </div>
+      <div class="lp-section-label">Entity Type</div>
+      <div class="lp-check-list">
+        <label class="lp-check"><input type="checkbox" checked> <span>Persons</span></label>
+        <label class="lp-check"><input type="checkbox" checked> <span>Countries</span></label>
+        <label class="lp-check"><input type="checkbox" checked> <span>Companies</span></label>
+        <label class="lp-check"><input type="checkbox"> <span>Commodities</span></label>
+      </div>
+      <div class="lp-section-label">Cascade Depth</div>
+      <div class="lp-depth-btns">
+        <div class="lp-depth-btn active-depth" onclick="setDepth(this)">1</div>
+        <div class="lp-depth-btn" onclick="setDepth(this)">2</div>
+        <div class="lp-depth-btn" onclick="setDepth(this)">3</div>
+        <div class="lp-depth-btn" onclick="setDepth(this)">4</div>
+        <div class="lp-depth-btn" onclick="setDepth(this)">∞</div>
+      </div>
+      <div class="lp-section-label">Edge Severity</div>
+      <div class="lp-check-list">
+        <label class="lp-check"><input type="checkbox" checked> <span class="sev-dot" style="background:var(--red)"></span><span>Critical</span></label>
+        <label class="lp-check"><input type="checkbox" checked> <span class="sev-dot" style="background:var(--gold)"></span><span>High</span></label>
+        <label class="lp-check"><input type="checkbox"> <span class="sev-dot" style="background:var(--blue)"></span><span>Medium</span></label>
+        <label class="lp-check"><input type="checkbox"> <span class="sev-dot" style="background:var(--green)"></span><span>Low</span></label>
+      </div>
+      <div class="lp-section-label">Active Triggers</div>
+      <div class="lp-triggers">
+        <div class="lp-trigger"><span class="lp-trigger-dot" style="background:var(--red)"></span><span>Iran → Hormuz · 8.2</span></div>
+        <div class="lp-trigger"><span class="lp-trigger-dot" style="background:var(--red)"></span><span>China → Taiwan · 7.6</span></div>
+        <div class="lp-trigger"><span class="lp-trigger-dot" style="background:var(--gold)"></span><span>Russia → Ukraine · 7.1</span></div>
+        <div class="lp-trigger"><span class="lp-trigger-dot" style="background:var(--gold)"></span><span>TSMC → NVIDIA · 6.4</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CENTER AREA -->
+  <div id="center">
+
+    <!-- Mode buttons -->
+    <div id="mode-bar">
+      <div class="mode-btn active" onclick="setMode(this,'power-map')">Power Map</div>
+      <div class="mode-btn" onclick="setMode(this,'supply-chain')">Supply Chain</div>
+      <div class="mode-btn" onclick="setMode(this,'rankings')">Rankings</div>
+      <div class="mode-btn" onclick="setMode(this,'timelines')">Timelines</div>
+      <div class="mode-btn" onclick="setMode(this,'risk-flow')">Risk Flow</div>
+    </div>
+
+    <!-- Globe -->
+    <div id="globe-wrap">
+      <canvas id="globe-canvas"></canvas>
+
+      <!-- Floating badges -->
+      <div id="gcri-badge">
+        <div class="badge-label">GCRI Index</div>
+        <div class="badge-value">71.4</div>
+        <div class="badge-sub">↑ High regime</div>
+      </div>
+
+      <div id="entity-count">
+        <div class="badge-label">Entities tracked</div>
+        <div class="badge-value" style="font-family:var(--manrope);font-size:22px;font-weight:800;color:var(--cyan);line-height:1;">540</div>
+        <div class="badge-sub" style="color:rgba(0,229,255,0.6);">1,246 relations</div>
+      </div>
+
+      <div id="live-indicator">
+        <div class="live-dot-pulse"></div>
+        <span class="live-text">Live</span>
+      </div>
+    </div>
+  </div><!-- /center -->
+
+  <!-- RIGHT COLUMN -->
+  <div id="right-col">
+    <div id="right-tabs">
+      <div class="r-tab active" onclick="switchRTab(0,this)">Network</div>
+      <div class="r-tab" onclick="switchRTab(1,this)">Timelines</div>
+      <div class="r-tab" onclick="switchRTab(2,this)">Risk</div>
+    </div>
+
+    <!-- NETWORK PANEL -->
+    <div class="r-panel active" id="rpanel-0">
+      <div class="net-section-label">Key Relations — Elon Musk</div>
+      <div class="net-item">
+        <div class="net-av av-p">DT</div>
+        <div class="net-info"><div class="net-name">Donald Trump</div><div class="net-rel">Person · USA</div></div>
+        <div class="net-badge nb-ally">Ally</div>
+      </div>
+      <div class="net-item">
+        <div class="net-av av-co">JB</div>
+        <div class="net-info"><div class="net-name">Jeff Bezos</div><div class="net-rel">Person · USA</div></div>
+        <div class="net-badge nb-rival">Rival</div>
+      </div>
+      <div class="net-item">
+        <div class="net-av av-p">MZ</div>
+        <div class="net-info"><div class="net-name">Mark Zuckerberg</div><div class="net-rel">Person · USA</div></div>
+        <div class="net-badge nb-rival">Rival</div>
+      </div>
+      <div class="net-item">
+        <div class="net-av av-c">MB</div>
+        <div class="net-info"><div class="net-name">Mohammed bin Salman</div><div class="net-rel">Person · Saudi Arabia</div></div>
+        <div class="net-badge nb-partner">Partner</div>
+      </div>
+      <div class="net-item">
+        <div class="net-av" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:var(--purple)">JH</div>
+        <div class="net-info"><div class="net-name">Jensen Huang</div><div class="net-rel">Person · USA</div></div>
+        <div class="net-badge nb-ally">Ally</div>
+      </div>
+      <div class="net-section-label">Companies Owned / Led</div>
+      <div class="net-item">
+        <div class="net-av av-co">TS</div>
+        <div class="net-info"><div class="net-name">Tesla</div><div class="net-rel">EV · $892B mcap</div></div>
+        <div class="net-badge nb-owns">CEO</div>
+      </div>
+      <div class="net-item">
+        <div class="net-av av-co">SX</div>
+        <div class="net-info"><div class="net-name">SpaceX</div><div class="net-rel">Aerospace · $350B</div></div>
+        <div class="net-badge nb-owns">Founder</div>
+      </div>
+      <div class="net-item">
+        <div class="net-av av-co">X</div>
+        <div class="net-info"><div class="net-name">X Corp</div><div class="net-rel">Social · $19B</div></div>
+        <div class="net-badge nb-owns">Owner</div>
+      </div>
+      <div class="net-item">
+        <div class="net-av av-co">xA</div>
+        <div class="net-info"><div class="net-name">xAI</div><div class="net-rel">AI · $50B</div></div>
+        <div class="net-badge nb-owns">Founder</div>
+      </div>
+      <div class="net-item">
+        <div class="net-av av-co">DG</div>
+        <div class="net-info"><div class="net-name">DOGE</div><div class="net-rel">US Gov · Advisory</div></div>
+        <div class="net-badge nb-controls">Controls</div>
+      </div>
+    </div>
+
+    <!-- TIMELINES PANEL -->
+    <div class="r-panel" id="rpanel-1">
+      <div class="tl-item">
+        <div class="tl-top"><div class="tl-name">DOGE Federal Restructuring</div><div class="tl-prob" style="color:var(--cyan)">67%</div></div>
+        <div class="tl-branches"><div class="tl-branch br-a">A · Full cuts</div><div class="tl-branch br-b">B · Partial</div></div>
+        <div class="tl-bar"><div class="tl-fill" style="width:67%"></div></div>
+        <div class="tl-meta"><span class="tl-meta-txt">Open · 3 bets</span><span class="tl-meta-txt">Closes Q2 2026</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-top"><div class="tl-name">Hormuz Strait Closure Risk</div><div class="tl-prob" style="color:var(--red)">44%</div></div>
+        <div class="tl-branches"><div class="tl-branch br-a">A · Closure</div><div class="tl-branch br-b">B · Tension holds</div></div>
+        <div class="tl-bar"><div class="tl-fill" style="width:44%;background:var(--red)"></div></div>
+        <div class="tl-meta"><span class="tl-meta-txt">Open · 12 bets</span><span class="tl-meta-txt">12mo window</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-top"><div class="tl-name">Fed Rate Cut — H2 2026</div><div class="tl-prob" style="color:var(--gold)">58%</div></div>
+        <div class="tl-branches"><div class="tl-branch br-a">A · Cut ≥25bps</div><div class="tl-branch br-b">B · Hold</div></div>
+        <div class="tl-bar"><div class="tl-fill" style="width:58%;background:var(--gold)"></div></div>
+        <div class="tl-meta"><span class="tl-meta-txt">Open · 8 bets</span><span class="tl-meta-txt">Sep 2026</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-top"><div class="tl-name">Taiwan Strait Escalation</div><div class="tl-prob" style="color:var(--red)">28%</div></div>
+        <div class="tl-branches"><div class="tl-branch br-a">A · Military action</div><div class="tl-branch br-b">B · Standoff</div></div>
+        <div class="tl-bar"><div class="tl-fill" style="width:28%;background:var(--red)"></div></div>
+        <div class="tl-meta"><span class="tl-meta-txt">Open · 21 bets</span><span class="tl-meta-txt">24mo window</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-top"><div class="tl-name">USD Dollar Dominance Index</div><div class="tl-prob" style="color:var(--blue)">71%</div></div>
+        <div class="tl-branches"><div class="tl-branch br-a">A · DSI holds</div><div class="tl-branch br-b">B · Erosion &gt;5%</div></div>
+        <div class="tl-bar"><div class="tl-fill" style="width:71%;background:var(--blue)"></div></div>
+        <div class="tl-meta"><span class="tl-meta-txt">Open · 6 bets</span><span class="tl-meta-txt">YE 2026</span></div>
+      </div>
+    </div>
+
+    <!-- RISK PANEL -->
+    <div class="r-panel" id="rpanel-2">
+      <div class="risk-item">
+        <div class="risk-header"><span class="risk-entity">Elon Musk</span><span class="risk-score-val" style="color:var(--red)">74</span></div>
+        <div class="risk-dimensions">
+          <div class="risk-dim"><span class="risk-dim-label">Financial</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-gold" style="width:88%"></div></div><span class="risk-dim-val">88</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Political</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-red" style="width:76%"></div></div><span class="risk-dim-val">76</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Software</span><div class="risk-dim-bar"><div class="risk-dim-fill" style="width:82%;background:var(--purple)"></div></div><span class="risk-dim-val">82</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Military</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-blue" style="width:55%"></div></div><span class="risk-dim-val">55</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Info</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-cyan" style="width:91%"></div></div><span class="risk-dim-val">91</span></div>
+        </div>
+      </div>
+      <div class="risk-item">
+        <div class="risk-header"><span class="risk-entity">Saudi Arabia</span><span class="risk-score-val" style="color:var(--gold)">72</span></div>
+        <div class="risk-dimensions">
+          <div class="risk-dim"><span class="risk-dim-label">Financial</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-gold" style="width:80%"></div></div><span class="risk-dim-val">80</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Military</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-red" style="width:68%"></div></div><span class="risk-dim-val">68</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Commodity</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-gold" style="width:95%"></div></div><span class="risk-dim-val">95</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Political</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-blue" style="width:74%"></div></div><span class="risk-dim-val">74</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Info</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-cyan" style="width:44%"></div></div><span class="risk-dim-val">44</span></div>
+        </div>
+      </div>
+      <div class="risk-item">
+        <div class="risk-header"><span class="risk-entity">Xi Jinping</span><span class="risk-score-val" style="color:var(--purple)">79</span></div>
+        <div class="risk-dimensions">
+          <div class="risk-dim"><span class="risk-dim-label">Political</span><div class="risk-dim-bar"><div class="risk-dim-fill" style="width:95%;background:var(--purple)"></div></div><span class="risk-dim-val">95</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Military</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-red" style="width:84%"></div></div><span class="risk-dim-val">84</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Financial</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-gold" style="width:77%"></div></div><span class="risk-dim-val">77</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Info</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-cyan" style="width:82%"></div></div><span class="risk-dim-val">82</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Commodity</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-gold" style="width:70%"></div></div><span class="risk-dim-val">70</span></div>
+        </div>
+      </div>
+      <div class="risk-item">
+        <div class="risk-header"><span class="risk-entity">Tesla Inc.</span><span class="risk-score-val" style="color:var(--blue)">68</span></div>
+        <div class="risk-dimensions">
+          <div class="risk-dim"><span class="risk-dim-label">Supply</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-red" style="width:72%"></div></div><span class="risk-dim-val">72</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Geo</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-gold" style="width:65%"></div></div><span class="risk-dim-val">65</span></div>
+          <div class="risk-dim"><span class="risk-dim-label">Regulatory</span><div class="risk-dim-bar"><div class="risk-dim-fill rf-blue" style="width:58%"></div></div><span class="risk-dim-val">58</span></div>
+        </div>
+      </div>
+    </div>
+
+
+  </div><!-- /right-col -->
+
+  <!-- MAP PANEL — fixed, overlays when preset selected -->
+  <div id="map-panel">
+    <div class="mp-header"><div class="mp-title"><span class="mp-icon" id="mp-icon">◈</span><span class="mp-name" id="mp-name">Power Map</span></div><span class="mp-close" onclick="closeMapPanel()">✕</span></div>
+    <div class="mp-section-label" id="mp-section-label">Entities</div>
+    <div class="mp-entity-list" id="mp-entity-list"></div>
+    <div class="mp-footer"><div class="mp-action-btn primary" onclick="closeMapPanel()">← Back</div><div class="mp-action-btn">Open Map</div></div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ═══════════════════════════════════════════════════════
+     BELOW FOLD — Extended intelligence content
+═══════════════════════════════════════════════════════ -->
+<div id="below-fold">
+
+  <!-- ROW 1: Section header -->
+  <div class="bf-section-header">
+    <div class="bf-section-title">
+      <span class="bf-kicker">Intelligence Layer</span>
+      <h2 class="bf-h2">Global Power Intelligence</h2>
+    </div>
+    <div class="bf-section-meta">540 entities · 1,246 relations · Updated continuously</div>
+  </div>
+
+  <!-- ROW 2: Three column grid — Power Map preview + Top Events + Timelines deep -->
+  <div class="bf-grid-3">
+
+    <!-- COL A: Power Map snapshot -->
+    <div class="bf-card">
+      <div class="bf-card-header">
+        <span class="bf-card-title">Power Map</span>
+        <span class="bf-card-badge badge-cyan">Financial</span>
+      </div>
+      <div class="bf-map-nodes">
+        <div class="bf-node-row">
+          <div class="bf-node-av" style="background:rgba(212,168,71,0.1);border:1px solid rgba(212,168,71,0.2);color:var(--gold)">LF</div>
+          <div class="bf-node-info">
+            <div class="bf-node-name">Larry Fink</div>
+            <div class="bf-node-sub">BlackRock · Financial power 88</div>
+          </div>
+          <div class="bf-node-score" style="color:var(--gold)">72</div>
+        </div>
+        <div class="bf-node-edge">
+          <span class="bf-edge-line"></span>
+          <span class="bf-edge-label">Controls · Strength 90</span>
+          <span class="bf-edge-score" style="color:var(--gold)">EdgeRisk 4.1</span>
+        </div>
+        <div class="bf-node-row">
+          <div class="bf-node-av av-co">BR</div>
+          <div class="bf-node-info">
+            <div class="bf-node-name">BlackRock</div>
+            <div class="bf-node-sub">$10T AUM · Aladdin OS</div>
+          </div>
+          <div class="bf-node-score" style="color:var(--blue)">91</div>
+        </div>
+        <div class="bf-node-edge">
+          <span class="bf-edge-line"></span>
+          <span class="bf-edge-label">Owns → Vanguard AM · Strength 75</span>
+          <span class="bf-edge-score" style="color:var(--blue)">EdgeRisk 3.2</span>
+        </div>
+        <div class="bf-node-row">
+          <div class="bf-node-av" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.18);color:var(--cyan)">JP</div>
+          <div class="bf-node-info">
+            <div class="bf-node-name">JPMorgan Chase</div>
+            <div class="bf-node-sub">Jamie Dimon · $3.9T assets</div>
+          </div>
+          <div class="bf-node-score" style="color:var(--cyan)">68</div>
+        </div>
+        <div class="bf-node-row">
+          <div class="bf-node-av" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:var(--purple)">GS</div>
+          <div class="bf-node-info">
+            <div class="bf-node-name">Goldman Sachs</div>
+            <div class="bf-node-sub">$1.6T AUM · G-SIB tier 1</div>
+          </div>
+          <div class="bf-node-score" style="color:var(--purple)">64</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COL B: Top intelligence events -->
+    <div class="bf-card">
+      <div class="bf-card-header">
+        <span class="bf-card-title">Top Events This Week</span>
+        <span class="bf-card-badge badge-red">6 high impact</span>
+      </div>
+      <div class="bf-events">
+        <div class="bf-event">
+          <div class="bf-event-header">
+            <span class="bf-event-entity">Elon Musk · DOGE</span>
+            <span class="bf-event-time">Mar 29</span>
+          </div>
+          <div class="bf-event-headline">DOGE restructuring confirms $180B in projected federal cuts. Executive branch influence at decade high.</div>
+          <div class="bf-event-tags">
+            <span class="bf-tag tag-sec">High Impact</span>
+            <span class="bf-impact">9.1</span>
+          </div>
+        </div>
+        <div class="bf-event">
+          <div class="bf-event-header">
+            <span class="bf-event-entity">Iran · IRGC</span>
+            <span class="bf-event-time">Mar 28</span>
+          </div>
+          <div class="bf-event-headline">Hormuz naval posturing confirmed. ClosureRisk elevated to 8.2 — highest since 2019 tanker seizures.</div>
+          <div class="bf-event-tags">
+            <span class="bf-tag tag-geo">Geopolitical</span>
+            <span class="bf-impact">8.4</span>
+          </div>
+        </div>
+        <div class="bf-event">
+          <div class="bf-event-header">
+            <span class="bf-event-entity">Turkey</span>
+            <span class="bf-event-time">Mar 27</span>
+          </div>
+          <div class="bf-event-headline">Parliament votes to join BRICS+ observer tier. Bloc realignment cascade triggered across 12 relation edges.</div>
+          <div class="bf-event-tags">
+            <span class="bf-tag tag-geo">Bloc Shift</span>
+            <span class="bf-impact">7.2</span>
+          </div>
+        </div>
+        <div class="bf-event">
+          <div class="bf-event-header">
+            <span class="bf-event-entity">Bolivia · Lithium</span>
+            <span class="bf-event-time">Mar 26</span>
+          </div>
+          <div class="bf-event-headline">Nationalisation decree signed. Lithium +6.3%. Supply shock propagated to 8 EV manufacturer nodes including Tesla and BYD.</div>
+          <div class="bf-event-tags">
+            <span class="bf-tag tag-fin">Commodity</span>
+            <span class="bf-impact">6.9</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COL C: Timeline deep view -->
+    <div class="bf-card">
+      <div class="bf-card-header">
+        <span class="bf-card-title">Timeline Intelligence</span>
+        <span class="bf-card-badge badge-cyan">5 open · 47 bets</span>
+      </div>
+      <div class="bf-timelines">
+        <div class="bf-tl-item">
+          <div class="bf-tl-top">
+            <span class="bf-tl-name">DOGE Federal Restructuring</span>
+            <span class="bf-tl-prob" style="color:var(--cyan)">67%</span>
+          </div>
+          <div class="bf-tl-branches">
+            <div class="bf-branch active-branch">
+              <span class="bf-branch-label" style="color:var(--cyan)">A · Full cuts enacted</span>
+              <span class="bf-branch-prob" style="color:var(--cyan)">67%</span>
+            </div>
+            <div class="bf-branch">
+              <span class="bf-branch-label">B · Partial rollback</span>
+              <span class="bf-branch-prob">33%</span>
+            </div>
+          </div>
+          <div class="bf-tl-bar"><div class="bf-tl-fill" style="width:67%;background:var(--cyan)"></div></div>
+          <div class="bf-tl-meta"><span>3 bets · Q2 2026</span><span>Oracle: 71% · Δ +4</span></div>
+        </div>
+        <div class="bf-tl-item">
+          <div class="bf-tl-top">
+            <span class="bf-tl-name">Hormuz Strait Closure</span>
+            <span class="bf-tl-prob" style="color:var(--red)">44%</span>
+          </div>
+          <div class="bf-tl-branches">
+            <div class="bf-branch active-branch">
+              <span class="bf-branch-label" style="color:var(--red)">A · Partial closure</span>
+              <span class="bf-branch-prob" style="color:var(--red)">44%</span>
+            </div>
+            <div class="bf-branch">
+              <span class="bf-branch-label">B · Tension holds</span>
+              <span class="bf-branch-prob">56%</span>
+            </div>
+          </div>
+          <div class="bf-tl-bar"><div class="bf-tl-fill" style="width:44%;background:var(--red)"></div></div>
+          <div class="bf-tl-meta"><span>12 bets · 12mo</span><span>Oracle: 63% · Δ +19</span></div>
+        </div>
+        <div class="bf-tl-item">
+          <div class="bf-tl-top">
+            <span class="bf-tl-name">Fed Rate Cut H2 2026</span>
+            <span class="bf-tl-prob" style="color:var(--gold)">58%</span>
+          </div>
+          <div class="bf-tl-branches">
+            <div class="bf-branch active-branch">
+              <span class="bf-branch-label" style="color:var(--gold)">A · Cut ≥25bps</span>
+              <span class="bf-branch-prob" style="color:var(--gold)">58%</span>
+            </div>
+            <div class="bf-branch">
+              <span class="bf-branch-label">B · Hold</span>
+              <span class="bf-branch-prob">42%</span>
+            </div>
+          </div>
+          <div class="bf-tl-bar"><div class="bf-tl-fill" style="width:58%;background:var(--gold)"></div></div>
+          <div class="bf-tl-meta"><span>8 bets · Sep 2026</span><span>Oracle: 39% · Δ −19</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROW 3: Full-width Oracle table -->
+  <div class="bf-full-card">
+    <div class="bf-card-header">
+      <span class="bf-card-title">Oracle Divergence — Full Signal Table</span>
+      <span class="bf-card-badge badge-purple">Alpha layer · Pro</span>
+    </div>
+    <div class="bf-oracle-table">
+      <div class="bf-oracle-row bf-oracle-head">
+        <span class="bf-oc oc-signal">Signal</span>
+        <span class="bf-oc oc-market">Market</span>
+        <span class="bf-oc oc-ai">AI Ensemble</span>
+        <span class="bf-oc oc-gap">Gap</span>
+        <span class="bf-oc oc-dir">Direction</span>
+        <span class="bf-oc oc-conf">Confidence</span>
+      </div>
+      <div class="bf-oracle-row">
+        <span class="bf-oc oc-signal">Taiwan Military Action 24mo</span>
+        <span class="bf-oc oc-market" style="color:var(--text-2)">28%</span>
+        <span class="bf-oc oc-ai" style="color:var(--purple)">51%</span>
+        <span class="bf-oc oc-gap" style="color:var(--purple)">+23pts</span>
+        <span class="bf-oc oc-dir"><span class="bf-dir-badge" style="background:rgba(0,230,118,0.08);color:var(--green);border-color:rgba(0,230,118,0.18)">AI Higher</span></span>
+        <span class="bf-oc oc-conf"><div class="bf-conf-bar"><div class="bf-conf-fill" style="width:78%;background:var(--purple)"></div></div></span>
+      </div>
+      <div class="bf-oracle-row">
+        <span class="bf-oc oc-signal">Hormuz Closure 12mo</span>
+        <span class="bf-oc oc-market" style="color:var(--text-2)">44%</span>
+        <span class="bf-oc oc-ai" style="color:var(--cyan)">63%</span>
+        <span class="bf-oc oc-gap" style="color:var(--cyan)">+19pts</span>
+        <span class="bf-oc oc-dir"><span class="bf-dir-badge" style="background:rgba(0,230,118,0.08);color:var(--green);border-color:rgba(0,230,118,0.18)">AI Higher</span></span>
+        <span class="bf-oc oc-conf"><div class="bf-conf-bar"><div class="bf-conf-fill" style="width:72%;background:var(--cyan)"></div></div></span>
+      </div>
+      <div class="bf-oracle-row">
+        <span class="bf-oc oc-signal">Fed Rate Cut Sep 2026</span>
+        <span class="bf-oc oc-market" style="color:var(--text-2)">58%</span>
+        <span class="bf-oc oc-ai" style="color:var(--gold)">39%</span>
+        <span class="bf-oc oc-gap" style="color:var(--gold)">−19pts</span>
+        <span class="bf-oc oc-dir"><span class="bf-dir-badge" style="background:rgba(229,57,53,0.08);color:var(--red);border-color:rgba(229,57,53,0.18)">AI Lower</span></span>
+        <span class="bf-oc oc-conf"><div class="bf-conf-bar"><div class="bf-conf-fill" style="width:65%;background:var(--gold)"></div></div></span>
+      </div>
+      <div class="bf-oracle-row">
+        <span class="bf-oc oc-signal">DOGE Full Cuts Enacted</span>
+        <span class="bf-oc oc-market" style="color:var(--text-2)">67%</span>
+        <span class="bf-oc oc-ai" style="color:var(--cyan)">71%</span>
+        <span class="bf-oc oc-gap" style="color:var(--cyan)">+4pts</span>
+        <span class="bf-oc oc-dir"><span class="bf-dir-badge" style="background:rgba(255,255,255,0.04);color:var(--text-muted);border-color:rgba(255,255,255,0.1)">Aligned</span></span>
+        <span class="bf-oc oc-conf"><div class="bf-conf-bar"><div class="bf-conf-fill" style="width:55%;background:var(--text-muted)"></div></div></span>
+      </div>
+      <div class="bf-oracle-row">
+        <span class="bf-oc oc-signal">USD Dollar Dominance YE 2026</span>
+        <span class="bf-oc oc-market" style="color:var(--text-2)">71%</span>
+        <span class="bf-oc oc-ai" style="color:var(--blue)">58%</span>
+        <span class="bf-oc oc-gap" style="color:var(--red)">−13pts</span>
+        <span class="bf-oc oc-dir"><span class="bf-dir-badge" style="background:rgba(229,57,53,0.08);color:var(--red);border-color:rgba(229,57,53,0.18)">AI Lower</span></span>
+        <span class="bf-oc oc-conf"><div class="bf-conf-bar"><div class="bf-conf-fill" style="width:61%;background:var(--blue)"></div></div></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 4: Risk matrix + Ideology profiles side by side -->
+  <div class="bf-grid-2">
+
+    <!-- Risk dimension matrix -->
+    <div class="bf-card">
+      <div class="bf-card-header">
+        <span class="bf-card-title">Power Index — Key Entities</span>
+        <span class="bf-card-badge badge-gold">6-axis breakdown</span>
+      </div>
+      <div class="bf-matrix">
+        <div class="bf-matrix-head">
+          <span class="bf-mx mx-name">Entity</span>
+          <span class="bf-mx mx-axis">FIN</span>
+          <span class="bf-mx mx-axis">MIL</span>
+          <span class="bf-mx mx-axis">SOFT</span>
+          <span class="bf-mx mx-axis">COMM</span>
+          <span class="bf-mx mx-axis">POL</span>
+          <span class="bf-mx mx-axis">INFO</span>
+          <span class="bf-mx mx-total">Total</span>
+        </div>
+        <div class="bf-matrix-row">
+          <span class="bf-mx mx-name">Vladimir Putin</span>
+          <span class="bf-mx mx-val" style="color:var(--gold)">74</span>
+          <span class="bf-mx mx-val" style="color:var(--red)">92</span>
+          <span class="bf-mx mx-val">38</span>
+          <span class="bf-mx mx-val" style="color:var(--gold)">71</span>
+          <span class="bf-mx mx-val" style="color:var(--red)">95</span>
+          <span class="bf-mx mx-val">62</span>
+          <span class="bf-mx mx-total-val" style="color:var(--red)">81</span>
+        </div>
+        <div class="bf-matrix-row">
+          <span class="bf-mx mx-name">Xi Jinping</span>
+          <span class="bf-mx mx-val" style="color:var(--gold)">77</span>
+          <span class="bf-mx mx-val" style="color:var(--red)">84</span>
+          <span class="bf-mx mx-val">55</span>
+          <span class="bf-mx mx-val" style="color:var(--gold)">70</span>
+          <span class="bf-mx mx-val" style="color:var(--purple)">95</span>
+          <span class="bf-mx mx-val">82</span>
+          <span class="bf-mx mx-total-val" style="color:var(--purple)">79</span>
+        </div>
+        <div class="bf-matrix-row">
+          <span class="bf-mx mx-name">Elon Musk</span>
+          <span class="bf-mx mx-val" style="color:var(--gold)">88</span>
+          <span class="bf-mx mx-val">12</span>
+          <span class="bf-mx mx-val" style="color:var(--purple)">82</span>
+          <span class="bf-mx mx-val">44</span>
+          <span class="bf-mx mx-val" style="color:var(--red)">76</span>
+          <span class="bf-mx mx-val" style="color:var(--cyan)">91</span>
+          <span class="bf-mx mx-total-val" style="color:var(--red)">74</span>
+        </div>
+        <div class="bf-matrix-row">
+          <span class="bf-mx mx-name">Larry Fink</span>
+          <span class="bf-mx mx-val" style="color:var(--red)">96</span>
+          <span class="bf-mx mx-val">8</span>
+          <span class="bf-mx mx-val" style="color:var(--purple)">88</span>
+          <span class="bf-mx mx-val">55</span>
+          <span class="bf-mx mx-val">62</span>
+          <span class="bf-mx mx-val" style="color:var(--gold)">74</span>
+          <span class="bf-mx mx-total-val" style="color:var(--gold)">72</span>
+        </div>
+        <div class="bf-matrix-row">
+          <span class="bf-mx mx-name">Jerome Powell</span>
+          <span class="bf-mx mx-val" style="color:var(--gold)">78</span>
+          <span class="bf-mx mx-val">6</span>
+          <span class="bf-mx mx-val">22</span>
+          <span class="bf-mx mx-val">18</span>
+          <span class="bf-mx mx-val" style="color:var(--gold)">74</span>
+          <span class="bf-mx mx-val">55</span>
+          <span class="bf-mx mx-total-val" style="color:var(--blue)">62</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ideology profiles -->
+    <div class="bf-card">
+      <div class="bf-card-header">
+        <span class="bf-card-title">Ideology Profiles</span>
+        <span class="bf-card-badge badge-blue">7-axis · −10 to +10</span>
+      </div>
+      <div class="bf-ideology">
+        <div class="bf-ideo-person">
+          <div class="bf-ideo-header">
+            <div class="bf-node-av" style="background:rgba(229,57,53,0.1);border:1px solid rgba(229,57,53,0.2);color:var(--red);width:24px;height:24px;font-size:8px">VP</div>
+            <span style="font-family:var(--dm);font-size:12px;font-weight:500;color:var(--text)">Vladimir Putin</span>
+            <span style="font-family:var(--rajdhani);font-size:9px;color:var(--text-muted);margin-left:auto">Nationalist</span>
+          </div>
+          <div class="bf-ideo-axes">
+            <div class="bf-axis-row"><span class="bf-axis-label">State control</span><div class="bf-axis-bar"><div class="bf-axis-fill" style="width:90%;background:var(--red)"></div></div><span class="bf-axis-val">+9</span></div>
+            <div class="bf-axis-row"><span class="bf-axis-label">Militarism</span><div class="bf-axis-bar"><div class="bf-axis-fill" style="width:95%;background:var(--red)"></div></div><span class="bf-axis-val">+9.5</span></div>
+            <div class="bf-axis-row"><span class="bf-axis-label">Global order</span><div class="bf-axis-bar-neg"><div class="bf-axis-fill-neg" style="width:80%;background:var(--red)"></div></div><span class="bf-axis-val">−8</span></div>
+          </div>
+        </div>
+        <div class="bf-ideo-person">
+          <div class="bf-ideo-header">
+            <div class="bf-node-av" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.18);color:var(--cyan);width:24px;height:24px;font-size:8px">JP</div>
+            <span style="font-family:var(--dm);font-size:12px;font-weight:500;color:var(--text)">Jerome Powell</span>
+            <span style="font-family:var(--rajdhani);font-size:9px;color:var(--text-muted);margin-left:auto">Institutionalist</span>
+          </div>
+          <div class="bf-ideo-axes">
+            <div class="bf-axis-row"><span class="bf-axis-label">Mon. conserv.</span><div class="bf-axis-bar"><div class="bf-axis-fill" style="width:70%;background:var(--cyan)"></div></div><span class="bf-axis-val">+7</span></div>
+            <div class="bf-axis-row"><span class="bf-axis-label">Intervention</span><div class="bf-axis-bar-neg"><div class="bf-axis-fill-neg" style="width:40%;background:var(--blue)"></div></div><span class="bf-axis-val">−4</span></div>
+            <div class="bf-axis-row"><span class="bf-axis-label">vs Lagarde Δ</span><div class="bf-axis-bar"><div class="bf-axis-fill" style="width:42%;background:var(--gold)"></div></div><span class="bf-axis-val">4.2</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer pad -->
+  <div style="height:60px"></div>
+
+</div>
+
+
+<script>
+// ─────────────────────────────────────────────
+// STAR FIELD
+// ─────────────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const stars = Array.from({ length: 280 }, () => ({
+    x: Math.random(),
+    y: Math.random(),
+    r: Math.random() * 1.2 + 0.2,
+    a: Math.random() * 0.6 + 0.1,
+    speed: Math.random() * 0.003 + 0.001,
+    phase: Math.random() * Math.PI * 2
+  }));
+
+  let t = 0;
+  function drawStars() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    t += 0.012;
+    stars.forEach(s => {
+      const alpha = s.a * (0.5 + 0.5 * Math.sin(t * s.speed * 60 + s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x * canvas.width, s.y * canvas.height, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(drawStars);
+  }
+  drawStars();
+})();
+
+// ─────────────────────────────────────────────
+// GLOBE RENDERER
+// ─────────────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('globe-canvas');
+  const ctx = canvas.getContext('2d');
+  const wrap = document.getElementById('globe-wrap');
+
+  // Sizing
+  function getSize() {
+    const wrapEl = document.getElementById('globe-wrap');
+    const s = Math.min(wrapEl.clientWidth * 0.94, wrapEl.clientHeight * 0.94);
+    return Math.max(s, 200);
+  }
+
+  function resize() {
+    const s = getSize();
+    canvas.width = s;
+    canvas.height = s;
+    canvas.style.width = s + 'px';
+    canvas.style.height = s + 'px';
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Globe state
+  let rotY = 0;
+  let rotX = 0.18; // slight tilt
+  let isDragging = false;
+  let lastMX = 0, lastMY = 0;
+  let autoSpin = true;
+
+  // Interaction
+  canvas.addEventListener('mousedown', e => {
+    isDragging = true; autoSpin = false;
+    lastMX = e.clientX; lastMY = e.clientY;
+  });
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+    setTimeout(() => { autoSpin = true; }, 2000);
+  });
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const dx = e.clientX - lastMX;
+    const dy = e.clientY - lastMY;
+    rotY += dx * 0.004;
+    rotX += dy * 0.004;
+    rotX = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, rotX));
+    lastMX = e.clientX; lastMY = e.clientY;
+  });
+
+  // Touch
+  canvas.addEventListener('touchstart', e => {
+    isDragging = true; autoSpin = false;
+    lastMX = e.touches[0].clientX; lastMY = e.touches[0].clientY;
+    e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('touchend', () => {
+    isDragging = false;
+    setTimeout(() => { autoSpin = true; }, 2000);
+  });
+  window.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    const dx = e.touches[0].clientX - lastMX;
+    const dy = e.touches[0].clientY - lastMY;
+    rotY += dx * 0.004;
+    rotX += dy * 0.004;
+    rotX = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, rotX));
+    lastMX = e.touches[0].clientX; lastMY = e.touches[0].clientY;
+  }, { passive: true });
+
+  // 3D projection helper
+  function project(lat, lon, R, cx, cy) {
+    const latR = lat * Math.PI / 180;
+    const lonR = lon * Math.PI / 180;
+    // 3D point on unit sphere
+    let x = Math.cos(latR) * Math.sin(lonR);
+    let y = Math.sin(latR);
+    let z = Math.cos(latR) * Math.cos(lonR);
+    // Apply rotY
+    const x2 = x * Math.cos(rotY) + z * Math.sin(rotY);
+    const z2 = -x * Math.sin(rotY) + z * Math.cos(rotY);
+    // Apply rotX
+    const y2 = y * Math.cos(rotX) - z2 * Math.sin(rotX);
+    const z3 = y * Math.sin(rotX) + z2 * Math.cos(rotX);
+    return { x: cx + x2 * R, y: cy + y2 * R, z: z3, visible: z3 > -0.08 };
+  }
+
+  // City nodes
+  const cities = [
+    { name: 'Washington',  lat: 38.9,  lon: -77.0,  color: '#00e5ff', r: 4.5 },
+    { name: 'London',      lat: 51.5,  lon: -0.12,  color: '#00e5ff', r: 4 },
+    { name: 'Moscow',      lat: 55.75, lon: 37.6,   color: '#00e5ff', r: 4.5 },
+    { name: 'Beijing',     lat: 39.9,  lon: 116.4,  color: '#e53935', r: 5 },
+    { name: 'Riyadh',      lat: 24.7,  lon: 46.7,   color: '#d4a847', r: 4.5 },
+    { name: 'Dubai',       lat: 25.2,  lon: 55.27,  color: '#d4a847', r: 3.5 },
+    { name: 'New York',    lat: 40.71, lon: -74.0,  color: '#00e5ff', r: 4 },
+    { name: 'Berlin',      lat: 52.52, lon: 13.4,   color: '#00e5ff', r: 3.5 },
+    { name: 'Tokyo',       lat: 35.68, lon: 139.69, color: '#3b8bd4', r: 4 },
+    { name: 'Mumbai',      lat: 19.07, lon: 72.87,  color: '#d4a847', r: 3.5 },
+    { name: 'São Paulo',   lat: -23.55,lon: -46.63, color: '#00e676', r: 3.5 },
+    { name: 'Taipei',      lat: 25.03, lon: 121.56, color: '#e53935', r: 3.5 },
+    { name: 'Singapore',   lat: 1.35,  lon: 103.82, color: '#3b8bd4', r: 3.5 },
+    { name: 'Zürich',      lat: 47.37, lon: 8.54,   color: '#d4a847', r: 3 },
+  ];
+
+  // Arc connections (city index pairs)
+  const arcs = [
+    { from: 0, to: 2,  color: '#00e5ff', w: 1.5, opacity: 0.65 }, // Washington→Moscow
+    { from: 4, to: 3,  color: '#e53935', w: 1.5, opacity: 0.6  }, // Riyadh→Beijing
+    { from: 7, to: 4,  color: '#00e5ff', w: 1.2, opacity: 0.45 }, // Berlin→Riyadh
+    { from: 0, to: 4,  color: '#d4a847', w: 1.2, opacity: 0.45 }, // Washington→Riyadh
+    { from: 2, to: 3,  color: '#e53935', w: 1.0, opacity: 0.35 }, // Moscow→Beijing
+    { from: 1, to: 2,  color: '#00e5ff', w: 1.0, opacity: 0.4  }, // London→Moscow
+    { from: 8, to: 3,  color: '#3b8bd4', w: 1.0, opacity: 0.4  }, // Tokyo→Beijing
+    { from: 0, to: 6,  color: '#00e5ff', w: 0.8, opacity: 0.3  }, // Washington→NY
+    { from: 11,to: 3,  color: '#e53935', w: 1.0, opacity: 0.45 }, // Taipei→Beijing
+    { from: 13,to: 1,  color: '#d4a847', w: 0.8, opacity: 0.3  }, // Zürich→London
+  ];
+
+  // Continent outlines as lat/lon polylines
+  const continents = [
+    // North America (simplified)
+    { points: [
+      [70,-140],[65,-168],[60,-165],[55,-160],[50,-128],[45,-124],[40,-124],[35,-120],[30,-117],
+      [25,-110],[20,-87],[15,-83],[10,-83],[8,-77],[10,-75],[15,-88],[20,-90],[25,-80],
+      [30,-81],[35,-76],[40,-74],[45,-67],[50,-64],[55,-60],[60,-65],[65,-65],[70,-68],
+      [72,-78],[72,-95],[70,-110],[68,-135],[70,-140]
+    ], color: 'rgba(40,80,130,0.5)', fill: 'rgba(20,50,100,0.12)' },
+    // South America
+    { points: [
+      [10,-75],[5,-77],[0,-80],[-5,-81],[-10,-75],[-15,-75],[-20,-70],[-25,-65],
+      [-30,-50],[-35,-57],[-40,-62],[-45,-65],[-50,-68],[-55,-67],[-55,-64],
+      [-50,-58],[-45,-50],[-40,-48],[-35,-37],[-30,-30],[-25,-43],[-20,-40],
+      [-15,-38],[-10,-37],[-5,-35],[0,-50],[5,-62],[10,-75]
+    ], color: 'rgba(40,80,130,0.45)', fill: 'rgba(20,50,100,0.1)' },
+    // Europe
+    { points: [
+      [70,20],[65,14],[60,5],[55,8],[50,2],[45,0],[40,-5],[37,-9],[36,0],
+      [36,10],[38,15],[40,18],[42,20],[45,28],[48,38],[55,38],[60,28],[65,26],[70,20]
+    ], color: 'rgba(40,80,130,0.5)', fill: 'rgba(20,50,100,0.12)' },
+    // Africa
+    { points: [
+      [37,10],[30,32],[25,37],[20,38],[15,42],[10,42],[5,40],[0,41],[-5,40],
+      [-10,38],[-15,35],[-20,35],[-25,33],[-30,30],[-35,27],[-34,19],[-30,18],
+      [-25,15],[-20,14],[-15,12],[-10,10],[-5,8],[0,9],[5,2],[10,-2],
+      [15,-17],[20,-18],[25,-15],[30,0],[35,10],[37,10]
+    ], color: 'rgba(40,80,130,0.45)', fill: 'rgba(20,50,100,0.1)' },
+    // Asia (simplified)
+    { points: [
+      [70,60],[65,58],[60,55],[55,52],[50,48],[45,38],[40,28],[35,26],[30,35],
+      [25,57],[20,58],[15,45],[10,45],[5,40],[0,42],[-5,40],[0,36],[5,33],
+      [10,40],[15,44],[20,48],[25,55],[30,48],[35,45],[40,50],[45,60],[50,70],
+      [55,82],[60,90],[65,100],[70,105],[72,120],[70,140],[65,140],[60,135],
+      [55,130],[50,120],[45,135],[40,128],[35,138],[30,130],[25,120],[20,110],
+      [15,100],[10,100],[5,103],[0,104],[5,100],[10,92],[15,80],[20,73],
+      [25,68],[30,60],[35,50],[40,44],[45,38],[50,36],[55,35],[60,40],[65,55],[70,60]
+    ], color: 'rgba(40,80,130,0.5)', fill: 'rgba(20,50,100,0.13)' },
+    // Australia
+    { points: [
+      [-15,130],[-20,122],[-25,114],[-30,115],[-35,117],[-38,140],[-38,147],
+      [-35,150],[-30,153],[-25,153],[-20,148],[-15,145],[-12,136],[-15,130]
+    ], color: 'rgba(40,80,130,0.4)', fill: 'rgba(20,50,100,0.09)' },
+  ];
+
+  // Graticule lines (lat/lon grid)
+  const latLines  = [-60,-30,0,30,60];
+  const lonLines  = [-150,-120,-90,-60,-30,0,30,60,90,120,150,180];
+
+  // Arc animation offset
+  let arcOffset = 0;
+
+  // Draw great-circle arc between two 3D points
+  function drawArc(p1, p2, col, lineWidth, opacity, R, cx, cy) {
+    // Sample arc in 3D space
+    const steps = 60;
+    ctx.beginPath();
+    let started = false;
+    let prevVis = false;
+
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      // Spherical interpolation (SLERP)
+      const lat1 = p1.lat * Math.PI / 180;
+      const lon1 = p1.lon * Math.PI / 180;
+      const lat2 = p2.lat * Math.PI / 180;
+      const lon2 = p2.lon * Math.PI / 180;
+
+      // Cartesian on unit sphere
+      const ax = Math.cos(lat1)*Math.sin(lon1), ay = Math.sin(lat1), az = Math.cos(lat1)*Math.cos(lon1);
+      const bx = Math.cos(lat2)*Math.sin(lon2), by = Math.sin(lat2), bz = Math.cos(lat2)*Math.cos(lon2);
+
+      // Lerp + normalize
+      const ix = ax + t*(bx-ax), iy = ay + t*(by-ay), iz = az + t*(bz-az);
+      const len = Math.sqrt(ix*ix+iy*iy+iz*iz);
+      const nx = ix/len, ny = iy/len, nz = iz/len;
+
+      // Apply rotations
+      const rx2 = nx*Math.cos(rotY) + nz*Math.sin(rotY);
+      const rz2 = -nx*Math.sin(rotY) + nz*Math.cos(rotY);
+      const ry2 = ny*Math.cos(rotX) - rz2*Math.sin(rotX);
+      const rz3 = ny*Math.sin(rotX) + rz2*Math.cos(rotX);
+
+      const sx = cx + rx2 * R;
+      const sy = cy + ry2 * R;
+      const vis = rz3 > -0.05;
+
+      if (vis) {
+        if (!started || !prevVis) { ctx.moveTo(sx, sy); started = true; }
+        else ctx.lineTo(sx, sy);
+      }
+      prevVis = vis;
+    }
+
+    ctx.strokeStyle = col;
+    ctx.globalAlpha = opacity;
+    ctx.lineWidth = lineWidth;
+    ctx.setLineDash([6, 4]);
+    ctx.lineDashOffset = -arcOffset;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+  }
+
+  // Draw continent polygon
+  function drawContinent(pts, strokeColor, fillColor, R, cx, cy) {
+    const projected = pts.map(([lat, lon]) => project(lat, lon, R, cx, cy));
+    const visible = projected.filter(p => p.visible);
+    if (visible.length < 3) return;
+
+    ctx.beginPath();
+    let started = false;
+    projected.forEach(p => {
+      if (p.visible) {
+        if (!started) { ctx.moveTo(p.x, p.y); started = true; }
+        else ctx.lineTo(p.x, p.y);
+      } else {
+        started = false;
+      }
+    });
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.globalAlpha = 0.9;
+    ctx.fill();
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 0.7;
+    ctx.globalAlpha = 0.7;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  // Draw graticule line
+  function drawGraticule(isLat, value, R, cx, cy) {
+    const steps = 72;
+    ctx.beginPath();
+    let started = false;
+    let prevVis = false;
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * 360 - 180;
+      const lat = isLat ? value : t;
+      const lon = isLat ? t : value;
+      const p = project(lat, lon, R, cx, cy);
+      if (p.visible) {
+        if (!started || !prevVis) { ctx.moveTo(p.x, p.y); started = true; }
+        else ctx.lineTo(p.x, p.y);
+      }
+      prevVis = p.visible;
+    }
+    ctx.strokeStyle = 'rgba(0,229,255,0.06)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  let t = 0;
+
+  function draw() {
+    const s = canvas.width;
+    const R = s * 0.46;
+    const cx = s / 2, cy = s / 2;
+
+    ctx.clearRect(0, 0, s, s);
+
+    // ── Globe base sphere ──
+    const grad = ctx.createRadialGradient(
+      cx - R * 0.25, cy - R * 0.25, R * 0.05,
+      cx, cy, R
+    );
+    grad.addColorStop(0,   'rgba(15,40,80,0.95)');
+    grad.addColorStop(0.4, 'rgba(8,20,50,0.92)');
+    grad.addColorStop(0.8, 'rgba(4,10,28,0.95)');
+    grad.addColorStop(1,   'rgba(2,5,15,0.98)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // ── Atmosphere glow ──
+    const atmo = ctx.createRadialGradient(cx, cy, R * 0.92, cx, cy, R * 1.08);
+    atmo.addColorStop(0,   'rgba(0,229,255,0.08)');
+    atmo.addColorStop(0.5, 'rgba(0,100,200,0.04)');
+    atmo.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 1.08, 0, Math.PI * 2);
+    ctx.fillStyle = atmo;
+    ctx.fill();
+
+    // ── Clip to sphere ──
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Graticule
+    latLines.forEach(lat => drawGraticule(true, lat, R, cx, cy));
+    lonLines.forEach(lon => drawGraticule(false, lon, R, cx, cy));
+
+    // Continents
+    continents.forEach(c => drawContinent(c.points, c.color, c.fill, R, cx, cy));
+
+    // ── Specular highlight ──
+    const spec = ctx.createRadialGradient(
+      cx - R * 0.3, cy - R * 0.35, 0,
+      cx - R * 0.1, cy - R * 0.15, R * 0.7
+    );
+    spec.addColorStop(0,   'rgba(180,220,255,0.07)');
+    spec.addColorStop(0.4, 'rgba(100,180,255,0.03)');
+    spec.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = spec;
+    ctx.fillRect(0, 0, s, s);
+
+    ctx.restore();
+
+    // ── Globe sphere edge ──
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0,229,255,0.18)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // ── Arcs ──
+    arcOffset = t * 18;
+    arcs.forEach(a => {
+      drawArc(cities[a.from], cities[a.to], a.color, a.w, a.opacity, R, cx, cy);
+    });
+
+    // ── City nodes ──
+    t += 0.008;
+    cities.forEach((city, idx) => {
+      const p = project(city.lat, city.lon, R, cx, cy);
+      if (!p.visible) return;
+
+      const pulse = 0.6 + 0.4 * Math.sin(t * 2.5 + idx * 0.8);
+      const outerR = city.r * (1 + 0.6 * pulse);
+
+      // Outer pulse ring
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, outerR * 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = city.color.replace(')', `,${0.08 * pulse})`).replace('rgb', 'rgba');
+      ctx.fill();
+
+      // Inner dot
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, city.r * 0.7, 0, Math.PI * 2);
+      ctx.fillStyle = city.color;
+      ctx.globalAlpha = 0.9;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Glow
+      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, city.r * 3);
+      glow.addColorStop(0, city.color.replace(')', ',0.3)').replace('rgb', 'rgba'));
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, city.r * 3, 0, Math.PI * 2);
+      ctx.fillStyle = glow;
+      ctx.fill();
+
+      // City label
+      if (city.r >= 4) {
+        ctx.font = `500 ${Math.round(R * 0.028)}px 'Rajdhani', sans-serif`;
+        ctx.fillStyle = 'rgba(255,255,255,0.65)';
+        ctx.shadowColor = city.color;
+        ctx.shadowBlur = 4;
+        ctx.fillText(city.name, p.x + city.r * 1.6, p.y + city.r * 0.5);
+        ctx.shadowBlur = 0;
+      }
+    });
+
+    if (autoSpin) rotY += 0.0018;
+
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+
+  // Resize handler
+  window.addEventListener('resize', () => {
+    resize();
+  });
+})();
+
+// Right tab switcher
+function switchRTab(idx, btn) {
+  document.querySelectorAll('.r-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.r-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('rpanel-' + idx).classList.add('active');
+}
+
+// Mode button switcher — also switches left panel
+function setMode(btn, mode) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.lp-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('lp-' + mode);
+  if (panel) panel.classList.add('active');
+  // Expand left col for rankings, reset for others
+  const col = document.getElementById('left-col');
+  col.style.width = mode === 'rankings' ? '340px' : '272px';
+}
+
+// Preset selector — opens map panel in right col
+function selectPreset(el) {
+  el.closest('.lp-preset-grid').querySelectorAll('.lp-preset').forEach(p => p.classList.remove('active-preset'));
+  el.classList.add('active-preset');
+  const name = el.querySelector('.lp-preset-name').textContent.trim();
+  openMapPanel(name);
+}
+
+function openMapPanel(name) {
+  const data = MAP_PRESETS[name];
+  if (!data) return;
+  // Populate header
+  document.getElementById('mp-icon').style.color = data.color;
+  document.getElementById('mp-name').textContent = name;
+  document.getElementById('mp-section-label').textContent = data.entities.length + ' Entities';
+  // Build entity list
+  const list = document.getElementById('mp-entity-list');
+  list.innerHTML = data.entities.map(e => `
+    <div class="mp-entity">
+      <div class="mp-entity-top">
+        <div class="mp-av" style="${e.av_style}">${e.av}</div>
+        <div class="mp-entity-info">
+          <div class="mp-entity-name">${e.name}</div>
+          <div class="mp-entity-sub">${e.sub}</div>
+        </div>
+        <div class="mp-entity-score" style="color:${e.score_color}">${e.score}</div>
+      </div>
+      <div class="mp-relations">
+        ${e.rels.map(([verb, target, rtype, risk, rc]) => `
+          <div class="mp-rel">
+            <span class="mp-rel-arrow">→</span>
+            <span class="mp-rel-target">${target}</span>
+            <span class="mp-rel-type" style="background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);border:1px solid rgba(255,255,255,0.1)">${rtype}</span>
+            <span class="mp-rel-risk" style="color:${rc}">${risk}</span>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+  // Show map panel
+  document.getElementById('map-panel').classList.add('active');
+  // Hide right col
+  const rc = document.getElementById('right-col');
+  rc.style.width = '0';
+  rc.style.opacity = '0';
+  rc.style.overflow = 'hidden';
+  rc.style.borderLeft = 'none';
+}
+
+function closeMapPanel() {
+  document.getElementById('map-panel').classList.remove('active');
+  const rc = document.getElementById('right-col');
+  rc.style.width = '260px';
+  rc.style.opacity = '1';
+  rc.style.overflow = 'hidden';
+  rc.style.borderLeft = '1px solid rgba(255,255,255,0.08)';
+}
+
+// Analyst selector
+function selectAnalyst(el) {
+  el.closest('.lp-analyst-pick').querySelectorAll('.lp-analyst').forEach(a => a.classList.remove('active-analyst'));
+  el.classList.add('active-analyst');
+}
+
+// Rank tab switcher
+function switchRankTab(btn, id) {
+  btn.closest('.lp-panel').querySelectorAll('.lp-rtab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  btn.closest('.lp-panel').querySelectorAll('.lp-rank-list').forEach(l => l.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// Timeline filter
+function filterTL(btn, status) {
+  btn.closest('.lp-tl-filters').querySelectorAll('.lp-filter-btn').forEach(b => b.classList.remove('active-filter'));
+  btn.classList.add('active-filter');
+  document.querySelectorAll('.lp-tl-item').forEach(item => {
+    if (status === 'all' || item.dataset.status === status) item.style.display = '';
+    else item.style.display = 'none';
+  });
+}
+
+// Range update
+function updateRange() {
+  document.getElementById('risk-min-val').textContent = parseFloat(document.getElementById('risk-min').value).toFixed(1);
+}
+
+// Cascade depth
+function setDepth(el) {
+  el.closest('.lp-depth-btns').querySelectorAll('.lp-depth-btn').forEach(b => b.classList.remove('active-depth'));
+  el.classList.add('active-depth');
+}
+
+// Burger stub
+document.getElementById('burger').addEventListener('click', function() {
+  this.style.opacity = this.style.opacity === '1' ? '0.75' : '1';
+});
+</script>
+<script>const MAP_PRESETS = {"Financial": {"icon": "\u25c8", "color": "var(--gold)", "accent": "rgba(212,168,71,0.08)", "entities": [{"av": "LF", "av_style": "background:rgba(212,168,71,0.12);border:1px solid rgba(212,168,71,0.22);color:var(--gold)", "name": "Larry Fink", "sub": "BlackRock \u00b7 Financial", "score": "72", "score_color": "var(--gold)", "rels": [["Controls", "BlackRock", "Controls", "4.1", "var(--gold)"], ["Influences", "Fed Reserve", "Influence", "3.8", "var(--blue)"]]}, {"av": "JD", "av_style": "background:rgba(59,139,212,0.12);border:1px solid rgba(59,139,212,0.22);color:var(--blue)", "name": "Jamie Dimon", "sub": "JPMorgan \u00b7 CEO", "score": "68", "score_color": "var(--blue)", "rels": [["Owns", "JPMorgan Chase", "Owns", "3.2", "var(--blue)"], ["Partner", "Federal Reserve", "Partner", "2.9", "var(--cyan)"]]}, {"av": "JP", "av_style": "background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.18);color:var(--cyan)", "name": "Jerome Powell", "sub": "Federal Reserve \u00b7 Chair", "score": "62", "score_color": "var(--cyan)", "rels": [["Regulates", "US Banking System", "Regulates", "5.1", "var(--red)"], ["Diverges", "Lagarde Axis 3", "Ideology", "4.2", "var(--gold)"]]}, {"av": "BR", "av_style": "background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:var(--purple)", "name": "BlackRock", "sub": "Company \u00b7 $10T AUM", "score": "91", "score_color": "var(--purple)", "rels": [["Owns", "Aladdin OS", "Controls", "6.8", "var(--red)"], ["Supplies", "Vanguard AM", "Supplies", "3.1", "var(--blue)"]]}, {"av": "GS", "av_style": "background:rgba(212,168,71,0.1);border:1px solid rgba(212,168,71,0.2);color:var(--gold)", "name": "Goldman Sachs", "sub": "Company \u00b7 G-SIB", "score": "64", "score_color": "var(--gold)", "rels": [["Partner", "US Treasury", "Partner", "3.6", "var(--blue)"], ["Rival", "JPMorgan Chase", "Rival", "2.8", "var(--red)"]]}]}, "AI": {"icon": "\u25c8", "color": "var(--cyan)", "accent": "rgba(0,229,255,0.06)", "entities": [{"av": "SA", "av_style": "background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.18);color:var(--cyan)", "name": "Sam Altman", "sub": "OpenAI \u00b7 CEO", "score": "61", "score_color": "var(--cyan)", "rels": [["Leads", "OpenAI", "Leads", "5.2", "var(--cyan)"], ["Rival", "Elon Musk", "Rival", "4.8", "var(--red)"]]}, {"av": "JH", "av_style": "background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:var(--purple)", "name": "Jensen Huang", "sub": "NVIDIA \u00b7 CEO", "score": "61", "score_color": "var(--purple)", "rels": [["Controls", "GPU Supply Chain", "Controls", "7.2", "var(--red)"], ["Supplies", "OpenAI \u00b7 xAI \u00b7 Meta", "Supplies", "6.9", "var(--gold)"]]}, {"av": "EM", "av_style": "background:rgba(229,57,53,0.12);border:1px solid rgba(229,57,53,0.22);color:var(--red)", "name": "Elon Musk", "sub": "xAI \u00b7 Founder", "score": "74", "score_color": "var(--red)", "rels": [["Owns", "xAI", "Owns", "4.1", "var(--cyan)"], ["Rival", "Sam Altman", "Rival", "4.8", "var(--red)"]]}, {"av": "MZ", "av_style": "background:rgba(59,139,212,0.12);border:1px solid rgba(59,139,212,0.22);color:var(--blue)", "name": "Mark Zuckerberg", "sub": "Meta \u00b7 Llama AI", "score": "68", "score_color": "var(--blue)", "rels": [["Leads", "Meta AI Labs", "Leads", "3.8", "var(--blue)"], ["Competes", "OpenAI \u00b7 Google", "Rival", "4.2", "var(--red)"]]}, {"av": "NV", "av_style": "background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:var(--purple)", "name": "NVIDIA", "sub": "Company \u00b7 $3.3T", "score": "88", "score_color": "var(--purple)", "rels": [["Chokepoint", "AI Compute Supply", "Critical", "8.1", "var(--red)"], ["Supplies", "All major AI labs", "Supplies", "7.4", "var(--gold)"]]}, {"av": "OA", "av_style": "background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.18);color:var(--cyan)", "name": "OpenAI", "sub": "Company \u00b7 $300B val", "score": "77", "score_color": "var(--cyan)", "rels": [["Partner", "Microsoft", "Partner", "5.6", "var(--blue)"], ["Depends", "NVIDIA GPUs", "Dependency", "6.1", "var(--gold)"]]}]}, "Dollar": {"icon": "\u25c8", "color": "var(--blue)", "accent": "rgba(59,139,212,0.06)", "entities": [{"av": "FD", "av_style": "background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.18);color:var(--cyan)", "name": "Federal Reserve", "sub": "Institution \u00b7 USA", "score": "95", "score_color": "var(--cyan)", "rels": [["Controls", "USD Supply", "Controls", "9.1", "var(--red)"], ["Regulates", "US Banking System", "Regulates", "8.2", "var(--red)"]]}, {"av": "TR", "av_style": "background:rgba(59,139,212,0.12);border:1px solid rgba(59,139,212,0.22);color:var(--blue)", "name": "US Treasury", "sub": "Institution \u00b7 Bessent", "score": "88", "score_color": "var(--blue)", "rels": [["Issues", "T-Bills \u00b7 Bonds", "Issues", "7.8", "var(--blue)"], ["Sanctions", "Iran \u00b7 Russia \u00b7 NK", "Controls", "8.4", "var(--red)"]]}, {"av": "IM", "av_style": "background:rgba(212,168,71,0.1);border:1px solid rgba(212,168,71,0.2);color:var(--gold)", "name": "IMF", "sub": "Institution \u00b7 Global", "score": "82", "score_color": "var(--gold)", "rels": [["Stabilises", "USD Global Role", "Supports", "6.2", "var(--blue)"], ["Lends", "94 countries", "Controls", "5.8", "var(--gold)"]]}, {"av": "JP", "av_style": "background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.18);color:var(--cyan)", "name": "Jerome Powell", "sub": "Fed Chair \u00b7 Monetary", "score": "62", "score_color": "var(--cyan)", "rels": [["Diverges", "Lagarde +4.2pts", "Ideology \u0394", "4.2", "var(--gold)"], ["Sets", "Global Rate Benchmark", "Influences", "7.1", "var(--blue)"]]}]}, "The Big Three": {"icon": "\u25c8", "color": "var(--purple)", "accent": "rgba(139,92,246,0.06)", "entities": [{"av": "BR", "av_style": "background:rgba(212,168,71,0.1);border:1px solid rgba(212,168,71,0.2);color:var(--gold)", "name": "BlackRock", "sub": "Company \u00b7 $10T AUM", "score": "91", "score_color": "var(--gold)", "rels": [["Owns", "Aladdin \u2014 $21.6T risk", "Chokepoint", "8.1", "var(--red)"], ["Controls", "Larry Fink", "Leads", "4.1", "var(--gold)"]]}, {"av": "VG", "av_style": "background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:var(--purple)", "name": "Vanguard", "sub": "Company \u00b7 $8.1T AUM", "score": "87", "score_color": "var(--purple)", "rels": [["Owns", "Apple 8.9% \u00b7 MSFT 8.3%", "Owns", "3.8", "var(--blue)"], ["Competes", "BlackRock", "Rival", "2.1", "var(--purple)"]]}, {"av": "SS", "av_style": "background:rgba(59,139,212,0.12);border:1px solid rgba(59,139,212,0.22);color:var(--blue)", "name": "State Street", "sub": "Company \u00b7 $3.9T AUM", "score": "74", "score_color": "var(--blue)", "rels": [["Issues", "SPDR S&P 500 ETF", "Issues", "4.2", "var(--blue)"], ["Collaborates", "BlackRock \u00b7 Vanguard", "Alliance", "3.1", "var(--purple)"]]}]}, "Wall Street": {"icon": "\u25c8", "color": "var(--green)", "accent": "rgba(0,230,118,0.04)", "entities": [{"av": "JP", "av_style": "background:rgba(59,139,212,0.12);border:1px solid rgba(59,139,212,0.22);color:var(--blue)", "name": "JPMorgan Chase", "sub": "Bank \u00b7 $3.9T assets", "score": "88", "score_color": "var(--blue)", "rels": [["Leads", "COMEX Gold Vault", "Controls", "4.8", "var(--gold)"], ["Rival", "Goldman Sachs", "Rival", "2.4", "var(--red)"]]}, {"av": "GS", "av_style": "background:rgba(212,168,71,0.1);border:1px solid rgba(212,168,71,0.2);color:var(--gold)", "name": "Goldman Sachs", "sub": "Bank \u00b7 G-SIB tier 1", "score": "82", "score_color": "var(--gold)", "rels": [["Controls", "Derivatives desk", "Controls", "3.9", "var(--gold)"], ["Advises", "US Treasury", "Advises", "4.1", "var(--blue)"]]}, {"av": "MS", "av_style": "background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.18);color:var(--cyan)", "name": "Morgan Stanley", "sub": "Bank \u00b7 $1.1T AUM", "score": "74", "score_color": "var(--cyan)", "rels": [["Manages", "Musk Tesla blocks", "Facilitates", "3.2", "var(--red)"], ["Partner", "BlackRock", "Partner", "2.8", "var(--gold)"]]}, {"av": "CT", "av_style": "background:rgba(229,57,53,0.1);border:1px solid rgba(229,57,53,0.2);color:var(--red)", "name": "Citigroup", "sub": "Bank \u00b7 160 countries", "score": "68", "score_color": "var(--red)", "rels": [["Operates", "160 country network", "Controls", "5.1", "var(--red)"], ["Rival", "JPMorgan", "Rival", "2.2", "var(--gold)"]]}]}, "Military": {"icon": "\u25c8", "color": "var(--red)", "accent": "rgba(229,57,53,0.05)", "entities": [{"av": "US", "av_style": "background:rgba(229,57,53,0.12);border:1px solid rgba(229,57,53,0.22);color:var(--red)", "name": "United States", "sub": "Country \u00b7 $886B budget", "score": "95", "score_color": "var(--red)", "rels": [["Leads", "NATO Alliance", "Controls", "7.4", "var(--blue)"], ["Operates", "750 foreign bases", "Controls", "8.1", "var(--red)"]]}, {"av": "RU", "av_style": "background:rgba(229,57,53,0.1);border:1px solid rgba(229,57,53,0.2);color:var(--red)", "name": "Russia", "sub": "Country \u00b7 6,000 warheads", "score": "84", "score_color": "var(--red)", "rels": [["Invades", "Ukraine", "Conflict", "9.2", "var(--red)"], ["Partner", "China \u00b7 Iran", "Alliance", "6.1", "var(--gold)"]]}, {"av": "CN", "av_style": "background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:var(--purple)", "name": "China (PLA)", "sub": "Country \u00b7 2M personnel", "score": "88", "score_color": "var(--purple)", "rels": [["Threatens", "Taiwan Strait", "Conflict Risk", "7.6", "var(--red)"], ["Builds", "Blue Water Navy", "Expands", "6.8", "var(--gold)"]]}, {"av": "LM", "av_style": "background:rgba(59,139,212,0.12);border:1px solid rgba(59,139,212,0.22);color:var(--blue)", "name": "Lockheed Martin", "sub": "Company \u00b7 $67B revenue", "score": "71", "score_color": "var(--blue)", "rels": [["Supplies", "Pentagon \u00b7 NATO", "Supplies", "5.2", "var(--blue)"], ["Contracts", "F-35 \u00b7 THAAD", "Controls", "4.8", "var(--gold)"]]}, {"av": "SX", "av_style": "background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.18);color:var(--cyan)", "name": "SpaceX / Starlink", "sub": "Company \u00b7 Musk", "score": "68", "score_color": "var(--cyan)", "rels": [["Provides", "Ukraine comms infra", "Critical", "8.4", "var(--red)"], ["Contracts", "DoD Starshield $6.2B", "Controls", "5.8", "var(--blue)"]]}]}};</script>
+</body>
+</html>

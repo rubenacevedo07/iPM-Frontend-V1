@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPM · Intelligence Power Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #030710;
+  --cyan:      #00e5ff;
+  --gold:      #d4a847;
+  --red:       #e53935;
+  --text:      #ffffff;
+  --text-2:    rgba(255,255,255,0.7);
+  --text-muted:rgba(255,255,255,0.38);
+  --manrope:   'Manrope', sans-serif;
+  --rajdhani:  'Rajdhani', sans-serif;
+  --dm:        'DM Sans', sans-serif;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  font-family: var(--dm);
+  color: var(--text);
+}
+
+/* ── NOISE OVERLAY ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999; opacity: 0.5;
+}
+
+/* ── WELCOME SCREEN ── */
+#welcome {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: stretch;
+  background: var(--bg);
+  z-index: 100;
+  opacity: 1;
+  transition: opacity 0.9s ease;
+}
+#welcome.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Left — character video */
+#welcome-left {
+  flex: 0 0 46%;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Deep atmospheric glow behind character */
+#welcome-left::before {
+  content: '';
+  position: absolute;
+  bottom: -10%; left: 50%;
+  transform: translateX(-50%);
+  width: 420px; height: 420px;
+  background: radial-gradient(ellipse, rgba(0,229,255,0.1) 0%, rgba(0,229,255,0.03) 45%, transparent 70%);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+/* Gradient floor fade */
+#welcome-left::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 200px;
+  background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Side fades — blend video into dark bg */
+#video-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    linear-gradient(to right,  var(--bg) 0%, transparent 12%),
+    linear-gradient(to left,   var(--bg) 0%, transparent 12%),
+    linear-gradient(to bottom, var(--bg) 0%, transparent 10%);
+}
+
+#ceo-video {
+  position: relative;
+  z-index: 1;
+  height: 96%;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Right — content */
+#welcome-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 7% 0 5%;
+  position: relative;
+}
+
+/* Vertical divider */
+#welcome-right::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 15%; bottom: 15%;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, rgba(0,229,255,0.15), transparent);
+}
+
+/* IPM badge */
+#welcome-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+  opacity: 0;
+  transform: translateY(12px);
+  animation: fadeUp 0.6s ease 0.3s forwards;
+}
+#welcome-badge-dot {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  background: rgba(0,229,255,0.1);
+  border: 1px solid rgba(0,229,255,0.25);
+  display: flex; align-items: center; justify-content: center;
+}
+#welcome-badge-dot svg { width: 14px; height: 14px; }
+#welcome-badge-text {
+  font-family: var(--manrope);
+  font-size: 12px; font-weight: 800;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.6);
+}
+#welcome-badge-version {
+  font-family: var(--rajdhani);
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 3px;
+  background: rgba(0,229,255,0.07);
+  border: 1px solid rgba(0,229,255,0.18);
+  color: var(--cyan);
+}
+
+/* Headline */
+#welcome-headline {
+  font-family: var(--manrope);
+  font-size: clamp(28px, 3.2vw, 48px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-bottom: 10px;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fadeUp 0.7s ease 0.5s forwards;
+}
+#welcome-headline span { color: var(--cyan); }
+
+/* Spoken line — typewriter */
+#welcome-spoken {
+  font-family: var(--manrope);
+  font-size: clamp(13px, 1.4vw, 18px);
+  font-weight: 400;
+  color: var(--text-2);
+  line-height: 1.55;
+  margin-bottom: 32px;
+  min-height: 3em;
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.8s forwards;
+}
+#typewriter-cursor {
+  display: inline-block;
+  width: 2px; height: 1.1em;
+  background: var(--cyan);
+  margin-left: 3px;
+  vertical-align: middle;
+  animation: blink 0.85s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* Stats row */
+#welcome-stats {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: fadeUp 0.6s ease 2.8s forwards;
+}
+.welcome-stat-val {
+  font-family: var(--manrope);
+  font-size: 26px; font-weight: 800;
+  line-height: 1; color: var(--text);
+}
+.welcome-stat-lbl {
+  font-family: var(--rajdhani);
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.welcome-stat-sep {
+  width: 1px; background: rgba(255,255,255,0.1); align-self: stretch;
+}
+
+/* CTA */
+#welcome-cta {
+  display: flex;
+  gap: 12px;
+  opacity: 0;
+  animation: fadeUp 0.6s ease 3.1s forwards;
+}
+.cta-btn {
+  font-family: var(--rajdhani);
+  font-size: 13px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  padding: 12px 28px; border-radius: 5px;
+  cursor: pointer; transition: all 0.2s;
+  text-decoration: none;
+}
+.cta-primary {
+  background: var(--cyan);
+  color: #030710;
+  border: none;
+}
+.cta-primary:hover {
+  background: rgba(0,229,255,0.85);
+  box-shadow: 0 0 28px rgba(0,229,255,0.35);
+}
+.cta-secondary {
+  background: rgba(255,255,255,0.04);
+  color: var(--text-2);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.cta-secondary:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+  border-color: rgba(255,255,255,0.24);
+}
+
+/* Bottom left — character name tag */
+#char-tag {
+  position: absolute;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  text-align: center;
+  opacity: 0;
+  animation: fadeUp 0.5s ease 1.0s forwards;
+}
+#char-tag-name {
+  font-family: var(--manrope);
+  font-size: 13px; font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+#char-tag-role {
+  font-family: var(--rajdhani);
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--cyan);
+  margin-top: 2px;
+}
+
+/* Scan line on character */
+#char-scanline {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.4), transparent);
+  z-index: 5;
+  animation: scanDown 4s ease-in-out 0.5s infinite;
+  pointer-events: none;
+}
+@keyframes scanDown {
+  0%   { top: 5%; opacity: 0; }
+  5%   { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 95%; opacity: 0; }
+}
+
+/* Corner marks */
+.corner {
+  position: absolute;
+  width: 16px; height: 16px;
+  border-color: rgba(0,229,255,0.3);
+  border-style: solid;
+  opacity: 0;
+  animation: fadeIn 0.4s ease 0.6s forwards;
+}
+.corner-tl { top: 16px; left: 16px; border-width: 1px 0 0 1px; }
+.corner-tr { top: 16px; right: 16px; border-width: 1px 1px 0 0; }
+.corner-bl { bottom: 16px; left: 16px; border-width: 0 0 1px 1px; }
+.corner-br { bottom: 16px; right: 16px; border-width: 0 1px 1px 0; }
+
+/* Skip button */
+#skip-btn {
+  position: fixed;
+  bottom: 28px; right: 32px;
+  z-index: 200;
+  font-family: var(--rajdhani);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  animation: fadeIn 0.4s ease 1.5s forwards;
+  display: flex; align-items: center; gap: 7px;
+  transition: color 0.15s;
+}
+#skip-btn:hover { color: var(--text-2); }
+#skip-progress {
+  width: 32px; height: 2px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 1px; overflow: hidden;
+}
+#skip-fill {
+  height: 100%;
+  background: var(--cyan);
+  width: 0%;
+  transition: width 0.05s linear;
+  border-radius: 1px;
+}
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ WELCOME SCREEN ══ -->
+<div id="welcome">
+
+  <!-- Left: Character -->
+  <div id="welcome-left">
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+    <div id="char-scanline"></div>
+    <div id="video-mask"></div>
+
+    <video id="ceo-video" autoplay loop muted playsinline>
+      <source src=
+
+    <div id="char-tag">
+      <div id="char-tag-name">IPM Intelligence</div>
+      <div id="char-tag-role">AI Analyst · Online</div>
+    </div>
+  </div>
+
+  <!-- Right: Content -->
+  <div id="welcome-right">
+
+    <!-- Badge -->
+    <div id="welcome-badge">
+      <div id="welcome-badge-dot">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="1.5">
+          <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+        </svg>
+      </div>
+      <span id="welcome-badge-text">IPM</span>
+      <span id="welcome-badge-version">Intelligence Power Map</span>
+    </div>
+
+    <!-- Headline -->
+    <h1 id="welcome-headline">
+      The map that<br>
+      shows <span>who controls</span><br>
+      the world.
+    </h1>
+
+    <!-- Spoken message — typewriter -->
+    <p id="welcome-spoken">
+      <span id="typewriter-text"></span><span id="typewriter-cursor"></span>
+    </p>
+
+    <!-- Stats -->
+    <div id="welcome-stats">
+      <div>
+        <div class="welcome-stat-val">540</div>
+        <div class="welcome-stat-lbl">Entities tracked</div>
+      </div>
+      <div class="welcome-stat-sep"></div>
+      <div>
+        <div class="welcome-stat-val">1,246</div>
+        <div class="welcome-stat-lbl">Relations mapped</div>
+      </div>
+      <div class="welcome-stat-sep"></div>
+      <div>
+        <div class="welcome-stat-val" style="color:var(--red)">8.2</div>
+        <div class="welcome-stat-lbl">Hormuz risk score</div>
+      </div>
+      <div class="welcome-stat-sep"></div>
+      <div>
+        <div class="welcome-stat-val" style="color:var(--gold)">71.4</div>
+        <div class="welcome-stat-lbl">Global GCRI</div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div id="welcome-cta">
+      <button class="cta-btn cta-primary" onclick="enterDashboard()">
+        Enter Intelligence
+      </button>
+      <button class="cta-btn cta-secondary" onclick="enterDashboard()">
+        View Demo
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Skip button -->
+<div id="skip-btn" onclick="enterDashboard()">
+  <div id="skip-progress"><div id="skip-fill"></div></div>
+  Skip
+</div>
+
+<script>
+// ── Video play fallback ──────────────────
+const vid = document.getElementById('ceo-video');
+if (vid) {
+  vid.play().catch(() => {
+    // Autoplay blocked — play on first user interaction
+    document.addEventListener('click', () => vid.play(), { once: true });
+    document.addEventListener('keydown', () => vid.play(), { once: true });
+  });
+}
+
+// ── Typewriter ────────────────────────
+const MESSAGE = "I've reviewed 540 entities, 1,246 relations, and every open timeline. The Hormuz risk is elevated. DOGE cuts are propagating. Let me show you what's moving.";
+const SPEED   = 32; // ms per character
+
+let charIndex  = 0;
+let twStarted  = false;
+const twEl     = document.getElementById('typewriter-text');
+const cursorEl = document.getElementById('typewriter-cursor');
+
+function typeNext() {
+  if (charIndex < MESSAGE.length) {
+    twEl.textContent += MESSAGE[charIndex];
+    charIndex++;
+    setTimeout(typeNext, SPEED + (MESSAGE[charIndex - 1] === '.' ? 320 : MESSAGE[charIndex - 1] === ',' ? 140 : 0));
+  } else {
+    // pause then blink cursor off
+    setTimeout(() => {
+      cursorEl.style.display = 'none';
+    }, 2400);
+  }
+}
+
+// Start typewriter after spoken line fades in
+setTimeout(() => {
+  twStarted = true;
+  typeNext();
+}, 900);
+
+// ── Auto-dismiss progress ─────────────
+const HOLD_MS    = 9000; // auto-advance after 9s
+const skipFill   = document.getElementById('skip-fill');
+let   progress   = 0;
+let   skipTimer  = null;
+
+function startSkipProgress() {
+  skipTimer = setInterval(() => {
+    progress = Math.min(progress + (100 / (HOLD_MS / 50)), 100);
+    skipFill.style.width = progress + '%';
+    if (progress >= 100) {
+      clearInterval(skipTimer);
+      enterDashboard();
+    }
+  }, 50);
+}
+setTimeout(startSkipProgress, 1500);
+
+// ── Enter dashboard ───────────────────
+function enterDashboard() {
+  if (skipTimer) clearInterval(skipTimer);
+  document.getElementById('welcome').classList.add('fade-out');
+  document.getElementById('skip-btn').style.opacity = '0';
+  // After fade: redirect or show dashboard
+  setTimeout(() => {
+    document.getElementById('welcome').style.display = 'none';
+    // Replace with: window.location.href = '/dashboard'
+    // For demo: show a placeholder
+    document.body.style.overflow = 'auto';
+    document.body.innerHTML += '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Rajdhani,sans-serif;font-size:13px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.3)">→ Dashboard loads here</div>';
+  }, 900);
+}
+
+// ── Keyboard shortcut (Enter / Space / Esc) ──
+document.addEventListener('keydown', (e) => {
+  if (['Enter', ' ', 'Escape'].includes(e.key)) enterDashboard();
+});
+</script>
+</body>
+</html>

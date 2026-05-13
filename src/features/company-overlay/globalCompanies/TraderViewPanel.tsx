@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import type { Company } from '@/types/company';
 import { useAlphaCashFlow } from '@/hooks/useAlphaCashFlow';
 import { useEarnings }      from '@/hooks/useAlphaEarnings';
@@ -38,11 +37,7 @@ export default function TraderViewPanel({ company }: Props) {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
-      transition={{ duration: 0.3 }}
+    <div
       style={{
         position: 'absolute',
         top: PANEL_TOP, left: 0, right: 0, bottom: CHART_STRIP_H,
@@ -167,6 +162,6 @@ export default function TraderViewPanel({ company }: Props) {
           </div>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }

@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian / IPM — Wave 1 Frozen Architecture</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-deep: #040810;
+  --bg-base: #060910;
+  --bg-panel: rgba(8, 11, 17, 0.96);
+  --bg-card: rgba(255, 255, 255, 0.02);
+  --bg-glass: rgba(8, 14, 22, 0.82);
+
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-medium: rgba(255, 255, 255, 0.08);
+  --border-cyan: rgba(0, 229, 255, 0.08);
+  --border-cyan-hi: rgba(0, 229, 255, 0.2);
+
+  --text-primary: #e8edf5;
+  --text-secondary: #d0d8e4;
+  --text-muted: #8a9bb5;
+  --text-dim: #6b7a90;
+  --text-label: #5a6b80;
+
+  --cyan: #00e5ff;
+  --green: #00d4aa;
+  --amber: #ffb547;
+  --red: #ff4d6d;
+  --magenta: #ff2d92;
+
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  --font-sans: 'Space Grotesk', -apple-system, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  line-height: 1.6;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  min-height: 100vh;
+}
+
+/* Background grid texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.015) 1px, transparent 1px);
+  background-size: 80px 80px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* Sidebar */
+.sidebar {
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border-medium);
+  padding: 32px 24px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  backdrop-filter: blur(12px);
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 2px;
+}
+
+.brand {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.brand-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.brand-subtitle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 32px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(0, 212, 170, 0.08);
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  margin-bottom: 32px;
+}
+
+.nav-section {
+  margin-bottom: 28px;
+}
+
+.nav-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.nav-list {
+  list-style: none;
+}
+
+.nav-list li {
+  margin-bottom: 2px;
+}
+
+.nav-list a {
+  display: block;
+  padding: 7px 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  border-radius: 2px;
+  border-left: 2px solid transparent;
+  transition: all 120ms ease;
+}
+
+.nav-list a:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border-left-color: var(--border-cyan-hi);
+}
+
+.nav-list a.active {
+  color: var(--cyan);
+  background: rgba(0, 229, 255, 0.04);
+  border-left-color: var(--cyan);
+}
+
+/* Main content */
+.main {
+  padding: 48px 64px;
+  max-width: 1100px;
+}
+
+.hero {
+  margin-bottom: 64px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--border-medium);
+}
+
+.hero-meta {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 24px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hero-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dim);
+}
+
+.hero-meta-item .dot {
+  width: 4px;
+  height: 4px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0, 212, 170, 0.4); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 6px rgba(0, 212, 170, 0); }
+}
+
+.hero h1 {
+  font-size: 48px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.hero h1 .accent {
+  color: var(--cyan);
+}
+
+.hero p {
+  font-size: 17px;
+  color: var(--text-muted);
+  max-width: 720px;
+  line-height: 1.65;
+}
+
+.section {
+  margin-bottom: 80px;
+  scroll-margin-top: 80px;
+}
+
+.section-header {
+  margin-bottom: 32px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.section-number {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 0.2em;
+}
+
+.section h2 {
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+}
+
+.doctrine-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.doctrine-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  padding: 24px;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+  transition: all 200ms ease;
+}
+
+.doctrine-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 2px;
+  background: var(--accent-color, var(--cyan));
+}
+
+.doctrine-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border-cyan-hi);
+}
+
+.doctrine-card.core { --accent-color: var(--cyan); }
+.doctrine-card.agent { --accent-color: var(--green); }
+.doctrine-card.governance { --accent-color: var(--amber); }
+.doctrine-card.ai { --accent-color: var(--magenta); }
+
+.doctrine-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent-color, var(--cyan));
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.doctrine-quote {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  font-style: italic;
+}
+
+.schema-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 2px;
+  margin-bottom: 24px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.schema-table th {
+  text-align: left;
+  padding: 14px 18px;
+  background: rgba(0, 229, 255, 0.03);
+  border-bottom: 1px solid var(--border-cyan-hi);
+  color: var(--cyan);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.schema-table td {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.schema-table tr:last-child td {
+  border-bottom: none;
+}
+
+.schema-table tr:hover {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+}
+
+.badge-frozen { background: rgba(0, 212, 170, 0.1); color: var(--green); border: 1px solid rgba(0, 212, 170, 0.2); }
+.badge-pending { background: rgba(255, 181, 71, 0.08); color: var(--amber); border: 1px solid rgba(255, 181, 71, 0.2); }
+.badge-future { background: rgba(255, 45, 146, 0.06); color: var(--magenta); border: 1px solid rgba(255, 45, 146, 0.15); }
+
+.file-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 2px;
+  padding: 24px 28px;
+  margin-bottom: 16px;
+  transition: all 200ms ease;
+  position: relative;
+}
+
+.file-card:hover {
+  border-color: var(--border-cyan-hi);
+  background: rgba(0, 229, 255, 0.015);
+}
+
+.file-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.file-name {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.file-lines {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+}
+
+.file-desc {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.file-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.feature-chip {
+  padding: 6px 10px;
+  background: rgba(0, 229, 255, 0.04);
+  border: 1px solid var(--border-cyan);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.feature-chip-strong {
+  background: rgba(0, 229, 255, 0.08);
+  border-color: var(--border-cyan-hi);
+  color: var(--cyan);
+}
+
+.adr-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.adr-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  padding: 16px 20px;
+  border-radius: 2px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  transition: border-color 150ms ease;
+}
+
+.adr-item:hover {
+  border-color: var(--border-cyan-hi);
+}
+
+.adr-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  padding-top: 2px;
+}
+
+.adr-text {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 32px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom,
+    var(--green) 0%,
+    var(--cyan) 25%,
+    var(--amber) 50%,
+    var(--magenta) 75%,
+    transparent 100%);
+}
+
+.wave-item {
+  position: relative;
+  margin-bottom: 32px;
+  padding: 20px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 2px;
+}
+
+.wave-item::before {
+  content: '';
+  position: absolute;
+  left: -32px;
+  top: 24px;
+  width: 18px;
+  height: 18px;
+  background: var(--bg-deep);
+  border: 2px solid var(--accent-color);
+  border-radius: 50%;
+}
+
+.wave-item.frozen { --accent-color: var(--green); }
+.wave-item.next { --accent-color: var(--cyan); }
+.wave-item.future { --accent-color: var(--amber); }
+.wave-item.deferred { --accent-color: var(--magenta); }
+
+.wave-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.wave-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.wave-trigger {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-left: 2px solid var(--accent-color);
+  border-radius: 0 2px 2px 0;
+}
+
+.wave-trigger strong {
+  color: var(--text-secondary);
+}
+
+.wave-content {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.wave-content ul {
+  list-style: none;
+  margin-top: 8px;
+}
+
+.wave-content li {
+  padding: 4px 0;
+  padding-left: 16px;
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.wave-content li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--accent-color);
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.metric {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  padding: 20px;
+  border-radius: 2px;
+  text-align: left;
+}
+
+.metric-value {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.metric-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.invariants-list {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-left: 3px solid var(--red);
+  padding: 24px 32px;
+  border-radius: 2px;
+}
+
+.invariants-list h3 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 16px;
+}
+
+.invariants-list ol {
+  counter-reset: invariant;
+  list-style: none;
+}
+
+.invariants-list li {
+  counter-increment: invariant;
+  position: relative;
+  padding: 8px 0 8px 36px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.invariants-list li:last-child {
+  border-bottom: none;
+}
+
+.invariants-list li::before {
+  content: counter(invariant, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--red);
+  font-weight: 600;
+}
+
+.footer {
+  margin-top: 96px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border-medium);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: relative;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-medium);
+  }
+  .main {
+    padding: 32px 24px;
+  }
+  .hero h1 {
+    font-size: 32px;
+  }
+  .doctrine-grid, .adr-list {
+    grid-template-columns: 1fr;
+  }
+  .metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <div class="brand">MERIDIAN / IPM</div>
+  <div class="brand-title">Wave 1 Frozen</div>
+  <div class="brand-subtitle">2026—05—09</div>
+  <div class="status-pill">● Production-Ready</div>
+
+  <div class="nav-section">
+    <span class="nav-label">Architecture</span>
+    <ul class="nav-list">
+      <li><a href="#doctrine" class="active">Doctrine</a></li>
+      <li><a href="#schemas">Schemas</a></li>
+      <li><a href="#files">Files</a></li>
+      <li><a href="#metrics">Metrics</a></li>
+    </ul>
+  </div>
+
+  <div class="nav-section">
+    <span class="nav-label">Decisions</span>
+    <ul class="nav-list">
+      <li><a href="#adr">16 ADRs</a></li>
+      <li><a href="#invariants">Invariants</a></li>
+    </ul>
+  </div>
+
+  <div class="nav-section">
+    <span class="nav-label">Roadmap</span>
+    <ul class="nav-list">
+      <li><a href="#waves">Waves 1—4+</a></li>
+    </ul>
+  </div>
+
+  <div class="nav-section">
+    <span class="nav-label">External</span>
+    <ul class="nav-list">
+      <li><a href="#mcp">MCP Resolution</a></li>
+      <li><a href="#stack">Tech Stack</a></li>
+    </ul>
+  </div>
+</aside>
+
+<main class="main">
+
+  <section class="hero">
+    <div class="hero-meta">
+      <div class="hero-meta-item"><span class="dot"></span> WAVE 1 FROZEN</div>
+      <div class="hero-meta-item">1395 LINES</div>
+      <div class="hero-meta-item">3 SCHEMAS · 9 TABLES</div>
+      <div class="hero-meta-item">10/10 ARCHITECTURE</div>
+    </div>
+    <h1>Constitutional <span class="accent">bootstrap</span><br>for cognitive decision infrastructure.</h1>
+    <p>Pure ontology with minimal origin trace. Forensic governance. Multi-runtime portable. Bitemporal from day one. Three schemas separated by responsibility, locked against contamination.</p>
+  </section>
+
+  <section class="section" id="doctrine">
+    <div class="section-header">
+      <span class="section-number">01</span>
+      <h2>Doctrine — four pillars</h2>
+    </div>
+    <div class="doctrine-grid">
+      <div class="doctrine-card core">
+        <div class="doctrine-label">core schema</div>
+        <div class="doctrine-quote">"Postgres remembers what is true."</div>
+      </div>
+      <div class="doctrine-card agent">
+        <div class="doctrine-label">agent schema</div>
+        <div class="doctrine-quote">"Agents remember what they did."</div>
+      </div>
+      <div class="doctrine-card governance">
+        <div class="doctrine-label">governance schema</div>
+        <div class="doctrine-quote">"Governance decides what is allowed."</div>
+      </div>
+      <div class="doctrine-card ai">
+        <div class="doctrine-label">ai schema · wave 2</div>
+        <div class="doctrine-quote">"AI remembers what it is thinking."</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="schemas">
+    <div class="section-header">
+      <span class="section-number">02</span>
+      <h2>Schemas — current state</h2>
+    </div>
+    <table class="schema-table">
+      <thead>
+        <tr>
+          <th>Schema</th>
+          <th>Status</th>
+          <th>Tables</th>
+          <th>Responsibility</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong style="color: var(--cyan);">core</strong></td>
+          <td><span class="badge badge-frozen">Frozen W1A</span></td>
+          <td>3</td>
+          <td>Pure ontology + minimal origin trace</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--green);">agent</strong></td>
+          <td><span class="badge badge-frozen">Frozen W1B</span></td>
+          <td>2</td>
+          <td>Identity + execution attribution</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--amber);">governance</strong></td>
+          <td><span class="badge badge-frozen">Frozen W1B</span></td>
+          <td>4</td>
+          <td>Contracts + audit + violations</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--magenta);">ai</strong></td>
+          <td><span class="badge badge-pending">Wave 2</span></td>
+          <td>—</td>
+          <td>Runtime cognition + learning</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--text-muted);">policy</strong></td>
+          <td><span class="badge badge-pending">Wave 2</span></td>
+          <td>—</td>
+          <td>OPA runtime enforcement</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--text-muted);">surface</strong></td>
+          <td><span class="badge badge-future">Wave 3</span></td>
+          <td>—</td>
+          <td>MCP + external exposure</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--text-muted);">ops</strong></td>
+          <td><span class="badge badge-future">Wave 2/3</span></td>
+          <td>—</td>
+          <td>Operations metadata</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--text-muted);">assurance</strong></td>
+          <td><span class="badge badge-future">Wave 4+</span></td>
+          <td>—</td>
+          <td>TEE/zkML placeholder</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section" id="files">
+    <div class="section-header">
+      <span class="section-number">03</span>
+      <h2>Frozen artifacts</h2>
+    </div>
+
+    <div class="file-card">
+      <div class="file-header">
+        <div class="file-name">01_core.sql</div>
+        <div class="file-lines">435 LINES · FROZEN 10/10</div>
+      </div>
+      <div class="file-desc">3 tables: Entity, RelationEdge, RelationEvidence. Pure ontology with bitemporal GiST EXCLUDE from day one. All coherence constraints enforced at DB level — no inconsistent state can exist.</div>
+      <div class="file-features">
+        <div class="feature-chip feature-chip-strong">GiST EXCLUDE bitemporal</div>
+        <div class="feature-chip">CK_Edge_ValidRange</div>
+        <div class="feature-chip">CK_Edge_VerificationCoherence</div>
+        <div class="feature-chip">CK_Entity_NodeTypeMatch</div>
+        <div class="feature-chip">CanonicalNodeKey generated</div>
+        <div class="feature-chip">UpdatedAt trigger</div>
+        <div class="feature-chip">DeletedCoherence</div>
+        <div class="feature-chip">LegacyMappings shape</div>
+      </div>
+    </div>
+
+    <div class="file-card">
+      <div class="file-header">
+        <div class="file-name">02_agent.sql</div>
+        <div class="file-lines">143 LINES · FROZEN</div>
+      </div>
+      <div class="file-desc">2 tables: AgentActor, AgentActionLedger. Loose coupling to core via textual ActorSlug. JSONB envelope shape explicit for AffectedEntities/Edges to prevent drift.</div>
+      <div class="file-features">
+        <div class="feature-chip feature-chip-strong">JSONB envelope explicit</div>
+        <div class="feature-chip">Loose coupling</div>
+        <div class="feature-chip">Trust tier authority</div>
+        <div class="feature-chip">CanMutateCore gate</div>
+        <div class="feature-chip">CanPromoteFacts gate</div>
+      </div>
+    </div>
+
+    <div class="file-card">
+      <div class="file-header">
+        <div class="file-name">03_governance.sql</div>
+        <div class="file-lines">388 LINES · FROZEN</div>
+      </div>
+      <div class="file-desc">4 tables + 2 functions + 3 triggers. Single reusable audit function. Cognitive contract enforcement only on RelationEdge (high-impact mutations). Cross-schema query to agent.AgentActor.</div>
+      <div class="file-features">
+        <div class="feature-chip feature-chip-strong">Single audit function</div>
+        <div class="feature-chip">EntityChangeLog</div>
+        <div class="feature-chip">RelationEdgeChangeLog</div>
+        <div class="feature-chip">CognitiveContract</div>
+        <div class="feature-chip">CognitiveContractViolation</div>
+        <div class="feature-chip">RelationEdge-only enforcement</div>
+      </div>
+    </div>
+
+    <div class="file-card">
+      <div class="file-header">
+        <div class="file-name">MeridianAuditInterceptor.cs</div>
+        <div class="file-lines">429 LINES · FROZEN 10/10</div>
+      </div>
+      <div class="file-desc">EF Core SaveChangesInterceptor. Auto-populates attribution fields. Detection by property presence (resilient to renames). Anti-spoofing trust hierarchy. Null-guard prevents clobbering. BatchId immutable.</div>
+      <div class="file-features">
+        <div class="feature-chip feature-chip-strong">Anti-spoofing JWT</div>
+        <div class="feature-chip">Property-based detection</div>
+        <div class="feature-chip">Null-guard</div>
+        <div class="feature-chip">BatchId immutable</div>
+        <div class="feature-chip">Respects explicit values</div>
+        <div class="feature-chip">Multi-IdP support</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="metrics">
+    <div class="section-header">
+      <span class="section-number">04</span>
+      <h2>Metrics</h2>
+    </div>
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="metric-value">1395</div>
+        <div class="metric-label">Lines of code</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">9</div>
+        <div class="metric-label">Tables locked</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">16</div>
+        <div class="metric-label">Doctrinal ADRs</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">540</div>
+        <div class="metric-label">Persons in DB</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">248</div>
+        <div class="metric-label">Companies</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">171</div>
+        <div class="metric-label">Countries</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">1294</div>
+        <div class="metric-label">RelationEdges</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">3 mo</div>
+        <div class="metric-label">Time to here</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="adr">
+    <div class="section-header">
+      <span class="section-number">05</span>
+      <h2>16 doctrinal decisions — locked</h2>
+    </div>
+    <div class="adr-list">
+      <div class="adr-item"><div class="adr-num">ADR-001</div><div class="adr-text">Thin core, never extended beyond minimal origin trace.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-002</div><div class="adr-text">CanonicalNodeKey, NOT McpUri — protocol-agnostic.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-003</div><div class="adr-text">ASCII-only NodeId. UTF-8 in CanonicalName.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-004</div><div class="adr-text">JSONB envelope explicit shape for AgentActionLedger.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-005</div><div class="adr-text">CognitiveContract in governance, NOT in core.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-006</div><div class="adr-text">Cognitive trigger ONLY on RelationEdge, NOT Entity.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-007</div><div class="adr-text">Single reusable audit function, not 6 separate.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-008</div><div class="adr-text">Bitemporal GiST EXCLUDE in Wave 1, NOT Wave 2.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-009</div><div class="adr-text">No IF NOT EXISTS on schema. YES on extensions.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-010</div><div class="adr-text">PolicyDecisionSample 5% sampling, 90 days retention.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-011</div><div class="adr-text">Per-brain isolation Graphiti graphs.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-012</div><div class="adr-text">Explicit states: proposed/validated/promoted/rejected/stale.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-013</div><div class="adr-text">Cognee downgrade Wave 3+, NOT eliminated.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-014</div><div class="adr-text">Neo4j Community for Graphiti, NOT FalkorDB.</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-015</div><div class="adr-text">AgentLedger in agent schema (moved from core).</div></div>
+      <div class="adr-item"><div class="adr-num">ADR-016</div><div class="adr-text">CreatedBy + CreatedByAgent can coexist (agent on behalf).</div></div>
+    </div>
+  </section>
+
+  <section class="section" id="invariants">
+    <div class="section-header">
+      <span class="section-number">06</span>
+      <h2>Invariants — never violated</h2>
+    </div>
+    <div class="invariants-list">
+      <h3>⚠ Anti-pattern blocklist</h3>
+      <ol>
+        <li>Microservices, Kafka, Kubernetes prematurely</li>
+        <li>Microsoft Agent Framework (Python-first decision)</li>
+        <li>Mix canonical truth with cognitive working memory</li>
+        <li>Shared Graphiti graph between brains</li>
+        <li>McpUri (use CanonicalNodeKey)</li>
+        <li>Tokens, crypto, blockchain</li>
+        <li>Augur, Mapbox, D3, cytoscape, Pinecone, Weaviate, FalkorDB initially</li>
+        <li>Drools, Camunda DMN (use OPA + Rego)</li>
+        <li>Lower-case identifiers (PascalCase quoted required)</li>
+        <li>Skip triple temporality (ValidFrom/ValidTo/AsObservedAt/LastSeenAt)</li>
+        <li>Add tables without 5-question filter</li>
+        <li>Extend core beyond minimal origin trace</li>
+        <li>UTF-8 in NodeId (ASCII-only convention)</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section" id="waves">
+    <div class="section-header">
+      <span class="section-number">07</span>
+      <h2>Roadmap — gating-based</h2>
+    </div>
+    <div class="timeline">
+
+      <div class="wave-item frozen">
+        <div class="wave-header">
+          <div class="wave-title">Wave 1 — Truth Foundation + Governance</div>
+          <span class="badge badge-frozen">Frozen</span>
+        </div>
+        <div class="wave-trigger"><strong>Status:</strong> Complete. 1395 lines. Production-ready.</div>
+        <div class="wave-content">
+          <ul>
+            <li>core schema with bitemporal integrity</li>
+            <li>agent schema with attribution ledger</li>
+            <li>governance schema with audit + contracts</li>
+            <li>EF Core Interceptor with anti-spoofing</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="wave-item next">
+        <div class="wave-header">
+          <div class="wave-title">Wave 2 — AI Cognition + Policy Runtime</div>
+          <span class="badge badge-pending">Next</span>
+        </div>
+        <div class="wave-trigger"><strong>Trigger:</strong> Wave 1 deployed. Legacy data migrated public.* → core. 30—75 days.</div>
+        <div class="wave-content">
+          <ul>
+            <li>ai.AgentProfile with calibration</li>
+            <li>ai.PredictionLog hash chain</li>
+            <li>ai.EntityNeed + ContextRequest (DDC)</li>
+            <li>policy.* schema (OPA)</li>
+            <li>projectops.SchemaVersion view</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="wave-item future">
+        <div class="wave-header">
+          <div class="wave-title">Wave 3 — Surface / Federation</div>
+          <span class="badge badge-future">Wave 3</span>
+        </div>
+        <div class="wave-trigger"><strong>Trigger:</strong> First external client requires programmatic access. 75—150 days.</div>
+        <div class="wave-content">
+          <ul>
+            <li>surface.ExposureRule per OAuth tier</li>
+            <li>surface.AccessLog billing/compliance</li>
+            <li>surface.ToolDefinition versioned</li>
+            <li>MCP wiring with Microsoft SDK</li>
+            <li>Multi-tenant RLS</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="wave-item deferred">
+        <div class="wave-header">
+          <div class="wave-title">Wave 4 — Cognitive Working Memory</div>
+          <span class="badge badge-future">Wave 4</span>
+        </div>
+        <div class="wave-trigger"><strong>Trigger:</strong> Cassandra brain processes temporal news streams with contradictions. 150+ days.</div>
+        <div class="wave-content">
+          <ul>
+            <li>Neo4j Community sidecar</li>
+            <li>Graphiti per-brain isolation</li>
+            <li>ai.GraphitiEpisode</li>
+            <li>core.RelationEvidence.SourceEpisodeId</li>
+            <li>Cognee for multimodal (Hermes brain) — late W4</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="wave-item deferred" style="--accent-color: var(--text-dim);">
+        <div class="wave-header">
+          <div class="wave-title">Wave 5+ — Optional cognition extras</div>
+          <span class="badge badge-future">Conditional</span>
+        </div>
+        <div class="wave-trigger"><strong>Trigger:</strong> Real use case appears. NO speculative construction.</div>
+        <div class="wave-content">
+          <ul>
+            <li>A2A tables (only when 2+ external agents)</li>
+            <li>LastReadAt context decay</li>
+            <li>TEE / zkML assurance schema</li>
+            <li>TelemetryAggregates if Phoenix insufficient</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section" id="mcp">
+    <div class="section-header">
+      <span class="section-number">08</span>
+      <h2>MCP — Microsoft SDK resolution</h2>
+    </div>
+    <p style="color: var(--text-muted); margin-bottom: 24px; max-width: 760px;">Verified via web search 2026-05-09. <strong style="color: var(--text-primary);">ModelContextProtocol</strong> + <strong style="color: var(--text-primary);">ModelContextProtocol.AspNetCore</strong> v1.0 stable since March 2026.</p>
+    <div class="doctrine-grid">
+      <div class="doctrine-card core">
+        <div class="doctrine-label">SDK resolves</div>
+        <div class="doctrine-quote" style="font-size: 13px; font-style: normal;">Tools, Prompts, capability negotiation, Streamable HTTP transport, OAuth 2.1 enforcement, ASP.NET integration.</div>
+      </div>
+      <div class="doctrine-card governance">
+        <div class="doctrine-label">Needs Meridian schema</div>
+        <div class="doctrine-quote" style="font-size: 13px; font-style: normal;">Canonical URI (core.Entity already), ExposureRule, AccessLog, ToolDefinition versioned, ResourceTemplate URI patterns.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="stack">
+    <div class="section-header">
+      <span class="section-number">09</span>
+      <h2>Tech stack — locked</h2>
+    </div>
+    <div class="file-features" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+      <div class="feature-chip feature-chip-strong">PostgreSQL 16 + pgvector</div>
+      <div class="feature-chip feature-chip-strong">btree_gist (canonical)</div>
+      <div class="feature-chip feature-chip-strong">ASP.NET Core 8 + EF Core 8</div>
+      <div class="feature-chip">Python FastAPI sidecar :8001</div>
+      <div class="feature-chip">React 19 + DeckGL (frontend v2)</div>
+      <div class="feature-chip">XState v5 actor model</div>
+      <div class="feature-chip">n8n autoresearch loops</div>
+      <div class="feature-chip">OpenClaw local agents</div>
+      <div class="feature-chip">MCP C# SDK v1.0</div>
+      <div class="feature-chip">OPA + Rego (Wave 2-3)</div>
+      <div class="feature-chip">Phoenix + OpenTelemetry</div>
+      <div class="feature-chip">DeepEval CI/CD</div>
+      <div class="feature-chip">Pydantic AI + AgentSpec</div>
+      <div class="feature-chip">OpenLineage + Marquez (W2)</div>
+      <div class="feature-chip">Cognee (W4 multimodal)</div>
+      <div class="feature-chip">Neo4j Community + Graphiti (W4)</div>
+      <div class="feature-chip">DSPy Brier compilation (W3)</div>
+      <div class="feature-chip">vLLM + LMCache (W3)</div>
+      <div class="feature-chip">Inspect AI UK AISI (W4+)</div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span>MERIDIAN / IPM · WAVE 1 FROZEN</span>
+    <span>2026—05—09 · 9.95/10</span>
+  </footer>
+
+</main>
+
+</div>
+
+<script>
+// Active nav highlighting on scroll
+const sections = document.querySelectorAll('.section, .hero');
+const navLinks = document.querySelectorAll('.nav-list a');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      navLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

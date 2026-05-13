@@ -1,0 +1,43 @@
+// src/components/AtlasViewToggle/AtlasViewToggle.module.scss
+
+.wrap {
+  position: fixed;
+  top: 50%;
+  right: 24px;
+  transform: translateY(-50%);
+  flex-direction: column;
+  z-index: 20; // above graph panel (10) and globe canvas; below overlays (50)
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(4, 8, 16, 0.88);
+  border: 1px solid rgba(0, 229, 255, 0.12);
+  border-radius: 8px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 229, 255, 0.04);
+}
+
+.btn {
+  padding: 5px 18px;
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #3a4a60;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    color: #8a9bb5;
+  }
+}
+
+.btnActive {
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.06);
+  border-color: rgba(0, 229, 255, 0.2);
+}

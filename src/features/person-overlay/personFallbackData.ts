@@ -10,6 +10,7 @@ export const elonMuskFallback: PersonIntelligence = {
   photoUrl: 'Musk.jpeg',
   nodeId: 'person:7',
   archetypeCode: 'TECHNOLOGICAL',
+  influenceDomain: 'Technology',
   compositeScore: 91,
   globalRank: 4,
   ideology: {
@@ -68,6 +69,7 @@ export const donaldTrumpFallback: PersonIntelligence = {
   photoUrl: 'Trump.jpg',
   nodeId: 'person:173',
   archetypeCode: 'POLITICAL',
+  influenceDomain: 'Politics',
   compositeScore: 76,
   globalRank: 1,
   ideology: {
@@ -139,13 +141,17 @@ export interface DemoConnection {
   color: string
   scoreColor: string
   nodeId: string
+  latitude?: number
+  longitude?: number
 }
 
+export const elonMuskFocalCoords: [number, number] = [-97.7431, 30.2672] // Tesla HQ, Austin TX [lon, lat]
+
 export const elonMuskConnections: DemoConnection[] = [
-  { initials: 'DT', name: 'Donald Trump', role: 'President USA · Allied',   score: '9.2', color: '#00d4aa', scoreColor: '#00e5ff', nodeId: 'person:173' },
-  { initials: 'JH', name: 'Jensen Huang', role: 'CEO NVIDIA · Partners',    score: '8.9', color: '#00e5ff', scoreColor: '#00e5ff', nodeId: 'person:1'   },
-  { initials: 'JP', name: 'Jerome Powell',role: 'Fed Chairman · Monitors',  score: '7.6', color: '#6b7a90', scoreColor: '#6b7a90', nodeId: 'person:192' },
-  { initials: 'LF', name: 'Larry Fink',   role: 'CEO BlackRock · Finances', score: '7.6', color: '#6b7a90', scoreColor: '#6b7a90', nodeId: 'person:75'  },
+  { initials: 'DT', name: 'Donald Trump', role: 'President USA · Allied',   score: '9.2', color: '#00d4aa', scoreColor: '#00e5ff', nodeId: 'person:173', latitude: 38.9072,  longitude: -77.0369  },
+  { initials: 'JH', name: 'Jensen Huang', role: 'CEO NVIDIA · Partners',    score: '8.9', color: '#00e5ff', scoreColor: '#00e5ff', nodeId: 'person:1',   latitude: 37.3387,  longitude: -121.9886 },
+  { initials: 'JP', name: 'Jerome Powell',role: 'Fed Chairman · Monitors',  score: '7.6', color: '#6b7a90', scoreColor: '#6b7a90', nodeId: 'person:192', latitude: 38.9072,  longitude: -77.0369  },
+  { initials: 'LF', name: 'Larry Fink',   role: 'CEO BlackRock · Finances', score: '7.6', color: '#6b7a90', scoreColor: '#6b7a90', nodeId: 'person:75',  latitude: 40.7128,  longitude: -74.0060  },
 ]
 
 export const trumpConnections: DemoConnection[] = [
@@ -155,9 +161,9 @@ export const trumpConnections: DemoConnection[] = [
 ]
 
 export const elonMuskClients: DemoConnection[] = [
-  { initials: '🏛', name: 'US DoD', role: 'Official',       score: '9.1', color: '#378ADD', scoreColor: '#00e5ff', nodeId: 'country:1' },
-  { initials: '🚀', name: 'NASA',   role: 'Major Client',   score: '8.9', color: '#378ADD', scoreColor: '#00e5ff', nodeId: 'country:1' },
-  { initials: 'CT', name: 'CATL',   role: 'China Strategic',score: '5.7', color: '#f5a623', scoreColor: '#f5a623', nodeId: 'company:2' },
+  { initials: '🏛', name: 'US DoD', role: 'Official',        score: '9.1', color: '#378ADD', scoreColor: '#00e5ff', nodeId: 'country:1', latitude: 38.8719, longitude: -77.0569  },
+  { initials: '🚀', name: 'NASA',   role: 'Major Client',    score: '8.9', color: '#378ADD', scoreColor: '#00e5ff', nodeId: 'country:1', latitude: 29.5594, longitude: -95.0897  },
+  { initials: 'CT', name: 'CATL',   role: 'China Strategic', score: '5.7', color: '#f5a623', scoreColor: '#f5a623', nodeId: 'company:2', latitude: 26.6569, longitude: 119.5197 },
 ]
 
 // ── Demo sectors list ─────────────────────────────────────────────────────────

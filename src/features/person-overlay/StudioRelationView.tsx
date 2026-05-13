@@ -1,21 +1,17 @@
+import { useMemo } from 'react'
 import type { ActorRefFrom } from 'xstate'
 import { useQuery } from '@tanstack/react-query'
-import type { EntityRef } from '@/domain/types'
+import type { EntityRef, PersonIntelligence } from '@/domain/types'
 import type { entityInspectorMachine } from '@/machines/entity-inspector.machine'
+import type { PersonMapDto } from '@/types/_ext/personMapDto'
 import { qk, fetchers } from '@/domain/queries'
 import { CompactProfilePanel } from './CompactProfilePanel'
-import {
-  elonMuskFallback,
-  donaldTrumpFallback,
-  elonMuskCompanies,
-  elonMuskSignals,
-  elonMuskConnections,
-  trumpCompanies,
-  trumpSignals,
-  trumpConnections,
-  elonTrumpRelation,
-} from './personFallbackData'
+import { toConnections, toSignals } from './adapters'
+import { elonTrumpRelation } from './personFallbackData'
 import './person-overlay.scss'
+
+const MUSK_NODE_ID  = 'person:7'
+const TRUMP_NODE_ID = 'person:173'
 
 function hexToRgb(hex: string): string {
   const h = hex.replace('#', '')
@@ -26,43 +22,104 @@ function hexToRgb(hex: string): string {
   ].join(',')
 }
 
+function nodeTypeColor(nodeType: string): string {
+  const map: Record<string, string> = {
+    person: '#8B5CF6', company: '#00e5ff', country: '#d4a847',
+    commodity: '#00e676', sector: '#3b8bd4',
+  }
+  return map[nodeType.toLowerCase()] ?? '#888'
+}
+
+function seedToIntel(seed: PersonMapDto): PersonIntelligence {
+  return {
+    ...seed,
+    wealth: seed.netWorthUsd != null ? { netWorthUsd: seed.netWorthUsd } : undefined,
+  } as any
+}
+
 interface StudioRelationViewProps {
-  entityA:     EntityRef
-  entityB:     EntityRef
-  inspectorRef: ActorRefFrom<typeof entityInspectorMachine>
-  onClose:     () => void
+  entityA:      EntityRef
+  entityB:      EntityRef
+  seedA:        PersonMapDto | null
+  seedB:        PersonMapDto | null
+  /** Optional: when present, the "Back" button sends RELATION.CLOSE to the
+   * machine. When absent (e.g. mounted as a top-level page), the back button
+   * falls through to onClose. */
+  inspectorRef?: ActorRefFrom<typeof entityInspectorMachine>
+  onClose:      () => void
 }
 
 export function StudioRelationView({
   entityA,
   entityB,
+  seedA,
+  seedB,
   inspectorRef,
   onClose,
 }: StudioRelationViewProps) {
 
-  // ── Data fetching ─────────────────────────────
-  const { data: personA, isLoading: loadingA } = useQuery({
-    queryKey: qk.person(entityA.id),
-    queryFn:  () => fetchers.person(entityA.id),
-    enabled:  !!entityA.id && entityA.type === 'PERSON',
+  // ── Connections (graph neighbors) ─────────────────────────────────────────
+  const { data: neighborsA } = useQuery({
+    queryKey: qk.personNeighbors(entityA.nodeId),
+    queryFn:  () => fetchers.personNeighbors(entityA.nodeId),
+    enabled:  !!entityA.nodeId,
+  })
+  const { data: neighborsB } = useQuery({
+    queryKey: qk.personNeighbors(entityB.nodeId),
+    queryFn:  () => fetchers.personNeighbors(entityB.nodeId),
+    enabled:  !!entityB.nodeId,
   })
 
-  const { data: personB, isLoading: loadingB } = useQuery({
-    queryKey: qk.person(entityB.id),
-    queryFn:  () => fetchers.person(entityB.id),
-    enabled:  !!entityB.id && entityB.type === 'PERSON',
+  // ── Signals (entity news) ─────────────────────────────────────────────────
+  const { data: newsA } = useQuery({
+    queryKey: qk.entityNews(entityA.nodeId, 10),
+    queryFn:  () => fetchers.entityNews(entityA.nodeId, 10),
+    enabled:  !!entityA.nodeId,
+  })
+  const { data: newsB } = useQuery({
+    queryKey: qk.entityNews(entityB.nodeId, 10),
+    queryFn:  () => fetchers.entityNews(entityB.nodeId, 10),
+    enabled:  !!entityB.nodeId,
+  })
+
+  // ── Relation analysis (graceful fallback for Musk↔Trump only) ────────────
+  const isMuskTrumpPair =
+    (entityA.nodeId === MUSK_NODE_ID  && entityB.nodeId === TRUMP_NODE_ID) ||
+    (entityA.nodeId === TRUMP_NODE_ID && entityB.nodeId === MUSK_NODE_ID)
+
+  const { data: relationApi, isError: relationError } = useQuery({
+    queryKey: qk.relation(entityA.nodeId, entityB.nodeId),
+    queryFn:  () => fetchers.relation(entityA.nodeId, entityB.nodeId),
+    enabled:  !!entityA.nodeId && !!entityB.nodeId,
+    retry:    false,
   })
 
   const handleBack = () => {
-    inspectorRef.send({ type: 'RELATION.CLOSE' })
+    if (inspectorRef) inspectorRef.send({ type: 'RELATION.CLOSE' })
+    else onClose()
   }
 
-  // Fallbacks
-  const dataA = personA ?? (entityA.id === 7 ? elonMuskFallback : null)
-  const dataB = personB ?? (entityB.id === 173 ? donaldTrumpFallback : null)
+  // Person data — from seed (top15 JSON), no API call needed
+  const dataA: PersonIntelligence | null = seedA ? seedToIntel(seedA) : null
+  const dataB: PersonIntelligence | null = seedB ? seedToIntel(seedB) : null
 
-  // Relation data — use demo fallback
-  const rel = elonTrumpRelation
+  // Relation: real RelationAnalysis for the center panel; elonTrumpRelation for
+  // timelines/cascade sections (Musk↔Trump only, no backend endpoint yet).
+  const useFallbackRelation = isMuskTrumpPair && (!relationApi || relationError)
+  const rel = useFallbackRelation ? elonTrumpRelation : null
+  const apiAnalysis    = relationApi?.description  ?? rel?.analysis     ?? null
+  const apiPowerDyn    = relationApi?.powerDynamic ?? rel?.powerDynamic ?? null
+  const apiLevers      = relationApi?.keyLevers   ?? rel?.levers.map(l => l.text) ?? []
+  const apiRisks       = relationApi?.riskFactors ?? rel?.risks.map(r => r.text)  ?? []
+  const strengthPct    = relationApi
+    ? Math.round((relationApi.strength ?? 0) * 100)
+    : (rel?.strengthPct ?? 0)
+  const score          = relationApi
+    ? Number((relationApi.strength * 10).toFixed(1))
+    : (rel?.score ?? 0)
+  const riskScore      = relationApi?.riskScore ?? rel?.riskScore ?? 0
+  const relationType   = (relationApi?.relationType ?? rel?.type ?? 'RELATED').toString().toUpperCase()
+  const severity       = rel?.severity ?? 'MEDIUM'
 
   // Photos for arc avatars
   const photoA = dataA?.photoUrl ?? null
@@ -70,10 +127,35 @@ export function StudioRelationView({
   const initialsA = entityA.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
   const initialsB = entityB.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
-  // Left panel connections: show entityB as active
-  const leftConnections = elonMuskConnections
-  // Right panel connections: show entityA as active
-  const rightConnections = trumpConnections
+  // Connections: live data via adapter
+  const liveConnA = toConnections(neighborsA, entityA.nodeId)
+  const liveConnB = toConnections(neighborsB, entityB.nodeId)
+
+  // Signals: live data via adapter; empty array if endpoint unavailable
+  const leftSignals  = toSignals(newsA)
+  const rightSignals = toSignals(newsB)
+
+  // Companies: from seed companyName field
+  const companiesA = seedA?.companyName
+    ? [{ icon: seedA.companyName.slice(0, 2).toUpperCase(), color: '#00e5ff', name: seedA.companyName, role: '—', cap: '—' }]
+    : []
+  const companiesB = seedB?.companyName
+    ? [{ icon: seedB.companyName.slice(0, 2).toUpperCase(), color: '#00e5ff', name: seedB.companyName, role: '—', cap: '—' }]
+    : []
+
+  // Shared connections: intersection of both neighbor graphs (live, works for any pair)
+  const sharedConnections = useMemo(() => {
+    const nodesA = new Set(neighborsA?.nodes?.map(n => n.nodeId) ?? [])
+    return (neighborsB?.nodes ?? [])
+      .filter(n => nodesA.has(n.nodeId) && !!n.name)
+      .slice(0, 5)
+      .map(n => ({
+        initials: (n.name ?? '').split(' ').map((w: string) => w[0]).filter(Boolean).join('').slice(0, 2).toUpperCase(),
+        name:     n.name ?? '',
+        type:     n.type ?? '',
+        color:    nodeTypeColor(n.type ?? ''),
+      }))
+  }, [neighborsA, neighborsB])
 
   return (
     <div className="sr__root">
@@ -86,10 +168,10 @@ export function StudioRelationView({
         person={dataA}
         side="left"
         entityName={entityA.name}
-        isLoading={loadingA}
-        companies={elonMuskCompanies}
-        connections={leftConnections}
-        signals={elonMuskSignals}
+        isLoading={false}
+        companies={companiesA}
+        connections={liveConnA}
+        signals={leftSignals}
         activeConnectionNodeId={entityB.nodeId}
       />
 
@@ -99,9 +181,9 @@ export function StudioRelationView({
         {/* Header */}
         <div className="sr__header">
           <div className="sr__kicker">Studio Relation</div>
-          <div className="sr__label">Allied</div>
+          <div className="sr__label">{relationType}</div>
           <div className="sr__type" style={{ color: '#00d4aa' }}>
-            Strength {rel.strengthPct}% · Active since 2024
+            Strength {strengthPct}%
           </div>
 
           {/* Arc SVG with entity avatars */}
@@ -126,7 +208,7 @@ export function StudioRelationView({
             <div className="sr__arc-ent sr__arc-ent--left">
               <div className="sr__arc-avatar">
                 {photoA
-                  ? <img src={photoA} alt={entityA.name} />
+                  ? <img src={photoA.startsWith('/') || photoA.startsWith('http') ? photoA : `/persons/${photoA}`} alt={entityA.name} />
                   : initialsA}
               </div>
             </div>
@@ -135,7 +217,7 @@ export function StudioRelationView({
             <div className="sr__arc-ent sr__arc-ent--right">
               <div className="sr__arc-avatar">
                 {photoB
-                  ? <img src={photoB} alt={entityB.name} />
+                  ? <img src={photoB.startsWith('/') || photoB.startsWith('http') ? photoB : `/persons/${photoB}`} alt={entityB.name} />
                   : initialsB}
               </div>
             </div>
@@ -154,13 +236,13 @@ export function StudioRelationView({
           <div className="sr__str-meter">
             <div className="sr__str-header">
               <span className="sr__str-label">Edge Strength</span>
-              <span className="sr__str-val" style={{ color: '#00d4aa' }}>{rel.score}</span>
+              <span className="sr__str-val" style={{ color: '#00d4aa' }}>{score || '—'}</span>
             </div>
             <div className="sr__str-track">
               <div
                 className="sr__str-fill"
                 style={{
-                  width:      `${rel.strengthPct}%`,
+                  width:      `${strengthPct}%`,
                   background: 'linear-gradient(90deg, rgba(0,229,255,0.3), #00d4aa)',
                 }}
               />
@@ -173,125 +255,146 @@ export function StudioRelationView({
             <div className="sr__details-grid">
               <div className="sr__kv-cell">
                 <div className="sr__kv-key">Edge Type</div>
-                <div className="sr__kv-val" style={{ color: '#00d4aa' }}>Allied</div>
+                <div className="sr__kv-val" style={{ color: '#00d4aa' }}>{relationType}</div>
               </div>
               <div className="sr__kv-cell">
                 <div className="sr__kv-key">Risk Score</div>
-                <div className="sr__kv-val" style={{ color: '#f5a623' }}>{rel.riskScore} / 5</div>
+                <div className="sr__kv-val" style={{ color: '#f5a623' }}>{riskScore} / 5</div>
               </div>
               <div className="sr__kv-cell">
                 <div className="sr__kv-key">Linked Timelines</div>
-                <div className="sr__kv-val" style={{ color: '#a855f7' }}>3</div>
+                <div className="sr__kv-val" style={{ color: '#a855f7' }}>{rel?.timelines.length ?? 0}</div>
               </div>
               <div className="sr__kv-cell">
                 <div className="sr__kv-key">Severity</div>
-                <div className="sr__kv-val" style={{ color: '#f5a623' }}>{rel.severity}</div>
+                <div className="sr__kv-val" style={{ color: '#f5a623' }}>{severity}</div>
               </div>
             </div>
           </div>
 
           {/* Relation Analysis */}
-          <div>
-            <div className="sr__section-label">Relation Analysis</div>
-            <div className="sr__analysis-desc">{rel.analysis}</div>
-          </div>
+          {apiAnalysis && (
+            <div>
+              <div className="sr__section-label">Relation Analysis</div>
+              <div className="sr__analysis-desc">{apiAnalysis}</div>
+            </div>
+          )}
 
           {/* Power Dynamic */}
-          <div>
-            <div className="sr__section-label">Power Dynamic</div>
-            <div className="sr__power-dyn">{rel.powerDynamic}</div>
-          </div>
+          {apiPowerDyn && (
+            <div>
+              <div className="sr__section-label">Power Dynamic</div>
+              <div className="sr__power-dyn">{apiPowerDyn}</div>
+            </div>
+          )}
 
           {/* Key Levers */}
-          <div>
-            <div className="sr__section-label">Key Levers</div>
-            <ul className="sr__lever-list">
-              {rel.levers.map((l, i) => (
-                <li key={i} className="sr__lever">
-                  <div className="sr__lever-dot" style={{ background: l.color }} />
-                  {l.text}
-                </li>
-              ))}
-            </ul>
-          </div>
+          {apiLevers.length > 0 && (
+            <div>
+              <div className="sr__section-label">Key Levers</div>
+              <ul className="sr__lever-list">
+                {apiLevers.map((text, i) => (
+                  <li key={i} className="sr__lever">
+                    <div className="sr__lever-dot" style={{ background: '#00e5ff' }} />
+                    {text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Risk Factors */}
-          <div>
-            <div className="sr__section-label">Risk Factors</div>
-            <ul className="sr__lever-list">
-              {rel.risks.map((r, i) => (
-                <li key={i} className="sr__lever">
-                  <div className="sr__lever-dot" style={{ background: r.color }} />
-                  {r.text}
-                </li>
-              ))}
-            </ul>
-          </div>
+          {apiRisks.length > 0 && (
+            <div>
+              <div className="sr__section-label">Risk Factors</div>
+              <ul className="sr__lever-list">
+                {apiRisks.map((text, i) => (
+                  <li key={i} className="sr__lever">
+                    <div className="sr__lever-dot" style={{ background: '#e53935' }} />
+                    {text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          {/* Affected Timelines */}
-          <div>
-            <div className="sr__section-label">Affected Timelines</div>
-            {rel.timelines.map((tl, i) => (
-              <div key={i} className="sr__tl-card">
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 5 }}>
-                  <span className={`badge badge--${tl.badgeColor}`}>{tl.badge}</span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: '#6b7a90' }}>{tl.age}</span>
-                </div>
-                <div className="sr__tl-q">{tl.text}</div>
-                <div className="sr__tl-bar">
-                  <div className="sr__tl-track">
-                    <div className="sr__tl-fill" style={{ width: `${tl.pct}%`, background: tl.color }} />
+          {/* Empty-state when no analysis available */}
+          {!apiAnalysis && !apiPowerDyn && apiLevers.length === 0 && apiRisks.length === 0 && (
+            <div className="sr__analysis-desc" style={{ color: '#7a8ba0' }}>
+              Relation analysis pending — backend `/relations/analyze` not yet available for this pair.
+            </div>
+          )}
+
+          {/* Affected Timelines (fallback-only — Musk↔Trump fixture) */}
+          {rel && (
+            <div>
+              <div className="sr__section-label">Affected Timelines</div>
+              {rel.timelines.map((tl, i) => (
+                <div key={i} className="sr__tl-card">
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 5 }}>
+                    <span className={`badge badge--${tl.badgeColor}`}>{tl.badge}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: '#6b7a90' }}>{tl.age}</span>
                   </div>
-                  <span className="sr__tl-pct" style={{ color: tl.color }}>{tl.pct}%</span>
+                  <div className="sr__tl-q">{tl.text}</div>
+                  <div className="sr__tl-bar">
+                    <div className="sr__tl-track">
+                      <div className="sr__tl-fill" style={{ width: `${tl.pct}%`, background: tl.color }} />
+                    </div>
+                    <span className="sr__tl-pct" style={{ color: tl.color }}>{tl.pct}%</span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
-          {/* Shared Connections */}
-          <div>
-            <div className="sr__section-label">Shared Connections</div>
-            {rel.shared.map((s, i) => (
-              <div key={i} className="sr__shared-row">
-                <div
-                  className="sr__shared-avatar"
-                  style={{
-                    color:       s.color,
-                    borderColor: `rgba(${hexToRgb(s.color)},0.3)`,
-                  }}
-                >
-                  {s.initials}
+          {/* Shared Connections — live intersection of both neighbor graphs */}
+          {sharedConnections.length > 0 && (
+            <div>
+              <div className="sr__section-label">Shared Connections</div>
+              {sharedConnections.map((s, i) => (
+                <div key={i} className="sr__shared-row">
+                  <div
+                    className="sr__shared-avatar"
+                    style={{
+                      color:       s.color,
+                      borderColor: `rgba(${hexToRgb(s.color)},0.3)`,
+                    }}
+                  >
+                    {s.initials}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="sr__shared-name">{s.name}</div>
+                    <div className="sr__shared-type">{s.type}</div>
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="sr__shared-name">{s.name}</div>
-                  <div className="sr__shared-type">{s.type}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
-          {/* Cascade Exposure */}
-          <div>
-            <div className="sr__section-label">Cascade Exposure</div>
-            <div className="sr__details-grid">
-              <div className="sr__kv-cell">
-                <div className="sr__kv-key">Total Exposed</div>
-                <div className="sr__kv-val" style={{ color: '#e53935' }}>{rel.cascade.exposed}</div>
-              </div>
-              <div className="sr__kv-cell">
-                <div className="sr__kv-key">Sectors Affected</div>
-                <div className="sr__kv-val">{rel.cascade.sectors}</div>
-              </div>
-              <div className="sr__kv-cell">
-                <div className="sr__kv-key">Countries</div>
-                <div className="sr__kv-val">{rel.cascade.countries}</div>
-              </div>
-              <div className="sr__kv-cell">
-                <div className="sr__kv-key">Propagation</div>
-                <div className="sr__kv-val" style={{ color: '#f5a623' }}>{rel.cascade.hops}</div>
+          {/* Cascade Exposure (fallback-only — Musk↔Trump fixture) */}
+          {rel && (
+            <div>
+              <div className="sr__section-label">Cascade Exposure</div>
+              <div className="sr__details-grid">
+                <div className="sr__kv-cell">
+                  <div className="sr__kv-key">Total Exposed</div>
+                  <div className="sr__kv-val" style={{ color: '#e53935' }}>{rel.cascade.exposed}</div>
+                </div>
+                <div className="sr__kv-cell">
+                  <div className="sr__kv-key">Sectors Affected</div>
+                  <div className="sr__kv-val">{rel.cascade.sectors}</div>
+                </div>
+                <div className="sr__kv-cell">
+                  <div className="sr__kv-key">Countries</div>
+                  <div className="sr__kv-val">{rel.cascade.countries}</div>
+                </div>
+                <div className="sr__kv-cell">
+                  <div className="sr__kv-key">Propagation</div>
+                  <div className="sr__kv-val" style={{ color: '#f5a623' }}>{rel.cascade.hops}</div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
         </div>
       </div>
@@ -301,10 +404,10 @@ export function StudioRelationView({
         person={dataB}
         side="right"
         entityName={entityB.name}
-        isLoading={loadingB}
-        companies={trumpCompanies}
-        connections={rightConnections}
-        signals={trumpSignals}
+        isLoading={false}
+        companies={companiesB}
+        connections={liveConnB}
+        signals={rightSignals}
         activeConnectionNodeId={entityA.nodeId}
       />
 
@@ -316,19 +419,19 @@ export function StudioRelationView({
         </span>
         <div className="sr__bar-sep" />
         <span className="sr__bar-label">TYPE</span>
-        <span className="sr__bar-value" style={{ color: '#00d4aa' }}>ALLIED</span>
+        <span className="sr__bar-value" style={{ color: '#00d4aa' }}>{relationType}</span>
         <div className="sr__bar-sep" />
         <span className="sr__bar-label">STRENGTH</span>
-        <span className="sr__bar-value sr__bar-value--teal">{rel.strengthPct}%</span>
+        <span className="sr__bar-value sr__bar-value--teal">{strengthPct}%</span>
         <div className="sr__bar-sep" />
         <span className="sr__bar-label">RISK</span>
-        <span className="sr__bar-value sr__bar-value--gold">{rel.riskScore}</span>
+        <span className="sr__bar-value sr__bar-value--gold">{riskScore}</span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
           <span className="sr__bar-live">
             <span className="sr__bar-live-dot" />
             LIVE
           </span>
-          <span className="badge badge--green">3 TIMELINES</span>
+          {rel && <span className="badge badge--green">{rel.timelines.length} TIMELINES</span>}
         </div>
       </div>
     </div>

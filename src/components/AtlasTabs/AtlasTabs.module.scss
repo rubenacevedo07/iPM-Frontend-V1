@@ -1,0 +1,37 @@
+.tabs {
+  display: flex;
+  gap: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 3px;
+  background: rgba(5, 10, 18, 0.5);
+}
+
+.tab {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a9bb5;
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 120ms ease;
+
+  &:hover:not(.tabActive):not(.tabDisabled) {
+    color: #e8edf5;
+  }
+}
+
+.tabActive {
+  background: rgba(0, 229, 255, 0.08);
+  color: #00e5ff;
+}
+
+.tabDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

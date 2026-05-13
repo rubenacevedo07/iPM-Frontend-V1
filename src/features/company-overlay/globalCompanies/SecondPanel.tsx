@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import type { Company } from '@/types/company';
 import type { CompanyProvider } from '@/types/companyProvider';
 import { FONT_SANS, glass, PANEL_TOP, CHART_STRIP_H } from './shared';
@@ -14,18 +13,14 @@ interface Props {
 
 export default function SecondPanel({ activeTab, providers, clients, companyById }: Props) {
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 30 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.4 }}
+    <div
       style={{
         position: 'absolute',
         top: PANEL_TOP, right: 0, bottom: CHART_STRIP_H,
         width: 280, zIndex: 10,
         padding: '14px 12px',
         display: 'flex', flexDirection: 'column', gap: 10,
-        overflowY: 'auto', pointerEvents: 'none',
+        overflowY: 'auto', pointerEvents: 'auto',
       }}
     >
       <div style={{ fontFamily: FONT_SANS, fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.06em', paddingLeft: 2 }}>
@@ -42,6 +37,6 @@ export default function SecondPanel({ activeTab, providers, clients, companyById
           </div>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }

@@ -13,6 +13,7 @@ import type { EngineArc } from '@/engine/contracts/inputs'
 type AppContext = {
   overlayId:        number | null
   overlayIdB:       number | null
+  powermapId:       string | null
   query:            string
   focusedEntity:    EntityRef | null
   navRef:           ActorRefFrom<typeof navigationActor>
@@ -46,7 +47,7 @@ const appMachine = setup({
   // GlobeBridge.send (no layer rebuild when both incoming and current arc
   // arrays are empty).
   actions: {
-    clearOverlay:      assign({ overlayId: null, overlayIdB: null, companyArcs: [] }),
+    clearOverlay:      assign({ overlayId: null, overlayIdB: null, powermapId: null, companyArcs: [] }),
     navigateHome:      sendTo(({ context }) => context.navRef,           { type: 'NAVIGATE', search: {} }),
     dispatchClearArcs: sendTo(({ context }) => context.engineManagerRef, { type: 'CMD.SET_ARCS', data: { arcs: [] } }),
   },
@@ -55,19 +56,22 @@ const appMachine = setup({
       if (event.type !== 'URL_CHANGED') return false
       const d = deriveContextFromSearchParams(event.search)
       return !deepEqual(
-        { overlayId: context.overlayId, overlayIdB: context.overlayIdB, searchQuery: context.query },
-        { overlayId: d.overlayId,       overlayIdB: d.overlayIdB,       searchQuery: d.searchQuery },
+        { overlayId: context.overlayId, overlayIdB: context.overlayIdB, powermapId: context.powermapId, searchQuery: context.query },
+        { overlayId: d.overlayId,       overlayIdB: d.overlayIdB,       powermapId: d.powermapId,       searchQuery: d.searchQuery },
       )
     },
-    isPersonUrl:  ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'person',
-    isCompanyUrl: ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'company',
-    isVsUrl:      ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'vs',
-    noOverlayUrl: ({ event }) => event.type === 'URL_CHANGED' && !event.search.overlay,
+    isCompanyUrl:  ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'company',
+    isVsUrl:       ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'vs',
+    isGoldUrl:     ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'gold',
+    isPowermapUrl: ({ event }) => event.type === 'URL_CHANGED' && event.search.overlay === 'powermap',
+    noOverlayUrl:  ({ event }) => event.type === 'URL_CHANGED' && !event.search.overlay,
     // Phase 8: stale-id guard for NETWORK_RESOLVED. Drops events whose
     // companyId no longer matches the open overlay (user closed/switched
     // overlays while the fetch was in flight).
     networkMatchesOverlay: ({ context, event }) =>
       event.type === 'NETWORK_RESOLVED' && event.companyId === context.overlayId,
+    personNetworkMatchesOverlay: ({ context, event }) =>
+      event.type === 'PERSON_NETWORK_RESOLVED' && event.personId === context.overlayId,
   },
 }).createMachine({
   id: 'app',
@@ -75,6 +79,7 @@ const appMachine = setup({
   context: ({ spawn }) => ({
     overlayId:        null,
     overlayIdB:       null,
+    powermapId:       null,
     query:            '',
     focusedEntity:    null,
     navRef:           spawn('navigationActor',      { id: 'nav' }),
@@ -89,63 +94,38 @@ const appMachine = setup({
         closed: {
           on: {
             OPEN_PERSON: {
-              target: 'person',
+              target: 'gold',
               actions: [
-                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'person' as const, id: event.id } })),
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'gold' as const, id: event.id } })),
               ],
             },
             OPEN_COMPANY: {
               target: 'company',
               actions: [
-                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
                 sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'company' as const, id: event.id } })),
               ],
             },
             OPEN_VS: {
               target: 'vs',
               actions: [
-                assign({ overlayId: ({ event }) => event.a, overlayIdB: ({ event }) => event.b }),
+                assign({ overlayId: ({ event }) => event.a, overlayIdB: ({ event }) => event.b, powermapId: null }),
                 sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'vs' as const, a: event.a, b: event.b } })),
               ],
             },
-            URL_CHANGED: [
-              { guard: 'isPersonUrl',  target: 'person',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
-              { guard: 'isCompanyUrl', target: 'company', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
-              { guard: 'isVsUrl',      target: 'vs',      actions: assign({ overlayId: ({ event }) => getSearch(event)?.a   ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null }) },
-            ],
-          },
-        },
-        person: {
-          on: {
-            CLOSE_OVERLAY: {
-              target: 'closed',
-              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
-            },
-            // Phase 6: v3 canonical PersonOverlay dispatches ENTITY.CLOSE on close.
-            // Handled as alias for CLOSE_OVERLAY so canonical stays untouched (Rule 6).
-            'ENTITY.CLOSE': {
-              target: 'closed',
-              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
-            },
-            OPEN_COMPANY: {
-              target: 'company',
+            OPEN_POWERMAP: {
+              target: 'powermap',
               actions: [
-                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'company' as const, id: event.id } })),
-              ],
-            },
-            OPEN_VS: {
-              target: 'vs',
-              actions: [
-                assign({ overlayId: ({ event }) => event.a, overlayIdB: ({ event }) => event.b }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'vs' as const, a: event.a, b: event.b } })),
+                assign({ powermapId: ({ event }) => event.id, overlayId: null, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'powermap' as const, powermapId: event.id } })),
               ],
             },
             URL_CHANGED: [
-              { guard: 'noOverlayUrl', target: 'closed',  actions: assign({ overlayId: null, overlayIdB: null }) },
-              { guard: 'isCompanyUrl', target: 'company', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
-              { guard: 'isVsUrl',      target: 'vs',      actions: assign({ overlayId: ({ event }) => getSearch(event)?.a   ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null }) },
+              { guard: 'isCompanyUrl',  target: 'company',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null, powermapId: null }) },
+              { guard: 'isVsUrl',       target: 'vs',       actions: assign({ overlayId: ({ event }) => getSearch(event)?.a   ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null, powermapId: null }) },
+              { guard: 'isGoldUrl',     target: 'gold',     actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null, powermapId: null }) },
+              { guard: 'isPowermapUrl', target: 'powermap', actions: assign({ overlayId: null, overlayIdB: null, powermapId: ({ event }) => getSearch(event)?.powermapId ?? null }) },
             ],
           },
         },
@@ -162,23 +142,31 @@ const appMachine = setup({
               actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
             },
             OPEN_PERSON: {
-              target: 'person',
+              target: 'gold',
               actions: [
-                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'person' as const, id: event.id } })),
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'gold' as const, id: event.id } })),
               ],
             },
             OPEN_VS: {
               target: 'vs',
               actions: [
-                assign({ overlayId: ({ event }) => event.a, overlayIdB: ({ event }) => event.b }),
+                assign({ overlayId: ({ event }) => event.a, overlayIdB: ({ event }) => event.b, powermapId: null }),
                 sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'vs' as const, a: event.a, b: event.b } })),
               ],
             },
+            OPEN_POWERMAP: {
+              target: 'powermap',
+              actions: [
+                assign({ powermapId: ({ event }) => event.id, overlayId: null, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'powermap' as const, powermapId: event.id } })),
+              ],
+            },
             URL_CHANGED: [
-              { guard: 'noOverlayUrl', target: 'closed', actions: assign({ overlayId: null, overlayIdB: null }) },
-              { guard: 'isPersonUrl',  target: 'person', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null }) },
-              { guard: 'isVsUrl',      target: 'vs',     actions: assign({ overlayId: ({ event }) => getSearch(event)?.a   ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null }) },
+              { guard: 'noOverlayUrl',  target: 'closed',   actions: assign({ overlayId: null, overlayIdB: null, powermapId: null }) },
+              { guard: 'isVsUrl',       target: 'vs',       actions: assign({ overlayId: ({ event }) => getSearch(event)?.a   ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null, powermapId: null }) },
+              { guard: 'isGoldUrl',     target: 'gold',     actions: assign({ overlayId: ({ event }) => getSearch(event)?.id  ?? null, overlayIdB: null, powermapId: null }) },
+              { guard: 'isPowermapUrl', target: 'powermap', actions: assign({ overlayId: null, overlayIdB: null, powermapId: ({ event }) => getSearch(event)?.powermapId ?? null }) },
             ],
           },
         },
@@ -195,23 +183,120 @@ const appMachine = setup({
               actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
             },
             OPEN_PERSON: {
-              target: 'person',
+              target: 'gold',
               actions: [
-                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
-                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'person' as const, id: event.id } })),
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'gold' as const, id: event.id } })),
               ],
             },
             OPEN_COMPANY: {
               target: 'company',
               actions: [
-                assign({ overlayId: ({ event }) => event.id, overlayIdB: null }),
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
                 sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'company' as const, id: event.id } })),
               ],
             },
+            OPEN_POWERMAP: {
+              target: 'powermap',
+              actions: [
+                assign({ powermapId: ({ event }) => event.id, overlayId: null, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'powermap' as const, powermapId: event.id } })),
+              ],
+            },
             URL_CHANGED: [
-              { guard: 'noOverlayUrl',  target: 'closed',  actions: assign({ overlayId: null, overlayIdB: null }) },
-              { guard: 'isPersonUrl',   target: 'person',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null }) },
-              { guard: 'isCompanyUrl',  target: 'company', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null }) },
+              { guard: 'noOverlayUrl',  target: 'closed',   actions: assign({ overlayId: null, overlayIdB: null, powermapId: null }) },
+              { guard: 'isCompanyUrl',  target: 'company',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
+              { guard: 'isGoldUrl',     target: 'gold',     actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
+              { guard: 'isPowermapUrl', target: 'powermap', actions: assign({ overlayId: null, overlayIdB: null, powermapId: ({ event }) => getSearch(event)?.powermapId ?? null }) },
+            ],
+          },
+        },
+        gold: {
+          on: {
+            CLOSE_OVERLAY: {
+              target: 'closed',
+              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
+            },
+            'ENTITY.CLOSE': {
+              target: 'closed',
+              actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'],
+            },
+            OPEN_PERSON: {
+              target: 'gold',
+              actions: [
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'gold' as const, id: event.id } })),
+              ],
+            },
+            OPEN_COMPANY: {
+              target: 'company',
+              actions: [
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'company' as const, id: event.id } })),
+              ],
+            },
+            OPEN_VS: {
+              target: 'vs',
+              actions: [
+                assign({ overlayId: ({ event }) => event.a, overlayIdB: ({ event }) => event.b, powermapId: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'vs' as const, a: event.a, b: event.b } })),
+              ],
+            },
+            OPEN_POWERMAP: {
+              target: 'powermap',
+              actions: [
+                assign({ powermapId: ({ event }) => event.id, overlayId: null, overlayIdB: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'powermap' as const, powermapId: event.id } })),
+              ],
+            },
+            URL_CHANGED: [
+              { guard: 'noOverlayUrl',  target: 'closed',   actions: assign({ overlayId: null, overlayIdB: null, powermapId: null }) },
+              { guard: 'isCompanyUrl',  target: 'company',  actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
+              { guard: 'isVsUrl',       target: 'vs',       actions: assign({ overlayId: ({ event }) => getSearch(event)?.a  ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null, powermapId: null }) },
+              { guard: 'isPowermapUrl', target: 'powermap', actions: assign({ overlayId: null, overlayIdB: null, powermapId: ({ event }) => getSearch(event)?.powermapId ?? null }) },
+            ],
+            PERSON_NETWORK_RESOLVED: {
+              guard: 'personNetworkMatchesOverlay',
+              actions: [
+                assign({ companyArcs: ({ event }) => event.type === 'PERSON_NETWORK_RESOLVED' ? event.arcs : [] }),
+                sendTo(({ context }) => context.engineManagerRef, ({ event }) => ({
+                  type: 'CMD.SET_ARCS' as const,
+                  data: { arcs: event.type === 'PERSON_NETWORK_RESOLVED' ? event.arcs : [] },
+                })),
+              ],
+            },
+          },
+        },
+        powermap: {
+          on: {
+            CLOSE_OVERLAY:  { target: 'closed', actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'] },
+            'ENTITY.CLOSE': { target: 'closed', actions: ['clearOverlay', 'navigateHome', 'dispatchClearArcs'] },
+            OPEN_PERSON: {
+              target: 'gold',
+              actions: [
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'gold' as const, id: event.id } })),
+              ],
+            },
+            OPEN_COMPANY: {
+              target: 'company',
+              actions: [
+                assign({ overlayId: ({ event }) => event.id, overlayIdB: null, powermapId: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'company' as const, id: event.id } })),
+              ],
+            },
+            OPEN_VS: {
+              target: 'vs',
+              actions: [
+                assign({ overlayId: ({ event }) => event.a, overlayIdB: ({ event }) => event.b, powermapId: null }),
+                sendTo(({ context }) => context.navRef, ({ event }) => ({ type: 'NAVIGATE', search: { overlay: 'vs' as const, a: event.a, b: event.b } })),
+              ],
+            },
+            URL_CHANGED: [
+              { guard: 'noOverlayUrl', target: 'closed',  actions: assign({ overlayId: null, overlayIdB: null, powermapId: null }) },
+              { guard: 'isCompanyUrl', target: 'company', actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
+              { guard: 'isVsUrl',      target: 'vs',      actions: assign({ overlayId: ({ event }) => getSearch(event)?.a  ?? null, overlayIdB: ({ event }) => getSearch(event)?.b ?? null, powermapId: null }) },
+              { guard: 'isGoldUrl',    target: 'gold',    actions: assign({ overlayId: ({ event }) => getSearch(event)?.id ?? null, overlayIdB: null, powermapId: null }) },
             ],
           },
         },
@@ -221,7 +306,7 @@ const appMachine = setup({
     search: {
       initial: 'idle',
       states: {
-        idle:   { on: { SEARCH_OPEN: 'active' } },
+        idle:   { on: { SEARCH_OPEN: 'active', SEARCH_QUERY: { actions: assign({ query: ({ event }) => event.q }) } } },
         active: {
           on: {
             SEARCH_CLOSE: 'idle',
@@ -257,13 +342,30 @@ const appMachine = setup({
         },
         'ATLAS.ENTITY_CLICK': [
           {
+            // PERSON entity click. If the entity was pre-tagged in AppShell
+            // with a coLocatedCompanyId (i.e. the person is the CEO of a
+            // company at the same headquarters), open the HEADQUARTERS dual
+            // overlay (?overlay=hq). Otherwise fall back to the single gold
+            // overlay (?overlay=gold).
             guard: ({ event }) => event.entity.type === 'PERSON',
             actions: sendTo(
               ({ context }) => context.navRef,
-              ({ event }) => ({
-                type: 'NAVIGATE',
-                search: { overlay: 'person' as const, id: event.entity.id },
-              })
+              ({ event }) => {
+                if (event.type !== 'ATLAS.ENTITY_CLICK') {
+                  return { type: 'NAVIGATE' as const, search: {} }
+                }
+                const co = event.entity.coLocatedCompanyId
+                if (typeof co === 'number') {
+                  return {
+                    type: 'NAVIGATE' as const,
+                    search: { overlay: 'hq' as const, personId: event.entity.id, companyId: co },
+                  }
+                }
+                return {
+                  type: 'NAVIGATE' as const,
+                  search: { overlay: 'gold' as const, id: event.entity.id },
+                }
+              }
             ),
           },
           {
@@ -294,16 +396,20 @@ const appMachine = setup({
       actions: enqueueActions(({ enqueue, context, event }) => {
         const e = event as Extract<AppEvent, { type: 'URL_CHANGED' }>
         const d = deriveContextFromSearchParams(e.search)
-        const overlayChanged = d.overlayId !== context.overlayId
+        const overlayChanged =
+          d.overlayId !== context.overlayId ||
+          d.powermapId !== context.powermapId
         if (overlayChanged) {
           enqueue.assign({
             overlayId: d.overlayId, overlayIdB: d.overlayIdB,
+            powermapId: d.powermapId,
             query: d.searchQuery, companyArcs: [],
           })
           enqueue('dispatchClearArcs')
         } else {
           enqueue.assign({
-            overlayId: d.overlayId, overlayIdB: d.overlayIdB, query: d.searchQuery,
+            overlayId: d.overlayId, overlayIdB: d.overlayIdB,
+            powermapId: d.powermapId, query: d.searchQuery,
           })
         }
       }),
