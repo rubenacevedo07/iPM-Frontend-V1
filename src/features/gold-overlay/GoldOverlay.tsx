@@ -29,7 +29,6 @@ export function GoldOverlay({ id, seed }: GoldOverlayProps) {
   const netWorth   = enrichedPerson?.netWorthUsd     ?? seed?.netWorthUsd     ?? null
   const globalRank = enrichedPerson?.globalRank      ?? seed?.globalRank      ?? null
   const archetype  = enrichedPerson?.archetypeCode   ?? seed?.archetypeCode   ?? '—'
-  const domain     = enrichedPerson?.influenceDomain ?? seed?.influenceDomain ?? '—'
   const citizenship = enrichedPerson?.citizenship    ?? seed?.citizenship     ?? '—'
   const bornRaw    = enrichedPerson?.born            ?? seed?.born            ?? null
   const born       = bornRaw ? bornRaw.slice(0, 4) : '—'
@@ -102,13 +101,6 @@ export function GoldOverlay({ id, seed }: GoldOverlayProps) {
           )}
         </div>
 
-        {/* Influence Domain */}
-        <div className="gov__bottom-section">
-          <div className="pe__section-label">Influence Domain</div>
-          <div style={{ color: '#cfd6e3', fontSize: 13, lineHeight: 1.4 }}>
-            {domain !== '—' ? domain : <span style={{ color: '#666' }}>—</span>}
-          </div>
-        </div>
       </OverlayPanel>
 
       {/* Right panel — Key Data */}
@@ -135,12 +127,6 @@ export function GoldOverlay({ id, seed }: GoldOverlayProps) {
             <div className="pe__kv-cell">
               <div className="pe__kv-key">Archetype</div>
               <div className="pe__kv-val">{archetype}</div>
-            </div>
-          )}
-          {domain !== '—' && (
-            <div className="pe__kv-cell">
-              <div className="pe__kv-key">Domain</div>
-              <div className="pe__kv-val">{domain}</div>
             </div>
           )}
           {citizenship !== '—' && (
