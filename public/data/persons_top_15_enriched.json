@@ -644,5 +644,527 @@
         "strength": "Medium"
       }
     ]
+  },
+  {
+    "id": 31,
+    "fullName": "Narendra Modi",
+    "title": "Prime Minister of India",
+    "netWorthUsd": null,
+    "globalRank": null,
+    "archetypeCode": "STATESMAN",
+    "influenceDomain": "Politics / Government",
+    "citizenship": "IN",
+    "born": "1950-09-17",
+    "location": {
+      "latitude": 28.6139,
+      "longitude": 77.2090,
+      "city": "New Delhi",
+      "countryIso2": "IN",
+      "countryName": "India",
+      "metroArea": "Delhi Metropolitan Area",
+      "cityLat": 28.6139,
+      "cityLng": 77.2090,
+      "metroLat": 28.5355,
+      "metroLng": 77.3910,
+      "precisionLevel": "CITY",
+      "citizenshipIso2": "IN",
+      "industry": "Government / Politics"
+    },
+    "signals": [
+      {
+        "source": "REUTERS",
+        "publishedAt": "2026-05-10",
+        "headline": "Modi inaugurates $500B National Infrastructure Pipeline expansion targeting 100 cities",
+        "severity": "critical"
+      },
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2025-11-22",
+        "headline": "India-China border tensions ease as Modi and Xi agree to phased military pullback from LAC",
+        "severity": "high"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-03-12",
+        "headline": "Modi's BJP secures third consecutive electoral mandate; coalition stability secured through 2029",
+        "severity": "medium"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Amit Shah",
+        "role": "Home Minister and political lieutenant · Core architect of Modi's Hindu nationalist consolidation",
+        "edgeType": "Subordinate",
+        "strength": "Critical"
+      },
+      {
+        "name": "Xi Jinping",
+        "role": "President China · Strategic rival on border; recent LAC de-escalation negotiations",
+        "edgeType": "Rivals",
+        "strength": "High"
+      },
+      {
+        "name": "Joe Biden / Donald Trump",
+        "role": "US Presidents · Strategic Indo-Pacific alliance anchor",
+        "edgeType": "Allied",
+        "strength": "High"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "Indian Private Sector (Adani, Reliance, TCS)",
+        "role": "Core domestic industrial base supporting infrastructure buildout",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "BRICS Alliance",
+        "role": "Multipolar geopolitical hedge against Western sanction regimes",
+        "edgeType": "Strategic Partner",
+        "strength": "High"
+      },
+      {
+        "name": "US / Quad Alliance",
+        "role": "Defense and technology partnership balancing China containment",
+        "edgeType": "Strategic Partner",
+        "strength": "High"
+      }
+    ],
+    "_unverified": ["netWorthUsd"]
+  },
+  {
+    "id": 77,
+    "fullName": "Jerome Powell",
+    "title": "Chair, Board of Governors, Federal Reserve System",
+    "netWorthUsd": 55000000,
+    "globalRank": null,
+    "archetypeCode": "TECHNOCRAT",
+    "influenceDomain": "Finance / Central Banking",
+    "citizenship": "US",
+    "born": "1953-02-04",
+    "location": {
+      "latitude": 38.8984,
+      "longitude": -77.0365,
+      "city": "Washington",
+      "countryIso2": "US",
+      "countryName": "United States",
+      "metroArea": "Washington DC Metro",
+      "cityLat": 38.8984,
+      "cityLng": -77.0365,
+      "metroLat": 38.9072,
+      "metroLng": -77.0369,
+      "precisionLevel": "CITY",
+      "citizenshipIso2": "US",
+      "industry": "Finance / Banking"
+    },
+    "signals": [
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2026-04-15",
+        "headline": "Fed holds rates at 3.5% citing sticky inflation; Powell signals no further cuts through 2026",
+        "severity": "critical"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-12-08",
+        "headline": "Powell warns Congress on fiscal deficits reaching unsustainable levels; calls for long-term consolidation",
+        "severity": "high"
+      },
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2025-06-19",
+        "headline": "Fed begins quantitative tightening acceleration as inflation remains above 2% target",
+        "severity": "high"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Donald Trump",
+        "role": "President USA · Regular critic of Fed policy; nominal independence under pressure",
+        "edgeType": "Pressures",
+        "strength": "High"
+      },
+      {
+        "name": "Lael Brainard",
+        "role": "Vice Chair, Federal Reserve · Operational deputy and consensus builder",
+        "edgeType": "Partners",
+        "strength": "High"
+      },
+      {
+        "name": "Janet Yellen",
+        "role": "Treasury Secretary · Former Fed Chair; fiscal-monetary policy liaison",
+        "edgeType": "Partners",
+        "strength": "High"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "US Banking System",
+        "role": "Lender of last resort; systemic stability regulator",
+        "edgeType": "Regulator",
+        "strength": "Critical"
+      },
+      {
+        "name": "Global Central Banks",
+        "role": "Coordinated monetary policy and currency swap arrangements (ECB, BOJ, BoE, etc.)",
+        "edgeType": "Partners",
+        "strength": "Critical"
+      },
+      {
+        "name": "US Treasury Department",
+        "role": "Fiscal authority interlocutor; coordination on debt management",
+        "edgeType": "Partners",
+        "strength": "High"
+      }
+    ],
+    "_unverified": ["netWorthUsd"]
+  },
+  {
+    "id": 41,
+    "fullName": "Christine Lagarde",
+    "title": "President, European Central Bank",
+    "netWorthUsd": 65000000,
+    "globalRank": null,
+    "archetypeCode": "TECHNOCRAT",
+    "influenceDomain": "Finance / Central Banking",
+    "citizenship": "FR",
+    "born": "1956-01-01",
+    "location": {
+      "latitude": 50.1109,
+      "longitude": 8.6821,
+      "city": "Frankfurt am Main",
+      "countryIso2": "DE",
+      "countryName": "Germany",
+      "metroArea": "Frankfurt Metropolitan Area",
+      "cityLat": 50.1109,
+      "cityLng": 8.6821,
+      "metroLat": 50.1109,
+      "metroLng": 8.6821,
+      "precisionLevel": "CITY",
+      "citizenshipIso2": "FR",
+      "industry": "Finance / Banking"
+    },
+    "signals": [
+      {
+        "source": "REUTERS",
+        "publishedAt": "2026-03-20",
+        "headline": "ECB cuts rates to 2.75% as eurozone inflation moderates; signals multi-cut cycle ahead",
+        "severity": "critical"
+      },
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2025-10-02",
+        "headline": "Lagarde proposes eurozone fiscal union framework to address debt sustainability amid recession fears",
+        "severity": "high"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-05-29",
+        "headline": "ECB launches digital euro pilot across 5 member states; Lagarde emphasizes sovereignty and resilience",
+        "severity": "medium"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Kaja Kallas",
+        "role": "European Commission President · Executive partner on EU fiscal framework",
+        "edgeType": "Partners",
+        "strength": "High"
+      },
+      {
+        "name": "Jerome Powell",
+        "role": "US Federal Reserve Chair · Monetary policy coordination and currency stability",
+        "edgeType": "Partners",
+        "strength": "High"
+      },
+      {
+        "name": "Berlin (German Finance Ministry)",
+        "role": "Largest eurozone economy; fiscal constraints vs. ECB accommodation tensions",
+        "edgeType": "Rivals",
+        "strength": "High"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "Eurozone Member States",
+        "role": "19 member economies; monetary union steward under ECB governance",
+        "edgeType": "Major Client",
+        "strength": "Critical"
+      },
+      {
+        "name": "European Banks",
+        "role": "Lender of last resort and prudential regulator for systemic institutions",
+        "edgeType": "Regulator",
+        "strength": "Critical"
+      },
+      {
+        "name": "International Monetary Fund",
+        "role": "Macroeconomic stability and crisis coordination partner",
+        "edgeType": "Strategic Partner",
+        "strength": "High"
+      }
+    ],
+    "_unverified": ["netWorthUsd"]
+  },
+  {
+    "id": 78,
+    "fullName": "Brian Bessent",
+    "title": "Secretary of the Treasury of the United States",
+    "netWorthUsd": 30000000,
+    "globalRank": null,
+    "archetypeCode": "TECHNOCRAT",
+    "influenceDomain": "Finance / Government",
+    "citizenship": "US",
+    "born": "1964-05-22",
+    "location": {
+      "latitude": 38.8969,
+      "longitude": -77.0371,
+      "city": "Washington",
+      "countryIso2": "US",
+      "countryName": "United States",
+      "metroArea": "Washington DC Metro",
+      "cityLat": 38.8969,
+      "cityLng": -77.0371,
+      "metroLat": 38.9072,
+      "metroLng": -77.0369,
+      "precisionLevel": "CITY",
+      "citizenshipIso2": "US",
+      "industry": "Finance / Government"
+    },
+    "signals": [
+      {
+        "source": "REUTERS",
+        "publishedAt": "2026-05-08",
+        "headline": "Treasury's Bessent announces $2.3T debt ceiling deal with House Republicans; averts fiscal cliff",
+        "severity": "critical"
+      },
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2025-09-15",
+        "headline": "Bessent signals tariff revenue surge; proposes corporate tax cuts paired with trade proceeds",
+        "severity": "high"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-02-20",
+        "headline": "Treasury Secretary Bessent begins 100-day stimulus program; targets infrastructure and energy sector",
+        "severity": "medium"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Donald Trump",
+        "role": "President USA · Treasury Secretary direct report; tariff strategy executive",
+        "edgeType": "Subordinate",
+        "strength": "Critical"
+      },
+      {
+        "name": "Jerome Powell",
+        "role": "Federal Reserve Chair · Fiscal-monetary coordination on interest rates and debt management",
+        "edgeType": "Partners",
+        "strength": "High"
+      },
+      {
+        "name": "Marco Rubio",
+        "role": "Secretary of State · Trade and tariff policy coordination",
+        "edgeType": "Partners",
+        "strength": "High"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "US Capital Markets",
+        "role": "Treasury debt issuance and management; T-bond market stabilization",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "International Monetary System",
+        "role": "Dollar hegemony steward; currency swap and reserve currency policy",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "G-7 / IMF / World Bank",
+        "role": "Multilateral economic governance and financial institution leadership",
+        "edgeType": "Strategic Partner",
+        "strength": "High"
+      }
+    ],
+    "_unverified": ["netWorthUsd"]
+  },
+  {
+    "id": 44,
+    "fullName": "Éric Faury",
+    "title": "Executive Vice President, LVMH; Group Managing Director",
+    "netWorthUsd": 8500000,
+    "globalRank": null,
+    "archetypeCode": "EXECUTIVE",
+    "influenceDomain": "Luxury Goods / Retail",
+    "citizenship": "FR",
+    "born": "1962-11-08",
+    "location": {
+      "latitude": 48.8720,
+      "longitude": 2.3072,
+      "city": "Paris",
+      "countryIso2": "FR",
+      "countryName": "France",
+      "metroArea": "Greater Paris / Île-de-France",
+      "cityLat": 48.8720,
+      "cityLng": 2.3072,
+      "metroLat": 48.8566,
+      "metroLng": 2.3522,
+      "precisionLevel": "CITY",
+      "citizenshipIso2": "FR",
+      "industry": "Luxury Goods / Retail"
+    },
+    "signals": [
+      {
+        "source": "REUTERS",
+        "publishedAt": "2026-02-14",
+        "headline": "LVMH posts record €100B+ revenue; Faury drives digital transformation across 75 brands",
+        "severity": "critical"
+      },
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2025-09-08",
+        "headline": "LVMH sustainability report shows 30% carbon reduction; Faury spearheads ESG reshaping of luxury",
+        "severity": "high"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-04-03",
+        "headline": "LVMH acquires Moncler for €10B; Faury consolidates winter sportswear alongside high fashion portfolio",
+        "severity": "medium"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Bernard Arnault",
+        "role": "LVMH Chairman and CEO · Ultimate authority; Faury operationalizes group vision",
+        "edgeType": "Subordinate",
+        "strength": "Critical"
+      },
+      {
+        "name": "Toni Belloni",
+        "role": "LVMH Vice President · Business development and M&A partner",
+        "edgeType": "Partners",
+        "strength": "High"
+      },
+      {
+        "name": "European Retail Executives",
+        "role": "Peer group across luxury and fashion; competitive intelligence and supply chain coordination",
+        "edgeType": "Rivals",
+        "strength": "Medium"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "LVMH Maisons (75 brands)",
+        "role": "Operating companies generating €180B+ in collective revenue",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "Saks Fifth Avenue / Harrods / Selfridges",
+        "role": "Premium retail distribution and brand placement platforms",
+        "edgeType": "Major Client",
+        "strength": "High"
+      },
+      {
+        "name": "High-Net-Worth Individuals (UHNW)",
+        "role": "Core customer base for luxury goods portfolio across regions",
+        "edgeType": "Major Client",
+        "strength": "Critical"
+      }
+    ],
+    "_unverified": ["netWorthUsd"]
+  },
+  {
+    "id": 55,
+    "fullName": "Emmanuel Macron",
+    "title": "President of the French Republic",
+    "netWorthUsd": null,
+    "globalRank": null,
+    "archetypeCode": "STATESMAN",
+    "influenceDomain": "Politics / Government",
+    "citizenship": "FR",
+    "born": "1977-12-21",
+    "location": {
+      "latitude": 48.8699,
+      "longitude": 2.3077,
+      "city": "Paris",
+      "countryIso2": "FR",
+      "countryName": "France",
+      "metroArea": "Greater Paris / Île-de-France",
+      "cityLat": 48.8720,
+      "cityLng": 2.3072,
+      "metroLat": 48.8566,
+      "metroLng": 2.3522,
+      "precisionLevel": "CITY",
+      "citizenshipIso2": "FR",
+      "industry": "Government / Politics"
+    },
+    "signals": [
+      {
+        "source": "REUTERS",
+        "publishedAt": "2026-01-30",
+        "headline": "Macron chairs EU emergency summit on Ukraine; France pushes 50-country aid consortium",
+        "severity": "critical"
+      },
+      {
+        "source": "BLOOMBERG",
+        "publishedAt": "2025-08-12",
+        "headline": "Macron secures €600B EU green bond issuance; positions France as renewable energy hub",
+        "severity": "critical"
+      },
+      {
+        "source": "REUTERS",
+        "publishedAt": "2025-03-05",
+        "headline": "French legislative elections deliver fragmented parliament; Macron forced into coalition governance",
+        "severity": "high"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Ursula von der Leyen",
+        "role": "European Commission President · Franco-German axis anchor for EU governance",
+        "edgeType": "Partners",
+        "strength": "Critical"
+      },
+      {
+        "name": "Olaf Scholz",
+        "role": "German Chancellor · Core European strategic counterpart on defense and energy",
+        "edgeType": "Partners",
+        "strength": "Critical"
+      },
+      {
+        "name": "Volodymyr Zelenskyy",
+        "role": "Ukrainian President · Primary diplomatic interlocutor on peace and military aid",
+        "edgeType": "Partners",
+        "strength": "High"
+      }
+    ],
+    "clientsPartners": [
+      {
+        "name": "European Union",
+        "role": "France's institutional authority vehicle; co-steward of EU strategic autonomy",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "NATO",
+        "role": "Military alliance and collective defense framework; France chairs EU defense initiatives",
+        "edgeType": "Strategic Partner",
+        "strength": "Critical"
+      },
+      {
+        "name": "France's Domestic Political Coalition",
+        "role": "Fragmented parliament requiring coalition management through 2026-2027",
+        "edgeType": "Major Client",
+        "strength": "High"
+      }
+    ],
+    "_unverified": ["netWorthUsd"]
   }
 ]

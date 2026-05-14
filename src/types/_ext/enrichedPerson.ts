@@ -22,6 +22,22 @@ export interface EnrichedConnection {
   strength: EnrichedStrength
 }
 
+export interface EnrichedPersonLocation {
+  latitude:        number
+  longitude:       number
+  city:            string
+  countryIso2:     string
+  countryName:     string
+  metroArea:       string
+  cityLat:         number
+  cityLng:         number
+  metroLat:        number
+  metroLng:        number
+  precisionLevel:  'CITY' | 'METRO' | 'COUNTRY'
+  citizenshipIso2: string
+  industry:        string
+}
+
 export interface EnrichedPerson {
   id:              number
   fullName:        string
@@ -35,5 +51,6 @@ export interface EnrichedPerson {
   signals:         EnrichedSignal[]
   connections:     EnrichedConnection[]
   clientsPartners: EnrichedConnection[]
+  location?:       EnrichedPersonLocation
   _unverified?:    string[]
 }
