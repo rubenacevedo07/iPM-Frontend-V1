@@ -143,10 +143,10 @@ export function AppShell() {
   const [top30Data, setTop30Data] = useState<Top30Entry[] | null>(null)
   useEffect(() => {
     let cancelled = false
-    fetch('/data/top3.json')
+    fetch('/data/top30.json')
       .then(r => r.json() as Promise<Top30Entry[]>)
       .then(arr => { if (!cancelled) setTop30Data(arr) })
-      .catch(err => console.error('[AppShell] failed to load /data/top3.json', err))
+      .catch(err => console.error('[AppShell] failed to load /data/top30.json', err))
     return () => { cancelled = true }
   }, [])
 

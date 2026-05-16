@@ -100,6 +100,52 @@ export interface EngineEntityData {
     // gold overlay. Undefined for COMPANY/COUNTRY entities or persons with
     // no detected colocated company.
     coLocatedCompanyId?: number;
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Cluster enrichment (geoCluster.ts) — ALL OPTIONAL.
+    //
+    // The cluster engine works without any of these (pure haversine
+    // union-find against `latitude`/`longitude` with `marketCapUsd`-dominant
+    // fallback labels). When present, these fields refine the clustering:
+    //   - city / countryIso2 / countryName  → human-readable cluster labels
+    //   - metroArea                         → SEMANTIC HINT: forces merge
+    //     of two entities whose haversine distance exceeds the dynamic
+    //     threshold but who share a metro (e.g., Apple Cupertino + an SF
+    //     entity both tagged "Bay Area" cluster even if zoom-threshold
+    //     would split them)
+    //   - cityLat / cityLng / metroLat / metroLng  → canonical centroids
+    //     to anchor the cluster badge at the city/metro center instead of
+    //     the arithmetic mean of HQ coordinates
+    //   - precisionLevel                    → confidence in lat/lng; for
+    //     'COUNTRY' entries, lat/lng IS the country centroid (e.g., the
+    //     placePersonDot legacy path that sets persons at country
+    //     centroids before spread)
+    //
+    // None of these are PII-sensitive and none affect picking/arc anchors —
+    // they exist purely so the cluster engine can produce better labels
+    // and better merge decisions. Backend rolls them out incrementally;
+    // frontend degrades gracefully when any field is absent.
+    // ───────────────────────────────────────────────────────────────────────
+    /** City of the entity's lat/lng (English, no diacritics). */
+    city?:          string;
+    /** ISO 3166-1 alpha-2 country code (UPPERCASE). */
+    countryIso2?:   string;
+    /** Full English country name. */
+    countryName?:   string;
+    /** Metropolitan area / economic region. Cluster merge hint. */
+    metroArea?:     string;
+    /** Canonical city centroid (4 decimals). Falls back to HQ lat/lng. */
+    cityLat?:       number;
+    cityLng?:       number;
+    /** Canonical metro centroid (4 decimals). Anchors cluster badge. */
+    metroLat?:      number;
+    metroLng?:      number;
+    /** Confidence of `latitude`/`longitude`. */
+    precisionLevel?: 'CITY' | 'METRO' | 'COUNTRY';
+    /** Industry / sector tag (1-2 words). For PERSON, use 'Politics' etc. */
+    industry?:      string;
+    /** Optional global city economic rank (1..200). Lower = more central. */
+    cityRank?:      number;
   }>;
 }
 

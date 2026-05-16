@@ -3,7 +3,7 @@
 // Rule 5: new Deck({...}) only. No <DeckGL />, no reconciler, no R3F.
 
 import { Deck, _GlobeView as DeckGlobeView } from '@deck.gl/core';
-import { ArcLayer, GeoJsonLayer, IconLayer, ScatterplotLayer } from '@deck.gl/layers';
+import { ArcLayer, GeoJsonLayer, IconLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 import {
   POWER_MAP_CONFIGS,
   HORMUZ_COUNTRY_TIERS,
@@ -25,13 +25,15 @@ import type {
   BridgeEvent,
   Unsubscribe,
 } from './contracts/bridge';
-import { pixelSpread, type Declutterd } from './pixelSpread';
+import { geoCluster, clusterThresholdKm, type Cluster } from './geoCluster';
+import { aggregateArcs, type AggregatedArc } from './aggregateArcs';
+import { getSpiderfyOffsets } from './spiderfy';
 
-// Day 4+: declutter algorithm has gone through THREE shapes; this is the
-// third (and current). The history is preserved here because each step is a
+// Day 4+: declutter algorithm has gone through FOUR shapes; this file
+// imports the latest. The history is preserved here because each step is a
 // real tradeoff worth keeping documented.
 //
-//   v1  entitySpread.ts (geographic, deleted)
+//   v1  entitySpread.ts (geographic spread, deleted)
 //       Stored `displayLat/displayLng` (cluster-offset, real HQ lost) on the
 //       entity model. Arcs needed `_resolveArcsToDisplay()` to rebind to
 //       the spread coords. Spread was 200/340/480 km rings — too aggressive
@@ -47,29 +49,46 @@ import { pixelSpread, type Declutterd } from './pixelSpread';
 //       reassigned grid slots → icons visibly "danced". Plus
 //       viewport.unproject near the limb returned garbage lat/lng. Killed.
 //
-//   v3  pixelSpread.ts (hybrid, this file imports it)
-//       Synthesis: union-find clustering by GEOGRAPHIC distance (stable in
-//       time, doesn't change with camera), but layout INSIDE each cluster
-//       is in screen PIXELS — multi-ring 32/56/80 px, applied via
-//       IconLayer.getPixelOffset. No viewport.project / unproject anywhere
-//       in the render loop. Computation runs ONCE per CMD.SET_ENTITIES
-//       and the result is cached on the bridge as `_entities`.
+//   v3  pixelSpread.ts (hybrid, deleted)
+//       Union-find geographic clustering at 50 km + per-cluster pixel
+//       offsets. Stable in time, no viewport.unproject. BUT: at low zoom
+//       the spread radius (32-80 px) was still tiny vs the typical 24 px
+//       icon size, so visually identical icons ("logo wars" — three near-
+//       overlapping Apple/Google/Meta logos in the Bay Area). Decluttering
+//       at low zoom is fundamentally information loss masquerading as
+//       cleanliness. User rejected.
 //
-// Consequences for the layers downstream:
-//   - IconLayer:   getPosition = REAL lat/lng, getPixelOffset = d.pixelOffset.
-//                  pickable: true now (was false in v2) so the click hits
-//                  the LOGO the user sees, not the underlying ring stack.
-//   - Scatterplot: getPosition = REAL lat/lng. Rings stay at the HQ (clusters
-//                  of N entities show N overlapping rings at the cluster
-//                  centre + N icons spread 32-80 px around them — the
-//                  "data-true ring at HQ + visually-offset icon" pattern).
-//   - ArcLayer:    a.source / a.target = REAL endpoints from the mapper.
-//                  No rebind step.
+//   v4  geoCluster.ts + spiderfy.ts + aggregateArcs.ts (this file)
+//       SEMANTIC CLUSTERING. Replace "render every entity, declutter
+//       visually" with "render N cluster badges + count, expand on click".
+//       At zoom 2 the Bay Area becomes ONE "[6] Bay Area" badge with
+//       aggregated arc thickness. Click the badge → spiderfy children in
+//       a multi-ring pattern around the cluster centroid; click outside
+//       → collapse. Arcs aggregate to cluster→cluster pairs while
+//       collapsed, switch to individual entity arcs while expanded.
 //
-// The "ring stays at HQ, icon moves" split is intentional: the ring tells
-// you where the entity REALLY is, the icon tells you which entity it is
-// (without overlap). Same pattern as Google Maps cluster pills.
-type DeclutterdEntity = Declutterd<EngineEntityData['entities'][number]>;
+// Consequences for the layers downstream (v4):
+//   - cluster-badges IconLayer: one icon per cluster at centroid. Icon
+//     is the dominant entity's logo (companies) or a generic colored disc
+//     (PERSON/COUNTRY-dominant). Pickable; click toggles expansion or
+//     fires ENTITY_CLICK on singletons.
+//   - cluster-labels TextLayer: shows "+N · ISO2" sublabel when count>1.
+//     Anchored ABOVE the cluster badge (-26 px Y offset, so it never
+//     overlaps the icon).
+//   - cluster-rings ScatterplotLayer: pickable HQ ring at REAL HQ for
+//     singletons / at cluster centroid for multi-clusters. Same dynamic
+//     radius as v3 globe-rings. Kept for picking parity (clicks on the
+//     glow ring still register, useful when the user's cursor is slightly
+//     off the small logo).
+//   - spiderfy-icons IconLayer (only while expanded): renders the
+//     expanded cluster's children at cluster centroid + per-child pixel
+//     offset from spiderfy.ts. Pickable; click fires ENTITY_CLICK on
+//     that specific child.
+//   - aggregated-arcs ArcLayer (while collapsed): one arc per cluster
+//     pair, width = base + k·√Σintensity (see aggregateArcs.ts).
+//   - individual-arcs ArcLayer (while expanded): the original per-
+//     entity arcs, filtered to those touching the expanded cluster's
+//     children (or all, depending on density).
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -80,6 +99,20 @@ const INITIAL_VIEW = { longitude: 20, latitude: 25, zoom: 2, minZoom: 0, maxZoom
 // Local GeoJSON in /public/data — no network round-trip on startup.
 // Layer renders empty if the file is missing (non-fatal: globe still works).
 const COUNTRIES_URL = '/data/countries-110m.geojson';
+
+// v4: generic disc used by IconLayer when an entity has no `iconUrl`
+// (PERSON, COUNTRY, or COMPANY entities without a logo asset). White
+// circle on transparent background — the `mask: true` flag on IconLayer's
+// getIcon return value tells deck.gl to multiply the white pixels by
+// `getColor` so we can recolor it per entity type at draw time. SVG is
+// rasterized once by deck.gl and cached in the texture atlas.
+const GENERIC_DOT_DATA_URL =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">' +
+      '<circle cx="16" cy="16" r="13" fill="white"/>' +
+    '</svg>',
+  );
 
 const GLOBE_BASE_GEOJSON = {
   type: 'FeatureCollection' as const,
@@ -167,19 +200,37 @@ export class GlobeBridge implements IEngineBridge {
   // or cleared by init() or any other method. See Phase 3 post-mortem.
   private _pendingEvents: BridgeEvent[] = [];
 
-  // Phase 4.1 / Day 4+ v3: entity data received via CMD.SET_ENTITIES, with
-  // a per-cluster pixelOffset baked in by pixelSpread() at receipt time.
-  // The longitude/latitude on each element are the REAL HQ — pixelOffset is
-  // a separate field consumed by IconLayer.getPixelOffset. Stable in time:
-  // these values don't change when the camera moves; they only refresh when
-  // a new CMD.SET_ENTITIES arrives (typically once at mount).
-  private _entities: DeclutterdEntity[] = [];
+  // Phase 4.1 / Day 4+ v4: raw entity data received via CMD.SET_ENTITIES.
+  // Untouched — longitude/latitude are REAL HQ coords from the mapper. The
+  // cluster engine (geoCluster) reads this array; we never mutate elements.
+  private _rawEntities: EngineEntityData['entities'] = [];
+
+  // v4: derived cluster set. Recomputed when raw entities change (CMD.SET_
+  // ENTITIES) or when the zoom step crosses a threshold boundary (handled by
+  // _maybeRecluster in onViewStateChange). `_clusterThresholdKm` tracks the
+  // last threshold used as a cache key — if the current view's threshold
+  // matches, we reuse `_clusters` without recomputing.
+  private _clusters: Cluster[] = [];
+  private _clusterThresholdKm = -1;
+
+  // v4: aggregated arcs per (sourceClusterId, targetClusterId). Recomputed
+  // whenever clusters OR raw arcs change. Used by the aggregated-arcs layer
+  // when no cluster is expanded.
+  private _aggArcs: AggregatedArc[] = [];
+
+  // v4: cluster currently spiderfy-expanded. null = all clusters collapsed.
+  // Cleared on: background click, click on a different cluster, zoom step
+  // change (when the expanded cluster might merge/split), CMD.SET_ENTITIES
+  // (data revision). NOT cleared on overlay open (per spec — let the user
+  // see what they expanded behind the overlay).
+  private _expandedClusterId: string | null = null;
 
   // Phase 8: network arcs received via CMD.SET_ARCS.
-  // Fed into globe-arcs ArcLayer. _arcsRevision is a monotonic counter used in
-  // updateTriggers — bumps every commit even when arcs.length stays the same
-  // (A→B navigation with identical arc counts but different targets), so
-  // deck.gl re-evaluates accessors. Using .length alone misses that case.
+  // Fed into individual-arcs ArcLayer (when a cluster is expanded) or via
+  // aggregateArcs into the aggregated-arcs layer (when all collapsed).
+  // _arcsRevision is a monotonic counter used in updateTriggers — bumps
+  // every commit even when arcs.length stays the same so deck.gl re-
+  // evaluates accessors. Using .length alone misses A→B navigation cases.
   private _arcs: EngineArc[] = [];
   private _arcsRevision = 0;
 
@@ -203,9 +254,11 @@ export class GlobeBridge implements IEngineBridge {
   private _arrivalAnimStart = 0;
   private _arrivalAnimRAF: number | null = null;
 
-  // Idle connection arcs — soft pulsing arcs between top-30 entities when globe is rotating.
-  private _idleArcs: Array<{ src: [number, number]; dst: [number, number]; phase: number }> = [];
-  private _idleAnimTime = 0;
+  // Idle pulse no-op scaffold — _startIdlePulse / _stopIdlePulse are
+  // called from CMD.SET_ROTATION true/false respectively, but the interval
+  // currently runs as a tick-only loop (no rendering). Kept as a lifecycle
+  // hook for a future Phase 8+ idle-arcs animation; remove if not used by
+  // end of Sprint 3.
   private _idleInterval: ReturnType<typeof setInterval> | null = null;
 
   // ---------------------------------------------------------------------------
@@ -271,10 +324,15 @@ export class GlobeBridge implements IEngineBridge {
           //    Writeback + pause rotation + arm idle timer.
           if (this._selfDriving) {
             this._viewState = viewState;
+            // v4: even on self-driven frames (rAF rotation, fly-to lerp) we
+            // need to check if zoom crossed a cluster-threshold boundary;
+            // _maybeRecluster bails cheaply when no change.
+            this._maybeRecluster();
             return;
           }
           this._viewState = viewState;
           this._deck?.setProps({ viewState });
+          this._maybeRecluster();
           const userDriven = !!(
             interactionState?.isDragging ||
             interactionState?.isPanning  ||
@@ -290,22 +348,34 @@ export class GlobeBridge implements IEngineBridge {
         // Cursor: pointer when hovering a pickable entity, grabbing while
         // panning, grab otherwise. deck.gl computes `isHovering` from the
         // pick buffer — true whenever the mouse is over a layer with
-        // pickable:true (currently `globe-rings` + `globe-pm-rings`).
+        // pickable:true (cluster-rings, cluster-badges, spiderfy-icons,
+        // globe-pm-rings).
         getCursor: ({ isDragging, isHovering }: { isDragging: boolean; isHovering: boolean }) =>
           isDragging ? 'grabbing' : isHovering ? 'pointer' : 'grab',
 
-        // Hover tooltip: small glass chip with the entity name. deck.gl
-        // positions it automatically near the cursor. Only for our three
-        // pickable entity layers (rings, icons, pm-rings). Plain text to
-        // avoid XSS — deck.gl renders `text` as innerText (escaped).
-        // Returning null disables the tooltip.
+        // Hover tooltip: small glass chip. deck.gl positions it
+        // automatically near the cursor. Content varies by layer:
+        //   - cluster-rings / cluster-badges  → cluster.label (+ sublabel if multi)
+        //   - spiderfy-icons                  → individual entity name
+        //   - globe-pm-rings                  → powermap entity name
+        // Plain text to avoid XSS — deck.gl renders `text` as innerText.
         getTooltip: (info: any) => {
           const id = info.layer?.id;
-          if (id !== 'globe-rings' && id !== 'globe-pm-rings' && id !== 'globe-company-icons') return null;
-          const name = info.object?.name ?? info.object?.label;
-          if (!name) return null;
+          if (!info.object) return null;
+          let text: string | null = null;
+          if (id === 'globe-cluster-rings' || id === 'globe-cluster-badges') {
+            const c = info.object as Cluster;
+            text = c.isSingleton
+              ? c.dominantEntity.name
+              : `${c.label} ${c.sublabel}`.trim();
+          } else if (id === 'globe-spiderfy-icons') {
+            text = info.object.name ?? null;
+          } else if (id === 'globe-pm-rings') {
+            text = info.object.name ?? info.object.label ?? null;
+          }
+          if (!text) return null;
           return {
-            text: String(name),
+            text,
             style: {
               background: 'rgba(4, 8, 16, 0.92)',
               color: '#e8edf5',
@@ -322,36 +392,74 @@ export class GlobeBridge implements IEngineBridge {
         },
 
         onClick: (info: any) => {
-          // Two layers carry entity hits now (v3): globe-rings (real HQ,
-          // works for every entity type) and globe-company-icons (offset
-          // logo, companies only). Either one fires the same downstream
-          // chain — _flyTo uses the entity's REAL longitude/latitude, the
-          // emitted ENGINE.ENTITY_CLICK carries the full entity object, and
-          // the click-ripple anchors on real coords too (see _startClickAnim).
+          // v4: cluster-aware click routing.
+          //
+          //   - cluster-badges / cluster-rings hit:
+          //       * singleton (count=1): treat like the v3 entity click —
+          //         fly to the dominant entity + emit ENTITY_CLICK +
+          //         click-ripple. No state change to _expandedClusterId.
+          //       * multi-cluster: TOGGLE expansion. Clicking the currently
+          //         expanded cluster collapses it; clicking a different
+          //         cluster while one is expanded switches expansion to the
+          //         new cluster (which implicitly collapses the previous).
+          //   - spiderfy-icons hit (only present while expanded):
+          //         fly + ENTITY_CLICK on that specific child. The
+          //         _expandedClusterId is NOT cleared — the overlay opens
+          //         on top of the expanded view (per spec).
+          //   - Anything else (background, country fill, base globe):
+          //         if a cluster is currently expanded, collapse it. This
+          //         is the "click outside to dismiss" gesture.
           const id = info.layer?.id;
-          const isEntityHit =
-            (id === 'globe-rings' || id === 'globe-company-icons') && info.object;
-          if (isEntityHit) {
-            this._flyTo(info.object);
-            this._emitOrBuffer({ type: 'ENGINE.ENTITY_CLICK', entity: info.object });
-            this._startClickAnim(info.object);
+
+          if ((id === 'globe-cluster-badges' || id === 'globe-cluster-rings') && info.object) {
+            const cluster = info.object as Cluster;
+            if (cluster.isSingleton) {
+              const entity = cluster.dominantEntity;
+              this._flyTo({ nodeId: entity.nodeId });
+              this._emitOrBuffer({ type: 'ENGINE.ENTITY_CLICK', entity });
+              this._startClickAnim(entity);
+            } else {
+              const next = this._expandedClusterId === cluster.id ? null : cluster.id;
+              this._expandedClusterId = next;
+              this._redraw();
+            }
+            return;
+          }
+
+          if (id === 'globe-spiderfy-icons' && info.object) {
+            const entity = info.object;
+            this._flyTo({ nodeId: entity.nodeId });
+            this._emitOrBuffer({ type: 'ENGINE.ENTITY_CLICK', entity });
+            this._startClickAnim(entity);
+            return;
+          }
+
+          // Background click — collapse if anything is expanded.
+          if (this._expandedClusterId !== null) {
+            this._expandedClusterId = null;
+            this._redraw();
           }
         },
 
         onHover: (info: any) => {
-          // v3: three pickable entity layers — rings, company icons, pm-rings.
-          // Dispatch EntityRef on hover-in (info.object), null on hover-out.
-          // Dedup: only emit when _hoveredId changes (avoids flood for same-
-          // object hovers as the cursor pixel-skitters inside one icon).
+          // v4: pickable layers are cluster-badges, cluster-rings,
+          // spiderfy-icons, globe-pm-rings. Hover id semantics:
+          //   - cluster hit → use cluster.id (already prefixed "cluster:...")
+          //   - spiderfy child / pm-rings hit → use entity nodeId/id
+          // The two namespaces never collide because cluster ids start with
+          // "cluster:". The hover ripple system + tooltip layer both read
+          // _hoveredId and dispatch differently based on the prefix.
           const layerId = info.layer?.id;
+          const isClusterLayer =
+            layerId === 'globe-cluster-rings' || layerId === 'globe-cluster-badges';
           const isEntityLayer =
-            layerId === 'globe-rings' ||
-            layerId === 'globe-pm-rings' ||
-            layerId === 'globe-company-icons';
-          const hoveredNodeId =
-            isEntityLayer && info.object
-              ? (info.object.nodeId ?? info.object.id ?? null)
-              : null;
+            layerId === 'globe-spiderfy-icons' || layerId === 'globe-pm-rings';
+          let hoveredNodeId: string | null = null;
+          if (isClusterLayer && info.object) {
+            hoveredNodeId = (info.object as Cluster).id;
+          } else if (isEntityLayer && info.object) {
+            hoveredNodeId = info.object.nodeId ?? info.object.id ?? null;
+          }
           if (hoveredNodeId === this._hoveredId) return;
 
           const wasHoveringPin = this._hoveredId !== null;
@@ -396,14 +504,21 @@ export class GlobeBridge implements IEngineBridge {
             if (this._rotationEnabled) this._armIdleResume();
           }
 
-          this._emitOrBuffer({
-            type: 'ENGINE.ENTITY_HOVER',
-            entity:
-              info.object &&
-              (info.layer?.id === 'globe-rings' || info.layer?.id === 'globe-company-icons')
-                ? info.object
-                : null,
-          });
+          // v4: ENGINE.ENTITY_HOVER carries an EntityRef-shaped object. For
+          // cluster-rings/cluster-badges hits we forward the cluster's
+          // DOMINANT entity (lets the receiver — typically a Workstation
+          // search-results highlight — react to "this cluster contains BMW
+          // among others" without UI for clusters yet). For spiderfy hits
+          // we forward the specific child. Hover-out → null.
+          let hoverEntity: any = null;
+          if (info.object) {
+            if (info.layer?.id === 'globe-cluster-rings' || info.layer?.id === 'globe-cluster-badges') {
+              hoverEntity = (info.object as Cluster).dominantEntity;
+            } else if (info.layer?.id === 'globe-spiderfy-icons') {
+              hoverEntity = info.object;
+            }
+          }
+          this._emitOrBuffer({ type: 'ENGINE.ENTITY_HOVER', entity: hoverEntity });
           this._redraw();
         },
       });
@@ -495,7 +610,10 @@ export class GlobeBridge implements IEngineBridge {
     this._ro = null;
     this._status = 'disposed';
     this._handlers = [];
-    this._entities = [];
+    this._rawEntities = [];
+    this._clusters = [];
+    this._aggArcs = [];
+    this._expandedClusterId = null;
     this._arcs = [];
   }
 
@@ -521,16 +639,18 @@ export class GlobeBridge implements IEngineBridge {
         this.setFocus({ target: command.target });
         break;
       case 'CMD.SET_ENTITIES':
-        // Day 4+ v3: bake the cluster-aware pixel offset INTO the entity
-        // array. pixelSpread() does geographic union-find at 50 km, then
-        // assigns each cluster member a pixelOffset on a 32/56/80 px
-        // multi-ring layout — sorted by id so the same input is always laid
-        // out the same way. Result is reused for the lifetime of this entity
-        // batch; the camera doesn't influence it. _buildIdleArcs() still
-        // reads `.longitude/.latitude` (REAL coords on every element), which
-        // pixelSpread preserves untouched.
-        this._entities = pixelSpread(command.data.entities);
-        this._idleArcs = this._buildIdleArcs();
+        // v4: store raw entities verbatim, then derive clusters via
+        // geoCluster. The cluster set is the new "render unit" — every
+        // visible-globe layer reads from `_clusters` now, not from raw
+        // entities directly.
+        //
+        // Data revision: when entity content changes, the previously
+        // expanded cluster's id is no longer guaranteed to exist. Reset
+        // _expandedClusterId so we don't try to expand a phantom cluster.
+        this._rawEntities = command.data.entities;
+        this._expandedClusterId = null;
+        this._recluster();
+        this._reaggregateArcs();
         this._redraw();
         break;
       case 'CMD.SET_ARCS': {
@@ -539,14 +659,13 @@ export class GlobeBridge implements IEngineBridge {
         // initial mount when no overlay is open.
         const incoming = command.data.arcs;
         if (this._arcs.length === 0 && incoming.length === 0) break;
-        // Day 4+: arcs stored verbatim — endpoints stay on REAL HQ
-        // longitude/latitude (the mapper's output). The previous
-        // _resolveArcsToDisplay() rebound endpoints to spread-cluster
-        // positions so the arc visually attached to the offset dot; with the
-        // pixel-offset architecture, both the icon AND the underlying ring
-        // sit on the real HQ, so no rebinding is needed.
+        // v4: store raw arcs; aggregate into cluster→cluster arcs. When
+        // a cluster is expanded, the individual-arcs layer reads from
+        // _arcs directly (filtered to that cluster's children); when
+        // collapsed, the aggregated-arcs layer reads from _aggArcs.
         this._arcs = incoming;
         this._arcsRevision++;
+        this._reaggregateArcs();
         this._redraw();
         break;
       }
@@ -654,13 +773,53 @@ export class GlobeBridge implements IEngineBridge {
     return canvas;
   }
 
-  // Returns the camera-facing entities. Single-stage filter now — pixelSpread
-  // already baked the pixelOffset into every element of this._entities at
-  // SET_ENTITIES time, so we just keep the ones whose REAL HQ lat/lng falls
-  // on the visible hemisphere. The threshold (-0.1 ≈ 96°) lets entities a
-  // little past the limb still render — useful for arcs that anchor outside
-  // the strict 90° hemisphere but whose visible arc body is still inside.
-  private _computeVisibleEntities(): DeclutterdEntity[] {
+  // v4: rebuild the cluster set from raw entities at the current zoom's
+  // threshold. Called whenever entities change (CMD.SET_ENTITIES) or zoom
+  // crosses a threshold boundary (_maybeRecluster). After clustering, agg
+  // arcs MUST also be rebuilt (entity → cluster mapping changed).
+  //
+  // Idempotent — calling twice with the same inputs is harmless.
+  private _recluster(): void {
+    const zoom = this._viewState?.zoom ?? INITIAL_VIEW.zoom;
+    const threshold = clusterThresholdKm(zoom);
+    this._clusters = geoCluster(this._rawEntities as any, { zoom });
+    this._clusterThresholdKm = threshold;
+  }
+
+  // v4: recompute aggregated arcs from the current (_arcs, _clusters) pair.
+  // Called any time either side changes. Pure function so no extra state
+  // to track.
+  private _reaggregateArcs(): void {
+    this._aggArcs = aggregateArcs(this._arcs, this._clusters);
+  }
+
+  // v4: cheap zoom-threshold check called from onViewStateChange every
+  // frame. The threshold curve is a 4-step ladder (80/40/20/8 km) so the
+  // check usually short-circuits to "no change". When it does fire, the
+  // O(n²) union-find at iPM scale is ~0.1 ms — fine inside a render frame.
+  // After reclustering we also need to re-aggregate arcs (cluster ids may
+  // have changed) and validate _expandedClusterId still exists.
+  private _maybeRecluster(): void {
+    const zoom = this._viewState?.zoom ?? INITIAL_VIEW.zoom;
+    const threshold = clusterThresholdKm(zoom);
+    if (threshold === this._clusterThresholdKm) return;
+    this._recluster();
+    this._reaggregateArcs();
+    if (
+      this._expandedClusterId !== null &&
+      !this._clusters.some((c) => c.id === this._expandedClusterId)
+    ) {
+      // Expanded cluster ceased to exist after threshold change (split or
+      // merged). Spec: reset on zoom-threshold change.
+      this._expandedClusterId = null;
+    }
+  }
+
+  // v4: returns the camera-facing clusters. The threshold (-0.1 ≈ 96°)
+  // lets clusters a little past the limb still render — useful for arcs
+  // that anchor outside the strict 90° hemisphere but whose visible body
+  // is still inside.
+  private _computeVisibleClusters(): Cluster[] {
     const vs = this._viewState ?? INITIAL_VIEW;
     const camLat = (vs.latitude  ?? 0) * Math.PI / 180;
     const camLng = (vs.longitude ?? 0) * Math.PI / 180;
@@ -668,41 +827,30 @@ export class GlobeBridge implements IEngineBridge {
     const cy = Math.cos(camLat) * Math.sin(camLng);
     const cz = Math.sin(camLat);
     const THRESHOLD = -0.1;
-    return this._entities.filter((d) => {
-      const lat = d.latitude  * Math.PI / 180;
-      const lng = d.longitude * Math.PI / 180;
+    return this._clusters.filter((c) => {
+      const lat = c.lat * Math.PI / 180;
+      const lng = c.lng * Math.PI / 180;
       return (cx * Math.cos(lat) * Math.cos(lng) +
               cy * Math.cos(lat) * Math.sin(lng) +
               cz * Math.sin(lat)) > THRESHOLD;
     });
   }
 
-  // Returns the 9 non-animated layers (base, countries, arcs, rings, dots,
-  // powermap layers).
+  // v4: returns the non-animated layers (base, countries, arcs, cluster
+  // rings, powermap). Cluster icons + spiderfy live in _buildAnimatedLayers
+  // because they need to be drawn LAST (on top of everything else).
   //
-  // No cache. The previous version had one keyed on (focused, hovered,
-  // powermap, arcsRev, visibleCount, round(zoom), round(lat)) but it became
-  // a liability twice in a row:
-  //
-  //   1. Under v2 (screen-space decluttering), the cache key didn't include
-  //      longitude, but the visibleEntities array changed every frame during
-  //      1 deg/sec rotation. Stale `data` arrays → spread froze in place.
-  //   2. Under v3 (this version), visibleEntities still changes every frame
-  //      because the hemisphere filter is camera-dependent — entities cross
-  //      the limb continuously during rotation. The cache would need a
-  //      per-frame key, which is just no cache.
-  //
-  // Cost of rebuilding: ~9 small layer objects per redraw, well inside the
-  // 16 ms frame budget at the iPM scale (≤50 entities). If we ever need
-  // caching, the right unit is the visibleEntities array reference, not a
-  // coarse viewState round-down — and even that only helps when the camera
-  // is stationary, which is most of the user's actual interaction time
-  // (paused on an open overlay).
-  private _buildStaticLayers(visibleEntities: DeclutterdEntity[]): any[] {
-    return this._buildStaticLayersImpl(visibleEntities);
+  // No cache. Previous versions tried to cache static layers by a key like
+  // (focused, hovered, powermap, arcsRev, visibleCount, round(zoom),
+  // round(lat)), but it always grew a hidden invalidation bug. At iPM
+  // scale (~50 entities, ~10 layer objects) the per-redraw cost is well
+  // inside the 16 ms frame budget. If we ever need caching, the right
+  // unit is by-cluster-set reference equality, not viewState.
+  private _buildStaticLayers(visibleClusters: Cluster[]): any[] {
+    return this._buildStaticLayersImpl(visibleClusters);
   }
 
-  private _buildStaticLayersImpl(visibleEntities: DeclutterdEntity[]) {
+  private _buildStaticLayersImpl(visibleClusters: Cluster[]) {
     // Idle skin — dark navy continents with visible borders.
     const IDLE_FILL:   [number,number,number,number] = [18, 54, 105, 255];
     const IDLE_STROKE: [number,number,number,number] = [55, 120, 190, 140];
@@ -720,22 +868,27 @@ export class GlobeBridge implements IEngineBridge {
     const metersPerPx      = (EARTH_C * Math.cos(_lat * Math.PI / 180)) / Math.pow(2, _zoom + 8);
     const dynamicRadius    = Math.max(30_000, Math.min(120_000, SCREEN_TARGET_PX * metersPerPx));
 
-    // Put the focused entity FIRST in the data array so that when its disc
-    // overlaps a neighbour's disc in the picking buffer, the neighbour (drawn
-    // later) wins the hit test — enabling re-selection of nearby entities.
-    //
-    // Why: globe-rings has parameters: { depthTest: false }. With depthTest
-    // disabled, both the visual and pick framebuffers use plain overwrite
-    // semantics — the LAST fragment written at a pixel wins. If focused were
-    // last, focused would dominate every overlap and the user could never
-    // click a neighbour close to it. The selected-halo (300 km, non-pickable)
-    // remains the visual cue for the focused entity regardless of draw order.
-    const orderedVisible = this._focusedId
+    // v4: clusters containing the focused entity are pushed to the END of
+    // the picking array so neighbour clusters win on overlap (same logic
+    // as v3 globe-rings but at the cluster granularity). Background:
+    // parameters.depthTest=false means LAST fragment wins picking; with
+    // focused first, focused-adjacent picks were impossible.
+    const orderedClusters = this._focusedId
       ? [
-          ...visibleEntities.filter((d: any) => d.nodeId === this._focusedId),
-          ...visibleEntities.filter((d: any) => d.nodeId !== this._focusedId),
+          ...visibleClusters.filter((c) => c.dominantEntity.nodeId !== this._focusedId),
+          ...visibleClusters.filter((c) => c.dominantEntity.nodeId === this._focusedId),
         ]
-      : visibleEntities;
+      : visibleClusters;
+
+    // v4: arc-layer routing — when a cluster is expanded, render the
+    // INDIVIDUAL underlying arcs (so the user sees BMW → Allianz precisely,
+    // not "Munich → Frankfurt [12]"); when collapsed, render the
+    // AGGREGATED arcs. The two layers are mutually exclusive at any moment
+    // — we pass an empty `data` to the non-active one so deck.gl simply
+    // doesn't render anything. Cheaper than constructing/unconstructing
+    // the layer object across frames (deck.gl re-uses layer instances
+    // across setProps when ids match).
+    const isExpanded = this._expandedClusterId !== null;
 
     const getCountryFill = (f: any): [number,number,number,number] => {
       const name: string = f.properties?.name ?? f.properties?.NAME ?? '';
@@ -791,15 +944,52 @@ export class GlobeBridge implements IEngineBridge {
           getLineColor: [this._activePowerMapId],
         },
       }),
-      // Phase 8: globe-arcs — supplier (amber) + client (cyan) network edges.
-      // Inserted BELOW globe-rings so picking on entity dots stays unaffected
-      // (arcs are non-pickable — they're decorative context for the open
-      // company overlay). greatCircle: true makes arcs follow globe curvature
-      // (verified to work on _GlobeView, unlike LinearInterpolator transitions
-      // — see docs/deck-gl-9-reference.md §5).
+      // v4: globe-arcs-aggregated — one arc per (sourceCluster, targetCluster)
+      // pair, anchored at cluster CENTROIDS. Visible only while NO cluster
+      // is expanded. Width = base + k·√Σintensity (see aggregateArcs.ts).
+      // Color follows the dominant kind in the underlying group (most-
+      // frequent of supplier/client/partner/connection).
+      new ArcLayer<AggregatedArc>({
+        id: 'globe-arcs-aggregated',
+        data: isExpanded ? [] : this._aggArcs,
+        pickable: false,
+        greatCircle: true,
+        widthUnits: 'pixels',
+        getSourcePosition: (a) => a.source,
+        getTargetPosition: (a) => a.target,
+        getSourceColor: (a) => {
+          const c = a.dominantKind === 'supplier'   ? GlobeBridge.ARC_COLOR_SUPPLIER
+                  : a.dominantKind === 'client'     ? GlobeBridge.ARC_COLOR_CLIENT
+                  : a.dominantKind === 'connection' ? GlobeBridge.ARC_COLOR_CONNECTION
+                  :                                  GlobeBridge.ARC_COLOR_PARTNER;
+          return [c[0], c[1], c[2], 220];
+        },
+        getTargetColor: (a) => {
+          const c = a.dominantKind === 'supplier'   ? GlobeBridge.ARC_COLOR_SUPPLIER
+                  : a.dominantKind === 'client'     ? GlobeBridge.ARC_COLOR_CLIENT
+                  : a.dominantKind === 'connection' ? GlobeBridge.ARC_COLOR_CONNECTION
+                  :                                  GlobeBridge.ARC_COLOR_PARTNER;
+          return [c[0], c[1], c[2], 220];
+        },
+        getWidth: (a) => a.width,
+        getHeight: 0.2,
+        updateTriggers: {
+          data:              [this._arcsRevision, this._expandedClusterId, this._clusters.length],
+          getSourcePosition: [this._arcsRevision, this._clusters.length],
+          getTargetPosition: [this._arcsRevision, this._clusters.length],
+          getSourceColor:    [this._arcsRevision],
+          getTargetColor:    [this._arcsRevision],
+          getWidth:          [this._arcsRevision],
+        },
+      }),
+      // v4: globe-arcs-individual — original per-entity arcs (from
+      // CMD.SET_ARCS), visible ONLY while a cluster is expanded. Filtered
+      // to arcs whose source OR target sits in the currently expanded
+      // cluster — keeps the visual focus on the user's choice and avoids
+      // re-clutter from arcs between collapsed clusters.
       new ArcLayer<EngineArc>({
-        id: 'globe-arcs',
-        data: this._arcs,
+        id: 'globe-arcs-individual',
+        data: isExpanded ? this._filterArcsForExpandedCluster() : [],
         pickable: false,
         greatCircle: true,
         widthUnits: 'pixels',
@@ -823,9 +1013,7 @@ export class GlobeBridge implements IEngineBridge {
           a.intensity * (GlobeBridge.ARC_WIDTH_MAX - GlobeBridge.ARC_WIDTH_MIN),
         getHeight: 0.2,
         updateTriggers: {
-          // _idleArcs.length included so the layer re-evaluates when entity set changes
-          // (idle arcs are precomputed per entity batch; full idle arc rendering is Phase 8+).
-          data:              [this._arcsRevision, this._idleArcs.length],
+          data:              [this._arcsRevision, this._expandedClusterId],
           getSourcePosition: [this._arcsRevision],
           getTargetPosition: [this._arcsRevision],
           getSourceColor:    [this._arcsRevision],
@@ -833,19 +1021,19 @@ export class GlobeBridge implements IEngineBridge {
           getWidth:          [this._arcsRevision],
         },
       }),
-      // Phase 8+: globe-selected-halo — cyan ring around focused entity at 300k radius.
-      // v3: anchored to the REAL HQ lat/lng. The halo is a 300 km circle —
-      // big enough that the pixelOffset of the icon (≤80 px ≈ 30-120 km at
-      // typical zoom) sits comfortably inside the halo's footprint. No need
-      // to chase the icon's offset slot.
-      new ScatterplotLayer({
+      // v4: globe-selected-halo — cyan ring around focused entity's
+      // CLUSTER centroid. Anchored to cluster.lat/lng (which equals real
+      // HQ for singletons and metro/mean centroid for multi-clusters).
+      // 300 km radius comfortably encloses the cluster badge + spiderfy
+      // pixel offsets (≤150 px at typical zoom).
+      new ScatterplotLayer<Cluster>({
         id: 'globe-selected-halo',
         data: this._focusedId
-          ? visibleEntities.filter((d: any) => d.nodeId === this._focusedId)
+          ? visibleClusters.filter((c) => c.dominantEntity.nodeId === this._focusedId)
           : [],
         pickable: false,
         radiusUnits: 'meters',
-        getPosition:  (d: any) => [d.longitude, d.latitude],
+        getPosition:  (c) => [c.lng, c.lat],
         getRadius:    300_000,
         getFillColor: [0, 0, 0, 0],
         getLineColor: [0, 229, 255, 200],
@@ -853,70 +1041,72 @@ export class GlobeBridge implements IEngineBridge {
         stroked: true,
         lineWidthUnits: 'pixels',
         updateTriggers: {
-          data: [this._focusedId, visibleEntities.length],
+          data: [this._focusedId, visibleClusters.length],
         },
       }),
-      // Phase 7: globe-rings — pickable entity dots, ring stroke, hover/focus-aware radius.
-      // v3: anchored to the REAL HQ lat/lng (NOT the icon's offset slot).
-      // For clustered entities the N rings overlap visually at the cluster
-      // centroid, while the N icons spread 32-80 px around. Picking on the
-      // ring stack is supplemented by IconLayer picking (icons are now
-      // pickable: true) so the user clicks the LOGO they see — the icon
-      // wins because it's drawn after the rings.
-      new ScatterplotLayer({
-        id: 'globe-rings',
-        data: orderedVisible,
+      // v4: globe-cluster-rings — pickable ring around each cluster's
+      // centroid. Visible at all times; click toggles expansion (multi-
+      // clusters) or fires ENTITY_CLICK (singletons). Same dynamic-radius
+      // logic as v3 globe-rings to keep the hit area at ~24 screen-px
+      // independent of zoom.
+      //
+      // Color: dominantEntity.type drives the ring color (COMPANY = cyan,
+      // PERSON = gold, COUNTRY = orange). This is consistent with v3 dot
+      // coloring — a cluster of 5 Munich companies reads "cyan cluster".
+      // The selected/hovered cases use cluster.id (multi) or dominant's
+      // nodeId (singleton) as the comparison key (see _hoveredId routing).
+      new ScatterplotLayer<Cluster>({
+        id: 'globe-cluster-rings',
+        data: orderedClusters,
         pickable: true,
         parameters: { depthTest: false } as any,
         radiusUnits: 'meters',
-        getPosition:  (d: DeclutterdEntity) => [d.longitude, d.latitude],
-        // Dynamic radius keeps the hit circle ~24 screen-px at all zoom levels.
-        // Focused entity is last in orderedVisible so neighbours win the pick
-        // when their discs overlap. Visual selection feedback via globe-selected-
-        // halo (300 km ring, non-pickable) + stroke width + fill alpha below.
+        getPosition:  (c) => [c.lng, c.lat],
         getRadius:    dynamicRadius,
-        getFillColor: (d: any) => {
-          if (d.nodeId === this._focusedId) return [0, 229, 255, 80];
-          if (d.nodeId === this._hoveredId) return [255, 255, 255, 180];
-          const c = dotColor(d.type, d.isGold);
-          // Slightly transparent fill so the decorative inner dot reads through
-          return [c[0], c[1], c[2], 80];
+        getFillColor: (c) => {
+          // Selected (clicked / focused via overlay): bright cyan glow.
+          if (c.dominantEntity.nodeId === this._focusedId) return [0, 229, 255, 80];
+          // Hovered: white wash. _hoveredId carries cluster.id for multi-
+          // clusters and entity.nodeId for spiderfy children — compare to
+          // both for cluster-level hover feedback.
+          if (c.id === this._hoveredId) return [255, 255, 255, 180];
+          const col = dotColor(c.dominantEntity.type, c.dominantEntity.isGold);
+          return [col[0], col[1], col[2], 80];
         },
-        getLineColor: (d: any) => {
-          const c = dotColor(d.type, d.isGold);
-          return [c[0], c[1], c[2], 255];
+        getLineColor: (c) => {
+          const col = dotColor(c.dominantEntity.type, c.dominantEntity.isGold);
+          return [col[0], col[1], col[2], 255];
         },
-        getLineWidth: (d: any) => (d.nodeId === this._focusedId ? 3 : 1.5),
+        getLineWidth: (c) => (c.dominantEntity.nodeId === this._focusedId ? 3 : 1.5),
         stroked: true,
         lineWidthUnits: 'pixels',
         updateTriggers: {
-          getFillColor: [this._focusedId, this._hoveredId, visibleEntities.length],
-          getLineColor: [visibleEntities.length],
+          getFillColor: [this._focusedId, this._hoveredId, visibleClusters.length],
+          getLineColor: [visibleClusters.length],
           getLineWidth: [this._focusedId],
-          getPosition:  [visibleEntities],
+          getPosition:  [visibleClusters],
           getRadius:    [_zoom, _lat],
         },
       }),
-      // Phase 7: globe-dots — decorative inner fill, non-pickable. Reads through the
-      // ring's translucent fill to give the "ring + dot" visual pattern from v3.
-      // v3: anchored to the REAL HQ lat/lng (sits inside the ring at the real
-      // HQ, NOT under the offset icon). For non-icon entities (PERSON, COUNTRY)
-      // this is the only visual indicator — they don't get the IconLayer offset
-      // treatment because they don't have a logo, so dot at real HQ is correct.
-      new ScatterplotLayer({
-        id: 'globe-dots',
-        data: visibleEntities.filter((d: any) => !d.iconUrl),
+      // v4: globe-cluster-dots — decorative inner fill that reads through
+      // the ring's translucent fill. Only for clusters whose dominant entity
+      // has NO iconUrl (PERSON, COUNTRY, or COMPANY without logo). When a
+      // logo is available, the cluster badge IconLayer (in
+      // _buildAnimatedLayers) provides the visual identity instead.
+      new ScatterplotLayer<Cluster>({
+        id: 'globe-cluster-dots',
+        data: visibleClusters.filter((c) => !c.dominantEntity.iconUrl),
         pickable: false,
         radiusUnits: 'meters',
-        getPosition:  (d: DeclutterdEntity) => [d.longitude, d.latitude],
+        getPosition:  (c) => [c.lng, c.lat],
         getRadius:    30_000,
-        getFillColor: (d: any) => {
-          const c = dotColor(d.type, d.isGold);
-          return [c[0], c[1], c[2], 200];
+        getFillColor: (c) => {
+          const col = dotColor(c.dominantEntity.type, c.dominantEntity.isGold);
+          return [col[0], col[1], col[2], 200];
         },
         updateTriggers: {
-          getFillColor: [visibleEntities.length],
-          getPosition:  [visibleEntities],
+          getFillColor: [visibleClusters.length],
+          getPosition:  [visibleClusters],
         },
       }),
       // PowerMap entity halo — soft glow behind ring, non-pickable
@@ -993,17 +1183,43 @@ export class GlobeBridge implements IEngineBridge {
     ];
   }
 
-  // Builds the animated layers (arrival pulse, click ripple, company icons).
-  // Historically kept separate from the static layers because the static
-  // cache was not invalidated by animation state. The cache is gone now,
-  // but the split still pays off — the animation RAFs (click ripple, fly-to
-  // arrival pulse) call _buildLayers() at ~60 Hz, and that's the LAST place
-  // we want to do anything beyond simple array literal construction. Static
-  // and animated halves both rebuild every call; the names are documentation
-  // of which fields drive each half (static: focus/hover/powermap/arcs;
-  // animated: arrival pulse + click ripple + the icon layer's offsets,
-  // which are read straight from the precomputed pixelOffset field).
-  private _buildAnimatedLayers(visibleEntities: DeclutterdEntity[]): any[] {
+  // v4: animated layers + cluster badges + spiderfy. All drawn AFTER the
+  // static layers so they end up on top in both the visual buffer and
+  // the pick buffer (with depthTest:false the LAST fragment wins).
+  //
+  // Layer set:
+  //   - arrival-pulse  (ScatterplotLayer)  fly-to landing ring
+  //   - click-ripple-* (ScatterplotLayer)  triple expanding rings on click
+  //   - cluster-badges (IconLayer)         dominant entity's logo per cluster
+  //   - cluster-labels (TextLayer)         "+N · ISO2" sublabel for multi-clusters
+  //   - spiderfy-icons (IconLayer)         expanded cluster's children at
+  //                                        cluster centroid + pixel offsets
+  private _buildAnimatedLayers(visibleClusters: Cluster[]): any[] {
+    // Resolve the expanded cluster (if any) and precompute child offsets.
+    // Hoisted outside the layer literal so we don't run getSpiderfyOffsets
+    // twice (once for the data array, once if we ever inspect counts).
+    const expandedCluster = this._expandedClusterId
+      ? visibleClusters.find((c) => c.id === this._expandedClusterId) ?? null
+      : null;
+    type SpiderfyChild = EngineEntityData['entities'][number] & {
+      _pxX: number;
+      _pxY: number;
+      _clusterLng: number;
+      _clusterLat: number;
+    };
+    const spiderfyChildren: SpiderfyChild[] = expandedCluster
+      ? (() => {
+          const offsets = getSpiderfyOffsets(expandedCluster.count);
+          return expandedCluster.children.slice(0, offsets.length).map((child, i) => ({
+            ...child,
+            _pxX: offsets[i].dx,
+            _pxY: offsets[i].dy,
+            _clusterLng: expandedCluster.lng,
+            _clusterLat: expandedCluster.lat,
+          })) as SpiderfyChild[];
+        })()
+      : [];
+
     return [
       // Arrival pulse — single gold ring expanding from fly-to destination.
       ...(this._arrivalCoords
@@ -1052,58 +1268,162 @@ export class GlobeBridge implements IEngineBridge {
             });
           }).filter(Boolean) as ScatterplotLayer<any>[]
         : []),
-      // Company logos — rendered last so depth buffer never clips them, AND
-      // so picking prefers the icon over the ring underneath (deck.gl picks
-      // the topmost layer on overlap; draw order = pick priority when
-      // depthTest is off).
-      // billboard: true keeps sprites camera-facing on _GlobeView.
-      // depthTest: false prevents the globe sphere from z-clipping the sprite.
+
+      // v4: globe-cluster-badges — one IconLayer item per cluster. The icon
+      // is the dominant entity's logo when available (COMPANY with iconUrl),
+      // otherwise a generic colored dot (PERSON gold, COUNTRY orange). The
+      // expanded cluster's badge is hidden because the spiderfy children
+      // visually replace it (we don't want a redundant "BMW" icon on top of
+      // the spiderfy BMW dot).
       //
-      // v3: anchor at REAL HQ lat/lng + screen-pixel offset via the prop
-      // pixelSpread() baked into each entity. Picking moved here (was false
-      // pre-v3) so a click on a clustered logo hits the icon directly
-      // instead of the random ring underneath the cluster centre.
-      new IconLayer({
-        id: 'globe-company-icons',
-        data: visibleEntities.filter(
-          (d: any) => d.type === 'COMPANY' && d.iconUrl,
-        ),
+      // billboard: true keeps sprites camera-facing on _GlobeView.
+      // depthTest: false prevents the globe sphere from z-clipping the sprite
+      // AND ensures this layer wins picking over the cluster-rings beneath.
+      new IconLayer<Cluster>({
+        id: 'globe-cluster-badges',
+        data: visibleClusters.filter((c) => c.id !== this._expandedClusterId),
         pickable: true,
         billboard: true,
         parameters: { depthTest: false } as any,
-        getPosition:   (d: any) => [d.longitude, d.latitude],
-        getPixelOffset:(d: any) => d.pixelOffset,
-        getIcon: (d: any) => ({
-          url:     d.iconUrl,
-          width:   64,
-          height:  64,
-          anchorX: 32,
-          anchorY: 32,
-          mask:    false,
-        }),
-        getSize:   28,
+        getPosition: (c) => [c.lng, c.lat],
+        getIcon: (c) => {
+          const d = c.dominantEntity;
+          if (d.iconUrl) {
+            return { url: d.iconUrl, width: 64, height: 64, anchorX: 32, anchorY: 32, mask: false };
+          }
+          // Mask SVG — getColor will tint it (deck.gl multiplies white pixels by getColor).
+          return { url: GENERIC_DOT_DATA_URL, width: 32, height: 32, anchorX: 16, anchorY: 16, mask: true };
+        },
+        getColor: (c) => {
+          // Only used when the icon is the GENERIC_DOT_DATA_URL (mask:true).
+          // For real iconUrls deck.gl ignores getColor (mask:false).
+          const t = c.dominantEntity.type.toUpperCase();
+          if (t === 'PERSON')  return [255, 210, 0, 240];
+          if (t === 'COUNTRY') return [245, 166, 35, 240];
+          return [0, 229, 255, 240];
+        },
+        // Slightly larger when hovered or when the cluster contains the
+        // focused entity — gives visual feedback parallel to the ring's
+        // fill change.
+        getSize: (c) => {
+          if (c.dominantEntity.nodeId === this._focusedId) return 34;
+          if (c.id === this._hoveredId) return 32;
+          return 28;
+        },
         sizeUnits: 'pixels',
         updateTriggers: {
-          getPosition:    [visibleEntities],
-          getPixelOffset: [visibleEntities],
-          getIcon:        [visibleEntities.length],
+          data:       [visibleClusters.length, this._expandedClusterId],
+          getIcon:    [visibleClusters.length],
+          getSize:    [this._focusedId, this._hoveredId],
+        },
+      }),
+
+      // v4: globe-cluster-labels — "+N · DE" sublabel rendered ABOVE the
+      // cluster badge. Only for clusters with count > 1 (sublabel is empty
+      // for singletons; geoCluster suppresses it). Also hidden for the
+      // currently expanded cluster (the spiderfy children replace the
+      // count visually).
+      //
+      // pixelOffset.y = -22 puts the text just above the 28 px icon,
+      // leaving a small visual gap. text + background fill via TextLayer's
+      // built-in background props (rendered as a separate background quad
+      // by deck.gl 9 when `background: true`).
+      new TextLayer<Cluster>({
+        id: 'globe-cluster-labels',
+        data: visibleClusters.filter(
+          (c) => !c.isSingleton && c.id !== this._expandedClusterId,
+        ),
+        pickable: false,
+        billboard: true,
+        getPosition: (c) => [c.lng, c.lat],
+        getPixelOffset: [0, -24],
+        getText: (c) => c.sublabel,
+        getColor: [232, 237, 245, 240],
+        getSize: 11,
+        sizeUnits: 'pixels',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontWeight: 600,
+        background: true,
+        backgroundPadding: [6, 3, 6, 3],
+        getBackgroundColor: [4, 8, 16, 220],
+        getBorderColor: [0, 229, 255, 140],
+        getBorderWidth: 1,
+        parameters: { depthTest: false } as any,
+        updateTriggers: {
+          data:    [visibleClusters.length, this._expandedClusterId],
+          getText: [visibleClusters.length],
+        },
+      }),
+
+      // v4: globe-spiderfy-icons — children of the expanded cluster, each
+      // anchored at the cluster centroid plus a per-child pixel offset
+      // computed by getSpiderfyOffsets. Single layer for ALL children
+      // (COMPANY with iconUrl, PERSON/COUNTRY without). When iconUrl is
+      // present we use it directly (mask:false, no color tint); otherwise
+      // the generic dot icon + getColor tint by entity type.
+      //
+      // The pickable:true here makes spiderfy children individually
+      // clickable; the onClick handler emits ENTITY_CLICK on the specific
+      // child without collapsing the cluster.
+      new IconLayer<SpiderfyChild>({
+        id: 'globe-spiderfy-icons',
+        data: spiderfyChildren,
+        pickable: true,
+        billboard: true,
+        parameters: { depthTest: false } as any,
+        getPosition:    (d) => [d._clusterLng, d._clusterLat],
+        getPixelOffset: (d) => [d._pxX, d._pxY],
+        getIcon: (d) => {
+          if (d.iconUrl) {
+            return { url: d.iconUrl, width: 64, height: 64, anchorX: 32, anchorY: 32, mask: false };
+          }
+          return { url: GENERIC_DOT_DATA_URL, width: 32, height: 32, anchorX: 16, anchorY: 16, mask: true };
+        },
+        getColor: (d) => {
+          const t = d.type.toUpperCase();
+          if (t === 'PERSON')  return [255, 210, 0, 240];
+          if (t === 'COUNTRY') return [245, 166, 35, 240];
+          return [0, 229, 255, 240];
+        },
+        getSize: (d) => (d.nodeId === this._focusedId ? 32 : d.nodeId === this._hoveredId ? 30 : 26),
+        sizeUnits: 'pixels',
+        updateTriggers: {
+          data:          [spiderfyChildren.length, this._expandedClusterId],
+          getPosition:   [this._expandedClusterId],
+          getPixelOffset:[this._expandedClusterId],
+          getSize:       [this._focusedId, this._hoveredId],
         },
       }),
     ];
   }
 
-  // v3 layer build pipeline. Camera-dependent on the hemisphere filter only;
-  // the pixelOffset on each entity was baked in by pixelSpread() at
-  // SET_ENTITIES time and is reused as-is. No viewport.project / unproject
-  // anywhere in the render loop.
+  // v4: arc filter for the expanded-cluster case. Returns the subset of
+  // _arcs whose source OR target nodeId belongs to the expanded cluster.
+  // O(arcs · expandedChildren) but at iPM scale (~80 arcs, ≤20 children
+  // per cluster) it's a few-hundred-op filter — well under 1 ms.
+  private _filterArcsForExpandedCluster(): EngineArc[] {
+    const expanded = this._expandedClusterId
+      ? this._clusters.find((c) => c.id === this._expandedClusterId)
+      : null;
+    if (!expanded) return [];
+    const childIds = new Set(expanded.children.map((e) => String(e.nodeId ?? e.id)));
+    return this._arcs.filter(
+      (a) => childIds.has(a.sourceNodeId) || childIds.has(a.targetNodeId),
+    );
+  }
+
+  // v4 layer build pipeline. Camera-dependent on the hemisphere filter
+  // only; clusters themselves are precomputed in _recluster (CMD.SET_
+  // ENTITIES) and _maybeRecluster (zoom-threshold crossing).
   //
-  // Cost: O(n) hemisphere filter + O(layers) array literal construction.
-  // Runs on every _redraw() — that's hover/click/focus changes, the rAF
-  // rotation tick (60 Hz while idle, gated by Rule 7), animation frames
-  // during fly-to + click ripple + arrival pulse. At iPM scale (~50
-  // entities, 9 layers) each redraw is well under a millisecond.
+  // Cost: O(visible) hemisphere filter + O(layers) array literal
+  // construction + getSpiderfyOffsets() (O(count) trig, called at most
+  // once per redraw when a cluster is expanded). Runs on every _redraw()
+  // — hover, click, focus, rAF rotation tick, fly-to lerp, click-ripple
+  // animation. At iPM scale (~50 entities → ~20 clusters, ~12 layers)
+  // each redraw is well under a millisecond.
   private _buildLayers(): any[] {
-    const visible = this._computeVisibleEntities();
+    const visible = this._computeVisibleClusters();
     return [
       ...this._buildStaticLayers(visible),
       ...this._buildAnimatedLayers(visible),
@@ -1138,42 +1458,19 @@ export class GlobeBridge implements IEngineBridge {
     this._arrivalCoords  = null;
   }
 
-  private _buildIdleArcs(): Array<{ src: [number, number]; dst: [number, number]; phase: number }> {
-    const n = Math.min(this._entities.length, 30);
-    if (n < 2) return [];
-    const result = [];
-    const count = Math.min(18, Math.floor(n * 0.7));
-    for (let i = 0; i < count; i++) {
-      const a = this._entities[i % n];
-      const b = this._entities[(i * 7 + 4) % n];
-      if (a === b) continue;
-      result.push({
-        src:   [a.longitude, a.latitude]  as [number, number],
-        dst:   [b.longitude, b.latitude]  as [number, number],
-        phase: (i / count) * Math.PI * 2,
-      });
-    }
-    return result;
-  }
-
-  // v3: no arc rebind step. EngineArc.source / EngineArc.target stay on the
-  // real HQ longitude/latitude emitted by the service-layer mapper, end to
-  // end. The arc visually arrives at the underlying ring (which is also at
-  // real HQ) inside a cluster's overlapping ring stack, while the icon sits
-  // a few pixels off — a small acceptable mismatch in exchange for keeping
-  // a single canonical coordinate on every record. Reverse migration: see
-  // git history for _resolveArcsToDisplay (rebound arc endpoints to the
-  // entitySpread offset coords) and v2's screenDeclutter (would have needed
-  // per-frame unproject of the offset → not architecturally clean).
+  // v4: arcs are end-to-end on REAL HQ coordinates from the mapper.
+  // Individual-arcs layer reads endpoints verbatim; aggregated-arcs layer
+  // remaps endpoints to cluster centroids in aggregateArcs.ts. No
+  // _resolveArcsToDisplay rebind step exists (see v1 git history for the
+  // legacy spread-cluster rebinder that this architecture obsoletes).
 
   private _startIdlePulse(): void {
     if (this._idleInterval !== null) return;
-    this._idleInterval = setInterval(() => {
-      this._idleAnimTime += 0.067;
-      // _redraw() omitted here: idle arcs are precomputed in _idleArcs but not yet
-      // wired into any rendered layer — calling _redraw() would push unchanged
-      // layers to deck.gl at 15fps for no visual effect.
-    }, 67);
+    // No-op tick loop kept as a scaffold for Phase 8+ idle arcs animation.
+    // Once a real animation exists, swap the body for a frame budget +
+    // _redraw() call. Today, calling _redraw() at 15 Hz here would push
+    // identical layers to deck.gl for zero visual effect.
+    this._idleInterval = setInterval(() => {}, 67);
   }
 
   private _stopIdlePulse(): void {
@@ -1308,7 +1605,15 @@ export class GlobeBridge implements IEngineBridge {
   }
 
   private _flyTo(target: { nodeId: string }): void {
-    const entity = this._entities.find(e => e.nodeId === target.nodeId);
+    // v4: look up the entity in raw entities first (covers spiderfy
+    // children clicks where the target may be any cluster member, not
+    // just the dominant one). Fall back to a cluster scan only if we
+    // can't find it — defensive against id-shape drift.
+    const entity =
+      this._rawEntities.find((e) => e.nodeId === target.nodeId) ??
+      this._clusters
+        .flatMap((c) => c.children)
+        .find((e) => e.nodeId === target.nodeId);
     if (!entity) return;
     this._focusedId = target.nodeId;
     this._flyToEntityClick = true;
